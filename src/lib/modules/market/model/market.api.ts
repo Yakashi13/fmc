@@ -3,7 +3,7 @@ import { createEffect } from "effector";
 import type { RecordModel } from "pocketbase";
 import { pb } from "$lib/shared/api";
 
-const MAX_BIN = 1048576; // .bin limit, duplicated in the PB schema
+const MAX_BIN = 1572864; // .bin limit, duplicated in the PB schema
 
 export const loadMarketFx = createEffect(async () => {
   // ponytail: full list, not paginated — catalog + user publishes are a couple hundred
@@ -79,7 +79,7 @@ export interface SavePayload {
 // from $openedWf (attach()); undefined creates a new record
 export const saveFx = createEffect(async (p: SavePayload & { openedId?: string }) => {
   if (p.bin.length > MAX_BIN)
-    throw new Error(`bin is ${(p.bin.length / 1024 / 1024).toFixed(1)} MB — limit is 1 MB`);
+    throw new Error(`bin is ${(p.bin.length / 1024 / 1024).toFixed(1)} MB — limit is 1.5 MB`);
   const fd = new FormData();
 
   fd.set("name", p.name);
