@@ -8,6 +8,7 @@ import { samePackage, type Wp2Package, type Wp2State } from "$lib/modules/device
 import type { RecordModel } from "pocketbase";
 import { authModel } from "$lib/modules/auth/model";
 import { bleModel } from "$lib/modules/device/model";
+import { isLoader } from "../lib/firmware";
 import * as storeApi from "./store.api";
 
 export { appDownloadUrl, firmwareDownloadUrl } from "./store.api";
@@ -108,6 +109,14 @@ sample({
 // tick, and only an image that's on the record. The bytes are fetched here and handed to the
 // device model, which checks them again and owns the watch.
 export const flashRequested = createEvent();
+// 0–100 while the image comes down, null otherwise — the flash's own progress is the device model's
+export const $imageProgress = createStore<number | null>(null);
+const imageProgressed = createEvent<number>();
+
+sample({
+  clock: imageProgressed,
+  target: $imageProgress,
+});
 export const downloadRequested = createEvent();
 export const $imageSaving = storeApi.saveFirmwareImageFx.pending;
 
@@ -115,7 +124,7 @@ sample({
   clock: downloadRequested,
   source: { rec: $firmware, may: authModel.$canFlash, accepted: $riskAccepted },
   filter: ({ rec, may, accepted }) => Boolean(rec?.image) && may && accepted,
-  fn: ({ rec }) => rec!,
+  fn: ({ rec }) => ({ rec: rec!, onProgress: imageProgressed }),
   target: storeApi.saveFirmwareImageFx,
 });
 export const $imageFetching = storeApi.fetchFirmwareImageFx.pending;
@@ -124,8 +133,10 @@ export const $imageErr = createStore("");
 sample({
   clock: flashRequested,
   source: { rec: $firmware, may: authModel.$canFlash, accepted: $riskAccepted },
-  filter: ({ rec, may, accepted }) => Boolean(rec?.image) && may && accepted,
-  fn: ({ rec }) => rec!,
+  // a loader package isn't an OTA image (the image gate would refuse it anyway)
+  filter: ({ rec, may, accepted }) =>
+    Boolean(rec?.image) && !isLoader(rec?.kind) && may && accepted,
+  fn: ({ rec }) => ({ rec: rec!, onProgress: imageProgressed }),
   target: storeApi.fetchFirmwareImageFx,
 });
 sample({
@@ -142,6 +153,16 @@ sample({
   fn: () => "",
   target: $imageErr,
 });
+sample({
+  clock: [
+    storeApi.fetchFirmwareImageFx.finally,
+    storeApi.saveFirmwareImageFx.finally,
+    firmwareRequested,
+  ],
+  fn: () => null,
+  target: $imageProgress,
+});
+
 // a result belongs to the page it happened on
 sample({
   clock: firmwareRequested,
@@ -193,16 +214,51 @@ export const $appsOnWatch = combine(bleModel.$wp2, $appHeaders, (wp2, headers) =
   return out;
 });
 
-// a firmware record against the watch's stub: null when there's nothing to say — no watch, a
-// stock watch, an image without the stub, or an older one than the watch runs
-const stubState = (wp2: Wp2State | "stock" | null, rec: RecordModel | null): OnWatch | null => {
+// loader records: their package header, for the comparison with the loader on the watch
+const $loaderHeaders = createStore<Record<string, Wp2Package>>({});
+
+sample({
+  clock: [bleModel.$wp2.updates, firmwares.$list.updates, firmwares.$one.updates],
+  source: { wp2: bleModel.$wp2, list: firmwares.$list, one: firmwares.$one, have: $loaderHeaders },
+  filter: ({ wp2 }) => Boolean(wp2) && wp2 !== "stock",
+  fn: ({ list, one, have }) =>
+    [...list, ...(one ? [one] : [])].filter(
+      (rec) => isLoader(rec.kind) && rec.image && !have[rec.id],
+    ),
+  target: storeApi.fetchLoaderHeadersFx,
+});
+sample({
+  clock: storeApi.fetchLoaderHeadersFx.doneData,
+  source: $loaderHeaders,
+  fn: (have, got) => ({ ...have, ...got }),
+  target: $loaderHeaders,
+});
+
+// a firmware record against the watch: null when there's nothing to say — no watch, a stock
+// watch, an image without the stub, or an older one than the watch runs. A loader record is
+// compared by its build (CRC) with the loader in slot L; an image by its `stub` number.
+const stubState = (
+  wp2: Wp2State | "stock" | null,
+  rec: RecordModel | null,
+  loaders: Record<string, Wp2Package>,
+): OnWatch | null => {
+  if (rec && isLoader(rec.kind)) {
+    const h = loaders[rec.id];
+
+    if (!wp2 || wp2 === "stock" || !h) return null;
+    return wp2.loader && samePackage(wp2.loader, h) ? "installed" : "update";
+  }
   const stub = Number(rec?.stub) || 0;
 
   if (!wp2 || wp2 === "stock" || !stub) return null;
   if (stub > wp2.stub.version) return "update";
   return stub === wp2.stub.version ? "installed" : null;
 };
-export const $firmwareOnWatch = combine(bleModel.$wp2, firmwares.$one, stubState);
-export const $firmwaresOnWatch = combine(bleModel.$wp2, firmwares.$list, (wp2, list) =>
-  Object.fromEntries(list.map((rec) => [rec.id, stubState(wp2, rec)])),
+export const $firmwareOnWatch = combine(bleModel.$wp2, firmwares.$one, $loaderHeaders, stubState);
+export const $firmwaresOnWatch = combine(
+  bleModel.$wp2,
+  firmwares.$list,
+  $loaderHeaders,
+  (wp2, list, loaders) =>
+    Object.fromEntries(list.map((rec) => [rec.id, stubState(wp2, rec, loaders)])),
 );
