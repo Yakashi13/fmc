@@ -72,6 +72,17 @@ export const fetchLoaderHeadersFx = createEffect(async (recs: RecordModel[]) => 
   return out;
 });
 
+// A loader record's package, for installing it — the same protected fetch, its own effect so its
+// bytes never reach the OTA path
+export const fetchLoaderPackageFx = createEffect(fetchImage);
+// An app's package, for installing it — public, through the download hook so it counts
+export const fetchAppPackageFx = createEffect(async (rec: RecordModel) => {
+  const res = await fetch(appDownloadUrl(rec));
+
+  if (!res.ok) throw new Error(`couldn't fetch the package (${res.status})`);
+  return new Uint8Array(await res.arrayBuffer());
+});
+
 // …and saved as a file, under the name it has on the server
 export const saveFirmwareImageFx = createEffect(async (job: ImageFetch) => {
   const url = URL.createObjectURL(new Blob([(await fetchImage(job)) as BlobPart]));

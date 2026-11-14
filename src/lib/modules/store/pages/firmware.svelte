@@ -35,6 +35,8 @@
     $imageSaving: imageSaving,
     $imageFetching: imageFetching,
     $imageProgress: imageProgress,
+    $packageFetching: packageFetching,
+    loaderInstallRequested,
     $imageErr: imageErr,
     $firmwareOnWatch: onWatch,
   } = storeModel;
@@ -49,14 +51,21 @@
     $otaError: otaError,
     $wp2: wp2,
     $wp2Reading: wp2Reading,
+    $installing: installing,
+    $installProgress: installProgress,
+    $installed: installed,
+    $installError: installError,
     OTA_MIN_BATTERY,
     connectRequested,
   } = bleModel;
-  const busy = $derived($imageFetching || $imageSaving || $flashing);
+  const busy = $derived(
+    $imageFetching || $imageSaving || $packageFetching || $flashing || $installing,
+  );
+  const done = $derived($result === "done" || Boolean($installed));
   // one bar for the whole job: the download, then the transfer
-  const pct = $derived($imageProgress ?? $progress ?? 0);
+  const pct = $derived($imageProgress ?? $progress ?? $installProgress ?? 0);
   const loader = $derived(isLoader($firmware?.kind));
-  const error = $derived($imageErr || $otaError);
+  const error = $derived($imageErr || $otaError || $installError);
 
   $effect(() => {
     firmwareRequested(id);
@@ -135,12 +144,7 @@
             <Icon name="download" size={22} />
             Download
           </Button>
-          {#if loader}
-            <Button size="large" disabled>
-              <Icon name="install_desktop" size={22} />
-              Install
-            </Button>
-          {:else if $canFlash && !$watch}
+          {#if $canFlash && !$watch}
             <Button size="large" onClick={() => connectRequested()} disabled={$connecting}>
               <Icon name="bluetooth" size={22} />
               {$connecting ? "Connecting…" : "Connect"}
@@ -148,8 +152,8 @@
           {:else}
             <Button
               size="large"
-              onClick={() => flashRequested()}
-              disabled={!$canFlash || !fw.image || !$riskAccepted || busy || $result === "done"}
+              onClick={() => (loader ? loaderInstallRequested() : flashRequested())}
+              disabled={!$canFlash || !fw.image || !$riskAccepted || busy || done}
             >
               <Icon name="bolt" size={22} />
               Install
@@ -157,14 +161,10 @@
           {/if}
         </div>
 
-        {#if $imageProgress !== null || $flashing}
+        {#if $imageProgress !== null || $flashing || $installing}
           <div class="progress">
             <div class="progress-row">
-              <span
-                >{$imageProgress !== null
-                  ? "Downloading the image"
-                  : "Installing on the watch"}</span
-              >
+              <span>{$imageProgress !== null ? "Downloading" : "Installing on the watch"}</span>
               <span class="pct">{pct}%</span>
             </div>
             <progress max="100" value={pct}></progress>
@@ -172,6 +172,9 @@
           </div>
         {/if}
 
+        {#if $installed}
+          <p class="ok"><Icon name="check_circle" size={20} /> Installed on the watch.</p>
+        {/if}
         {#if $result === "done"}
           <p class="ok">
             <Icon name="check_circle" size={20} /> Sent. The watch installs it and restarts — leave it
@@ -184,8 +187,6 @@
         <p class="muted state">
           {#if !$canFlash}
             Open to testers only for now.
-          {:else if loader}
-            Installing from FMC is coming soon.
           {/if}
           {#if $watch}
             {#if $wp2Reading}
@@ -193,8 +194,8 @@
             {:else if $wp2 === "stock"}
               Watch: stock firmware.
             {:else if $wp2}
-              Watch: App Loader stub {$wp2.stub.version}{#if $wp2.loader}, loader v{$wp2.loader
-                  .version}{/if}.
+              Watch: patched firmware (stub {$wp2.stub.version}){#if $wp2.loader}, App Loader v{$wp2
+                  .loader.version}{/if}.
             {/if}
             {#if $onWatch === "update"}<Badge>Update available</Badge>{/if}
             {#if $onWatch === "installed"}<Badge quiet>Installed</Badge>{/if}
@@ -214,8 +215,8 @@
             </ul>
           {:else}
             <p>
-              It goes into the App Loader's loader slot over Bluetooth — no flashing. Until FMC
-              installs it:
+              It goes into its own slot over Bluetooth — no flashing, the firmware stays as it is.
+              Needs the patched firmware on the watch. The CLI way:
             </p>
             <pre><code>wp2apps install loader.wp2app --address &lt;address&gt;</code></pre>
           {/if}

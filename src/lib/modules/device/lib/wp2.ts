@@ -1,5 +1,6 @@
 // What the App Loader firmware (cmf-tech-community/wp2-apps) keeps on the watch, as its stub reports
-// it: the stub's own release and the package in each slot. Read-only — installing is not here.
+// it — the stub's own release and the package in each slot — and the checks a package passes
+// before Watch.installPackage sends it (the same ones the stub runs when it lands).
 //
 // The stub answers INFO (0x90A0) on the stock command channel, under the session this app already
 // holds. Stock firmware passes commands it doesn't know to a default branch that ignores them —
@@ -67,3 +68,66 @@ export function parseStubReply(r: Uint8Array): Wp2Stub {
 
 /** Is the catalog's build the one on the watch? Same name, same image. */
 export const samePackage = (a: Wp2Package, b: Wp2Package) => a.name === b.name && a.crc === b.crc;
+
+// ---- installing ----
+
+export const STATUS_NAMES = [
+  "OK",
+  "bad request",
+  "storage error",
+  "out of sequence",
+  "checksum mismatch",
+  "busy",
+  "invalid package",
+  "no app",
+  "full",
+  "paused",
+];
+/** Bytes per DATA request: the stub's MAX_DATA, and what keeps a request in one BLE frame. */
+export const MAX_DATA = 128;
+const LOADER_SIZE = 0x1_0000;
+const APP_SIZE = 0x2_0000;
+// stub 1 doesn't say which abi_minor it takes; every stub on a watch so far takes 3
+const DEFAULT_ABI_MINOR = 3;
+
+/**
+ * The stub's own checks (wp2-core pkg.rs: parse_header, check_slot, the body CRC), run before a
+ * byte goes out so a package that would be refused at the end isn't sent first. Returns the slot
+ * it goes to: L for a loader, else the slot that already holds an app of that name (an update
+ * replaces it), else the first free one.
+ */
+export function planInstall(data: Uint8Array, state: Wp2State, crc32: (d: Uint8Array) => number) {
+  const fail = (why: string) => {
+    throw new Error(`can't install this package: ${why}`);
+  };
+  const h = parsePackageHeader(data);
+
+  if (!h) fail("not a .wp2app");
+  const pkg = h!;
+  const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
+
+  if (crc32(data.subarray(0, 0x34)) !== dv.getUint32(0x34, true)) fail("header checksum");
+  if (dv.getUint16(4, true) !== 1) fail("unknown ABI");
+  const maxMinor = state.stub.abiMinor ?? DEFAULT_ABI_MINOR;
+
+  if (pkg.abiMinor > maxMinor)
+    fail(`it needs app ABI 1.${pkg.abiMinor}, the watch's App Loader takes up to 1.${maxMinor}`);
+  const relocs = dv.getUint32(44, true);
+
+  if (pkg.size > (pkg.kind === 1 ? LOADER_SIZE : APP_SIZE)) fail("too big for its slot");
+  if (data.length !== HEADER_SIZE + pkg.size + 4 * relocs) fail("truncated or padded");
+  if (crc32(data.subarray(HEADER_SIZE)) !== pkg.crc) fail("body checksum");
+
+  let slot: number;
+
+  if (pkg.kind === 1) slot = LOADER_SLOT;
+  else if (pkg.kind === 0) {
+    const same = Object.entries(state.apps).find(([, p]) => p.name === pkg.name);
+    const free = Array.from({ length: APP_SLOTS }, (_, i) => i).find((i) => !state.apps[i]);
+
+    if (same) slot = Number(same[0]);
+    else if (free !== undefined) slot = free;
+    else throw new Error(`all ${APP_SLOTS} app slots are taken — remove an app on the watch first`);
+  } else throw new Error("can't install this package: unknown kind");
+  return { pkg, slot: slot! };
+}

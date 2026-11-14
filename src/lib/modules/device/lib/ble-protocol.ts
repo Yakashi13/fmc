@@ -99,6 +99,12 @@ export const CMD = {
   // the App Loader stub's install channel (wp2-apps, docs/abi-1.4.md); only INFO is used here
   stubInfo: C(0xffff, 0x90a0),
   stubInfoRep: C(0xffff, 0xb0a0),
+  stubBegin: C(0xffff, 0x90a1),
+  stubBeginRep: C(0xffff, 0xb0a1),
+  stubData: C(0xffff, 0x90a2),
+  stubDataRep: C(0xffff, 0xb0a2),
+  stubEnd: C(0xffff, 0x90a3),
+  stubEndRep: C(0xffff, 0xb0a3),
 };
 // the watch sends authFailed in plaintext (6 bytes — not a multiple of the AES block): it failed to decrypt with the key
 const PLAINTEXT = new Set([

@@ -157,6 +157,7 @@ sample({
   clock: [
     storeApi.fetchFirmwareImageFx.finally,
     storeApi.saveFirmwareImageFx.finally,
+    storeApi.fetchLoaderPackageFx.finally,
     firmwareRequested,
   ],
   fn: () => null,
@@ -262,3 +263,48 @@ export const $firmwaresOnWatch = combine(
   (wp2, list, loaders) =>
     Object.fromEntries(list.map((rec) => [rec.id, stubState(wp2, rec, loaders)])),
 );
+
+// ---- installing a package: an app from its page, the loader from the firmware shelf ----
+// Same gate as flashing (flashers only). The loader also wants the tick, like every firmware
+// record; an app doesn't — it can't touch the firmware.
+export const appInstallRequested = createEvent();
+export const loaderInstallRequested = createEvent();
+export const $packageFetching = combine(
+  storeApi.fetchAppPackageFx.pending,
+  storeApi.fetchLoaderPackageFx.pending,
+  (a, b) => a || b,
+);
+
+sample({
+  clock: appInstallRequested,
+  source: { rec: apps.$one, may: authModel.$canFlash },
+  filter: ({ rec, may }) => Boolean(rec?.package) && may,
+  fn: ({ rec }) => rec!,
+  target: storeApi.fetchAppPackageFx,
+});
+sample({
+  clock: loaderInstallRequested,
+  source: { rec: $firmware, may: authModel.$canFlash, accepted: $riskAccepted },
+  filter: ({ rec, may, accepted }) => Boolean(rec?.image) && isLoader(rec?.kind) && may && accepted,
+  fn: ({ rec }) => ({ rec: rec!, onProgress: imageProgressed }),
+  target: storeApi.fetchLoaderPackageFx,
+});
+sample({
+  clock: [storeApi.fetchAppPackageFx.doneData, storeApi.fetchLoaderPackageFx.doneData],
+  target: bleModel.packageInstallRequested,
+});
+sample({
+  clock: [storeApi.fetchAppPackageFx.failData, storeApi.fetchLoaderPackageFx.failData],
+  fn: (e) => e.message,
+  target: $imageErr,
+});
+sample({
+  clock: [appInstallRequested, loaderInstallRequested],
+  fn: () => "",
+  target: $imageErr,
+});
+// a result belongs to the page it happened on
+sample({
+  clock: [appRequested, firmwareRequested],
+  target: bleModel.installReset,
+});

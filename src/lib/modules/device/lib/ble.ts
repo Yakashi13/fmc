@@ -21,11 +21,15 @@ import {
   utf8,
   UUID,
   verbose,
+  crc32,
 } from "./ble-protocol";
 import {
   APP_SLOTS,
   LOADER_SLOT,
+  MAX_DATA,
   parsePackageHeader,
+  planInstall,
+  STATUS_NAMES,
   parseStubReply,
   STATUS_OK,
   STUB_SLOT,
@@ -768,6 +772,60 @@ export class Watch {
     }
     dbg("wp2:", { stub, loader, apps });
     return { stub, loader, apps };
+  }
+
+  // Install a .wp2app into the App Loader — port of wp2-apps install.py: BEGIN (slot, size, CRC of
+  // the whole file), DATA in 128-byte pieces at the offset the stub has written so far, END (the
+  // stub verifies, then swaps the file in). Writes only the App Loader's own files on NAND, never
+  // the firmware; a refusal anywhere leaves the old package in place. `state` is a fresh readWp2.
+  async installPackage(
+    data: Uint8Array,
+    state: Wp2State,
+    onProgress: (pct: number) => void = () => {},
+  ) {
+    const { pkg, slot } = planInstall(data, state, crc32);
+    const call = async (req: number, rep: number, payload: Uint8Array) => {
+      await this.send(req, payload);
+      const r = await this.waitFor(rep, 8000);
+
+      if (r[0] !== STATUS_OK) {
+        const why = STATUS_NAMES[r[0]] ?? `status ${r[0]}`;
+
+        throw new Error(
+          r[0] === 5
+            ? `${pkg.name} is running on the watch — leave it and try again`
+            : `the watch refused ${cmdName(req)}: ${why}`,
+        );
+      }
+      return r;
+    };
+    const head = new Uint8Array(9),
+      hv = new DataView(head.buffer);
+
+    head[0] = slot;
+    hv.setUint32(1, data.length, true);
+    hv.setUint32(5, crc32(data), true);
+    this.status(`installing ${pkg.name}…`);
+    dbg("install", pkg.name, "v" + pkg.version, "slot", slot === LOADER_SLOT ? "L" : slot);
+    await call(CMD.stubBegin, CMD.stubBeginRep, head);
+    for (let off = 0; off < data.length; off += MAX_DATA) {
+      const part = data.subarray(off, off + MAX_DATA);
+      const req = new Uint8Array(4 + part.length);
+
+      new DataView(req.buffer).setUint32(0, off, true);
+      req.set(part, 4);
+      const r = await call(CMD.stubData, CMD.stubDataRep, req);
+      const written = new DataView(r.buffer, r.byteOffset).getUint32(1, true);
+
+      if (written !== off + part.length)
+        throw new Error(`the watch has ${written} bytes, expected ${off + part.length}`);
+      onProgress(Math.min(99, Math.floor(((off + part.length) / data.length) * 100)));
+    }
+    // the stub's decrypt returns nothing for an empty plaintext, so END carries one dummy byte
+    await call(CMD.stubEnd, CMD.stubEndRep, new Uint8Array([0]));
+    onProgress(100);
+    this.status("connected");
+    return { name: pkg.name, slot };
   }
 
   // There was a probe()/sweep() pair here for guessing at undocumented commands. Removed after

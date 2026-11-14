@@ -11,6 +11,8 @@
   import { fileUrl, pb } from "$lib/shared/api";
   import { compact, day } from "$lib/shared/lib/format";
   import { deviceLabel } from "$lib/modules/market/lib/devices";
+  import { authModel } from "$lib/modules/auth/model";
+  import { bleModel } from "$lib/modules/device/model";
   import { APP_GUIDE } from "../lib/links";
   import { storeModel } from "../model";
 
@@ -25,8 +27,24 @@
     $appsOnWatch: onWatch,
     appRequested,
     appDownloadUrl,
+    appInstallRequested,
+    $packageFetching: fetching,
+    $imageErr: fetchErr,
   } = storeModel;
   const state = $derived($app ? $onWatch[$app.id] : undefined);
+  const { $canFlash: canFlash } = authModel;
+  const {
+    $bleInfo: watch,
+    $connecting: connecting,
+    $wp2: wp2,
+    $installing: installing,
+    $installProgress: installProgress,
+    $installed: installed,
+    $installError: installError,
+    connectRequested,
+  } = bleModel;
+  const busy = $derived($installing || $fetching);
+  const error = $derived($fetchErr || $installError);
 
   $effect(() => {
     appRequested(id);
@@ -78,20 +96,56 @@
         </div>
       </header>
 
-      <div class="actions">
-        {#if $app.package}
-          <Button size="large" href={appDownloadUrl($app)}>
+      <!-- Download and Install side by side; Install goes over the App Loader's own channel and
+           is open to flashers only (auth.model $canFlash), like flashing -->
+      <section class="act">
+        <div class="buttons">
+          <Button
+            size="large"
+            kind="secondary"
+            href={appDownloadUrl($app)}
+            disabled={!$app.package}
+          >
             <Icon name="download" size={22} />
             Download
           </Button>
+          {#if $canFlash && !$watch}
+            <Button size="large" onClick={() => connectRequested()} disabled={$connecting}>
+              <Icon name="bluetooth" size={22} />
+              {$connecting ? "Connecting…" : "Connect"}
+            </Button>
+          {:else}
+            <Button
+              size="large"
+              onClick={() => appInstallRequested()}
+              disabled={!$canFlash || !$app.package || busy || state === "installed"}
+            >
+              <Icon name={state === "update" ? "upgrade" : "install_desktop"} size={22} />
+              {state === "update" ? "Update" : state === "installed" ? "Installed" : "Install"}
+            </Button>
+          {/if}
+        </div>
+        {#if $installing}
+          <div class="progress">
+            <div class="progress-row">
+              <span>Installing on the watch</span>
+              <span class="pct">{$installProgress ?? 0}%</span>
+            </div>
+            <progress max="100" value={$installProgress ?? 0}></progress>
+          </div>
         {/if}
-        {#if $app.source}
-          <Button size="large" kind="secondary" href={$app.source} external>
-            <Icon name="code" size={22} />
-            Source
-          </Button>
+        {#if $installed}
+          <p class="ok"><Icon name="check_circle" size={20} /> Installed — open it from Apps.</p>
         {/if}
-      </div>
+        {#if error}<p class="err">{error}</p>{/if}
+        {#if !$canFlash}
+          <p class="muted">Installing from FMC is open to testers only for now.</p>
+        {:else if $wp2 === "stock"}
+          <p class="muted">
+            The watch runs stock firmware — <a href="/firmware">flash the patched firmware</a> first.
+          </p>
+        {/if}
+      </section>
 
       <StatStrip items={stats} />
 
@@ -109,45 +163,44 @@
         </section>
       {/if}
 
-      <section class="how">
-        <!-- installing is the step FMC doesn't do yet — said at the step itself, with the
-             button it will be, so nobody hunts for it -->
-        <h2>Install it <Badge>Coming soon</Badge></h2>
-        <Button size="large" disabled>
-          <Icon name="watch" size={22} />
-          Install on the watch
-        </Button>
-        <p class="wip">
-          Installing straight from this page is still in the works. Until it lands, the manual way:
-        </p>
-        <ol>
-          <li>
-            <span class="n">1</span>
-            <span>
-              Flash the <a href="/firmware">App Loader firmware</a> once. It adds an
-              <b>Apps</b> row to the watch and the channel that installs packages.
-            </span>
-          </li>
-          <li>
-            <span class="n">2</span>
-            <span>
-              Send the package with the <code>wp2apps</code> tool:
-              <code class="cmd">wp2apps install app.wp2app --address …</code>
-              The address comes from <code>wp2apps scan</code>.
-            </span>
-          </li>
-          <li>
-            <span class="n">3</span>
-            <span>
-              Open <b>Apps</b> at the end of the watch's app list. It shows in the list style, not the
-              waterfall.
-            </span>
-          </li>
-        </ol>
-        <p class="note">
-          <a href={APP_GUIDE} target="_blank" rel="noopener noreferrer">Write your own app</a>
-        </p>
-      </section>
+      <details class="more">
+        <summary>Details</summary>
+        <div class="more-body">
+          <ol>
+            <li>
+              <span class="n">1</span>
+              <span>
+                The watch needs the <a href="/firmware">patched firmware</a> and the App Loader
+                once: they add an
+                <b>Apps</b> row and the channel that installs packages.
+              </span>
+            </li>
+            <li>
+              <span class="n">2</span>
+              <span>
+                Without FMC, send the package with the <code>wp2apps</code> tool:
+                <code class="cmd">wp2apps install app.wp2app --address …</code>
+              </span>
+            </li>
+            <li>
+              <span class="n">3</span>
+              <span>
+                Open <b>Apps</b> at the end of the watch's app list (list style, not the waterfall).
+              </span>
+            </li>
+          </ol>
+          <div class="links">
+            {#if $app.source}
+              <Button kind="secondary" href={$app.source} external>
+                <Icon name="code" size={20} /> Source
+              </Button>
+            {/if}
+            <Button kind="secondary" href={APP_GUIDE} external>
+              <Icon name="menu_book" size={20} /> Write your own app
+            </Button>
+          </div>
+        </div>
+      </details>
 
       <p class="dates">Updated {day($app.updated)}</p>
     {:else if $loading}
@@ -225,14 +278,54 @@
     font-size: 0.875rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
-  .actions {
+  .act {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+
+    p {
+      margin: 0;
+    }
+    a {
+      color: inherit;
+      text-underline-offset: 0.2em;
+    }
+  }
+  .buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .progress {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  .progress-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+  }
+  .pct {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  progress {
+    width: 100%;
+    height: 0.375rem;
+    accent-color: var(--color-accent);
+  }
+  .ok {
     display: flex;
     gap: 0.5rem;
-
-    > :global(*) {
-      flex: 1;
-      min-width: 0;
-    }
+    align-items: center;
+  }
+  .err {
+    color: var(--color-error);
+  }
+  .muted {
+    font-size: 0.75rem;
+    color: oklch(from var(--color-text) l c h / 55%);
   }
   /* watch screens, so round ones — a row that scrolls sideways, edge to edge on a phone */
   .shots {
@@ -259,23 +352,15 @@
     flex-direction: column;
     gap: 0.75rem;
   }
-  h2 {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.625rem;
-    margin: 0;
-    font-size: 1.375rem;
-  }
-  .wip {
-    margin: 0;
-    line-height: 1.5;
-  }
-  .how {
-    padding: 1rem;
-    border-radius: var(--border-radius);
-    background: oklch(from var(--color-text) l c h / 5%);
+  /* the manual way and the links, folded */
+  .more {
+    border-top: 1px solid oklch(from var(--color-text) l c h / 10%);
 
+    summary {
+      padding: 0.875rem 0;
+      cursor: pointer;
+      font-weight: 500;
+    }
     ol {
       display: flex;
       flex-direction: column;
@@ -294,11 +379,22 @@
         min-width: 0;
       }
     }
-    a {
+    a:not(:global(.btn)) {
       color: var(--color-text);
       text-decoration-color: var(--color-accent);
       text-underline-offset: 0.2em;
     }
+  }
+  .more-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
   .n {
     display: inline-flex;
@@ -326,7 +422,6 @@
     border-radius: calc(var(--border-radius) / 2);
     background: oklch(from var(--color-text) l c h / 8%);
   }
-  .note,
   .dates {
     margin: 0;
     font-size: 0.75rem;

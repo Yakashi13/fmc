@@ -26,9 +26,9 @@ export const KINDS: Record<string, FirmwareKind> = {
   },
   // not an OTA image: loader.wp2app, installed over the App Loader's own channel into slot L
   loader: {
-    label: "Loader",
+    label: "App Loader",
     icon: "apps",
-    hint: "Not a firmware image: the App Loader's own part that runs the apps. It goes on over Bluetooth, no flashing, and needs the App Loader firmware.",
+    hint: "Not a firmware image: the part that runs the apps. It goes on over Bluetooth, no flashing, and needs the patched firmware.",
   },
 };
 

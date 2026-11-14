@@ -32,10 +32,10 @@
     <a class="loader-note" href="/firmware">
       <span class="glyph"><Icon name="memory" size={24} /></span>
       <span class="text">
-        <span class="title">Apps need the App Loader</span>
+        <span class="title">Apps need the patched firmware</span>
         <span class="desc">
-          A small patch for the stock firmware. Flash it once, then add and remove apps over
-          Bluetooth. Installing from FMC is coming soon.
+          A small patch for the stock firmware and the App Loader on top. Set up once, then add and
+          remove apps over Bluetooth.
         </span>
       </span>
       <Icon name="chevron_right" size={24} class="go" />

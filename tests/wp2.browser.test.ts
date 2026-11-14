@@ -3,13 +3,15 @@
 // "installed" against "update available".
 import { expect, test } from "vitest";
 import { Watch } from "$lib/modules/device/lib/ble";
-import { CMD } from "$lib/modules/device/lib/ble-protocol";
+import { CMD, crc32 } from "$lib/modules/device/lib/ble-protocol";
 import {
   LOADER_SLOT,
   parsePackageHeader,
   parseStubReply,
+  planInstall,
   samePackage,
   STUB_SLOT,
+  type Wp2State,
 } from "$lib/modules/device/lib/wp2";
 
 // a .wp2app header as wp2apps `pack` writes it (<4sHBB24sIIIIII8s)
@@ -95,4 +97,128 @@ test("a watch with the stub reports its release, the loader and the apps by slot
   expect(Object.keys(state!.apps)).toEqual(["3"]);
   expect(state!.apps[3].name).toBe("workout");
   expect(asked).toEqual([STUB_SLOT, LOADER_SLOT, 0, 1, 2, 3, 4, 5, 6, 7]);
+});
+
+// ---- installing ----
+// a whole, valid package the way wp2apps `pack` builds one: header (its own CRC over 0x34 bytes),
+// image, relocation table; the header's CRC field covers image ‖ table
+function pack(name: string, size: number, kind = 0, abiMinor = 3) {
+  const body = new Uint8Array(size + 8).map((_, i) => (i * 31) & 0xff); // image + 2 relocs
+  const h = new Uint8Array(64);
+  const dv = new DataView(h.buffer);
+
+  h.set(new TextEncoder().encode("WP2A"));
+  dv.setUint16(4, 1, true);
+  h[6] = kind;
+  h[7] = abiMinor;
+  h.set(new TextEncoder().encode(name), 8);
+  dv.setUint32(32, 1, true);
+  dv.setUint32(36, size, true);
+  dv.setUint32(44, 2, true);
+  dv.setUint32(48, crc32(body), true);
+  dv.setUint32(0x34, crc32(h.subarray(0, 0x34)), true);
+  const out = new Uint8Array(64 + body.length);
+
+  out.set(h);
+  out.set(body, 64);
+  return out;
+}
+const state = (apps: Record<number, string>, abiMinor: number | null = 3): Wp2State => ({
+  stub: { version: 2, abiMinor },
+  loader: null,
+  apps: Object.fromEntries(
+    Object.entries(apps).map(([slot, name]) => [slot, parsePackageHeader(pack(name, 64))!]),
+  ),
+});
+
+test("an app goes to its own slot when it's there, else the first free one; a loader to L", () => {
+  const p = pack("workout", 300);
+
+  expect(planInstall(p, state({ 0: "a", 4: "workout" }), crc32).slot).toBe(4);
+  expect(planInstall(p, state({ 0: "a", 1: "b" }), crc32).slot).toBe(2);
+  expect(planInstall(pack("loader", 300, 1), state({}), crc32).slot).toBe(LOADER_SLOT);
+});
+
+test.each([
+  [
+    "a full watch",
+    pack("new", 64),
+    state(Object.fromEntries([...Array(8)].map((_, i) => [i, `x${i}`]))),
+    /slots are taken/,
+  ],
+  ["a newer ABI than the stub takes", pack("x", 64, 0, 4), state({}), /ABI 1\.4/],
+  [
+    "a damaged body",
+    (() => {
+      const p = pack("x", 64);
+
+      p[100] ^= 1;
+      return p;
+    })(),
+    state({}),
+    /body checksum/,
+  ],
+  [
+    "a damaged header",
+    (() => {
+      const p = pack("x", 64);
+
+      p[9] ^= 1;
+      return p;
+    })(),
+    state({}),
+    /header checksum/,
+  ],
+  ["a truncated file", pack("x", 64).subarray(0, 100), state({}), /truncated/],
+] as const)("refuses %s before sending anything", (_, data, st, why) => {
+  expect(() => planInstall(data, st, crc32)).toThrow(why);
+});
+
+test("an install is BEGIN, DATA at the stub's offset in 128-byte pieces, END", async () => {
+  const w = new Watch();
+  const data = pack("workout", 300);
+  const sent: [number, Uint8Array][] = [];
+  let written = 0;
+  let last = 0;
+
+  w.send = async (key, payload) => {
+    sent.push([key, payload!]);
+    last = key;
+    if (key === CMD.stubData) written += payload!.length - 4;
+  };
+  w.waitFor = async () => {
+    if (last !== CMD.stubData) return new Uint8Array([0]);
+    const r = new Uint8Array(5);
+
+    new DataView(r.buffer).setUint32(1, written, true);
+    return r;
+  };
+  const progress: number[] = [];
+
+  expect(await w.installPackage(data, state({ 2: "workout" }), (p) => progress.push(p))).toEqual({
+    name: "workout",
+    slot: 2,
+  });
+  const begin = sent[0][1];
+
+  expect(sent[0][0]).toBe(CMD.stubBegin);
+  expect([...begin.subarray(0, 1)]).toEqual([2]);
+  expect(new DataView(begin.buffer).getUint32(1, true)).toBe(data.length);
+  expect(new DataView(begin.buffer).getUint32(5, true)).toBe(crc32(data));
+  const pieces = sent.filter(([k]) => k === CMD.stubData).map(([, p]) => p);
+
+  expect(pieces.map((p) => new DataView(p.buffer).getUint32(0, true))).toEqual(
+    [...Array(Math.ceil(data.length / 128))].map((_, i) => i * 128),
+  );
+  expect(pieces.every((p) => p.length <= 4 + 128)).toBe(true);
+  expect(sent.at(-1)![0]).toBe(CMD.stubEnd);
+  expect(progress.at(-1)).toBe(100);
+});
+
+test("a busy slot says the app is running", async () => {
+  const w = new Watch();
+
+  w.send = async () => {};
+  w.waitFor = async () => new Uint8Array([5]);
+  await expect(w.installPackage(pack("workout", 64), state({}))).rejects.toThrow(/running/);
 });

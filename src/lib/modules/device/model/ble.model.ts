@@ -188,6 +188,59 @@ sample({
 // a flash rewrote what the watch runs, and the watch restarts after it — ask again on reconnect
 reset({ clock: [disconnected, flashFirmwareFx.done], target: $wp2 });
 
+// ---- installing a .wp2app (an app, or the loader) ----
+export const $installProgress = createStore<number | null>(null);
+export const $installed = createStore<string | null>(null); // the name, once it's in
+export const $installError = createStore("");
+const installProgressed = createEvent<number>();
+export const packageInstallRequested = createEvent<Uint8Array>();
+export const installReset = createEvent();
+
+const installPackageFx = createEffect(async (data: Uint8Array) => {
+  if (!watch) throw new Error("connect the watch first");
+  // fresh: the slot choice depends on what's there now, not on what was there at connect
+  const state = await watch.readWp2();
+
+  if (!state) throw new Error("the watch runs stock firmware — flash the patched firmware first");
+  const { name } = await watch.installPackage(data, state, installProgressed);
+
+  return { name, state: (await watch.readWp2()) ?? ("stock" as const) };
+});
+export const $installing = installPackageFx.pending;
+
+sample({
+  clock: packageInstallRequested,
+  source: installPackageFx.pending,
+  filter: (busy) => !busy,
+  fn: (_, data) => data,
+  target: installPackageFx,
+});
+sample({
+  clock: installProgressed,
+  target: $installProgress,
+});
+sample({
+  clock: installPackageFx.doneData,
+  fn: ({ name }) => name,
+  target: $installed,
+});
+// the badges read $wp2, so the re-read after the install is what turns "Update" into "Installed"
+sample({
+  clock: installPackageFx.doneData,
+  fn: ({ state }) => state,
+  target: $wp2,
+});
+sample({
+  clock: installPackageFx.failData,
+  fn: (e) => e.message,
+  target: $installError,
+});
+reset({ clock: installPackageFx.finally, target: $installProgress });
+reset({
+  clock: [packageInstallRequested, installReset, disconnected],
+  target: [$installed, $installError],
+});
+
 // ---- business logic ----
 sample({
   clock: statusChanged,
