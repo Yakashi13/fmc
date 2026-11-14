@@ -55,6 +55,18 @@
       p {
         margin: 0 0 0.75rem;
       }
+      /* a note the reader must not miss ("works only with…"): an accent plate, not an indent */
+      blockquote {
+        margin: 0 0 1rem;
+        padding: 0.75rem 1rem;
+        border-left: 3px solid var(--color-accent);
+        border-radius: calc(var(--border-radius) / 2);
+        background: oklch(from var(--color-accent) l c h / 10%);
+
+        p:last-child {
+          margin-bottom: 0;
+        }
+      }
       ul,
       ol {
         margin: 0 0 0.75rem;
