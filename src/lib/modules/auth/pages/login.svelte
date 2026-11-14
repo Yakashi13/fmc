@@ -27,6 +27,10 @@
     display: grid;
     place-items: center;
     height: 100%;
+    /* the card must not touch the screen edge on a phone, and a short screen (keyboard up)
+       scrolls instead of clipping the form */
+    padding: 1rem;
+    overflow-y: auto;
   }
   .panel {
     display: flex;

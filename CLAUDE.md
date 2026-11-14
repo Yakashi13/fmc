@@ -8,10 +8,18 @@ pointing straight at PocketBase — no vite dev-server proxy involved), and fall
 same-origin (`location.origin`) without it, which is what prod uses — through Caddy on the
 same domain as the backend (see `fmc_pocketbase/README.md`).
 
-App: marketplace at the root (`/`, with `?mine` for the signed-in user's own shelf; `/my`
-redirects there; `/market/[id]` — a face's showcase page), creator profiles (`/user/[id]`),
-watchface editor (`/editor`,
+App: the store at the root, three shelves under one "Store" tab — watchfaces (`/`, with
+`?mine` for the signed-in user's own shelf and `?community` for the links panel; `/my`
+redirects there; `/market/[id]` — a face's showcase page), apps (`/apps`, `/apps/[id]` —
+`.wp2app` packages from cmf-tech-community/wp2-apps) and firmware (`/firmware`,
+`/firmware/[id]` — OTA images); creator profiles (`/user/[id]`), watchface editor (`/editor`,
 with a BLE connection to the CMF Watch Pro 2) and auth (`/login`, `/register`).
+
+Apps and firmware are curated: the `apps` and `firmwares` collections are writable only by a
+PocketBase superuser, and the frontend only lists and downloads them. Installing an app or
+flashing an image over BLE is not implemented — the pages send people to the community's CLI
+tools. Don't add an upload form for either without an explicit ask: a firmware image can brick
+a watch.
 
 ## Architecture
 
@@ -22,9 +30,13 @@ src/lib/
   shared/
     api/          # PocketBase client (pb, fileUrl, downloadUrl)
     styles/       # tokens.css — design tokens, the only source of colors/type/motion
+    lib/          # tiny pure helpers shared by modules (format.ts: compact numbers, dates)
     components/   # one folder per component (button/, input/, dialog/, …) + barrel index.ts;
-                  # app chrome: app-nav/ (bottom bar on a phone, left rail on md+)
-  modules/<feature>/   # auth, market, editor, device
+                  # app chrome: app-nav/ (bottom bar on a phone, left rail on md+),
+                  # store-tabs/ (the store's section titles — every shelf page opens with it),
+                  # page/ (a routed page's frame: header + one scroller that runs under the
+                  # phone's glass tab bar); prose/ (a record's markdown, sanitized)
+  modules/<feature>/   # auth, market, store (apps + firmware), editor, device
     model/        # <feature>.model.ts + index.ts (export * as fooModel)
     core/         # editor only: the domain, split by concern (see the map below)
     lib/          # other modules' domain libraries (see the device map below)
@@ -159,6 +171,10 @@ and `frames` sections; `PropsPanel.svelte` is the container and owns the shared 
   the ligature — `<Icon name="storefront" />`, any name from fonts.google.com/icons works with
   no map to edit and no build step. A name the font doesn't know renders as its own word, so
   `tests/ui-icon.browser.test.ts` measures every name the app spells.
+- Phone first for the store: the watchface grid is two dials across on a phone
+  (`watchface-list`), a detail page is one column with a single accent button (the action that
+  puts the thing on the watch) and its numbers in a `stat-strip/`, not a list of rows. New
+  routed pages use `page/` rather than re-deriving the under-the-tab-bar scroll.
 - Theme is automatic via `prefers-color-scheme` (dark overrides in tokens.css). Don't add
   a `.dark` class on `<html>`.
 - The catalog dialog in the editor was removed intentionally — don't restore it. Catalog

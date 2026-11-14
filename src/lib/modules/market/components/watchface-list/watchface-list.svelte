@@ -54,8 +54,8 @@
   {#if loading}
     {#each Array(8) as _, i (i)}
       <div class="skeleton-card">
-        <Skeleton height="8.75rem" />
-        <Skeleton height="0.875rem" width="70%" />
+        <div class="skeleton-dial"><Skeleton height="100%" /></div>
+        <Skeleton height="1rem" width="70%" />
         <Skeleton height="0.75rem" width="40%" />
       </div>
     {/each}
@@ -82,26 +82,29 @@
 </div>
 
 <style>
+  /* a phone fits two dials across (one below ~340px), a desktop as many as there is room for */
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
-    align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
     gap: 1rem;
     padding: 1rem;
 
-    & > :global(*) {
-      aspect-ratio: 1;
-    }
-
     @media (max-width: 767px) {
+      grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
       gap: 0.5rem;
-      padding: 0.5rem;
+      padding: 0.75rem;
     }
   }
   .skeleton-card {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  .skeleton-dial {
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 50%;
   }
   .empty {
     grid-column: 1 / -1;

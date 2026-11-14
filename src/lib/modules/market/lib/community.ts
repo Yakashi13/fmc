@@ -23,7 +23,18 @@ export const COMMUNITY_LINKS: readonly CommunityLink[] = [
     icon: "forum",
     url: "https://www.reddit.com/r/CMFWatchMods/s/XLyTkrw57o",
   },
-  { id: "slot-2", title: "More links", description: "", icon: "link", url: null },
-  { id: "slot-3", title: "More links", description: "", icon: "link", url: null },
-  { id: "slot-4", title: "More links", description: "", icon: "link", url: null },
+  {
+    id: "discord",
+    title: "CMF Tech Community on Discord",
+    description: "Where the apps, firmware and tools are built. Findings, ideas, device testing.",
+    icon: "chat",
+    url: "https://discord.gg/KnAFruMabJ",
+  },
+  {
+    id: "github",
+    title: "cmf-tech-community on GitHub",
+    description: "The source of FMC, the app loader and SDK, and the firmware tools.",
+    icon: "code",
+    url: "https://github.com/cmf-tech-community",
+  },
 ];

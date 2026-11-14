@@ -5,6 +5,7 @@
   import type { RecordModel } from "pocketbase";
   import { SearchInput } from "$lib/shared/components/search-input";
   import { Select } from "$lib/shared/components/select";
+  import { StoreTabs } from "$lib/shared/components/store-tabs";
   import { Tabs } from "$lib/shared/components/tabs";
   import { authModel } from "$lib/modules/auth/model";
   import { marketModel } from "../model";
@@ -127,37 +128,37 @@
   {#if $marketErr}<p class="error">{$marketErr}</p>{/if}
 
   <div class="toolbar">
-    <!-- shown to everyone: "Community" is for visitors too, only "Mine" needs an account.
-         The label stays short: the bar is split evenly on a phone (below) and a longer name
-         ("Join Community") clips to an ellipsis even on a Pro Max. -->
-    <Tabs
-      items={[
-        { value: "all", label: "All" },
-        ...($user ? [{ value: "mine", label: "Mine" }] : []),
-        { value: "community", label: "Community" },
-      ]}
-      value={tab}
-      onChange={(v) =>
-        goto(v === "mine" ? "/?mine" : v === "community" ? "/?community" : "/", {
-          replaceState: true,
-        })}
-    />
+    <!-- the store's sections double as the page title; Community is one of them, so the
+         shelf's own switch is down to All / Mine and only exists for a signed-in user -->
+    <StoreTabs />
     <!-- search, device and sort filter faces — the links panel has none to filter -->
     {#if !community}
       <SearchInput bind:value={() => $marketView.query, (query) => marketViewPatched({ query })} />
-      <div class="device">
-        <Select
-          value={$marketView.device}
-          onChange={(device) => marketViewPatched({ device })}
-          options={DEVICE_OPTIONS}
+      {#if $user}
+        <Tabs
+          items={[
+            { value: "all", label: "All" },
+            { value: "mine", label: "Mine" },
+          ]}
+          value={tab}
+          onChange={(v) => goto(v === "mine" ? "/?mine" : "/", { replaceState: true })}
         />
-      </div>
-      <div class="sort">
-        <Select
-          value={$marketView.sort}
-          onChange={(sort) => marketViewPatched({ sort })}
-          options={SORT_OPTIONS}
-        />
+      {/if}
+      <div class="filters">
+        <div class="device">
+          <Select
+            value={$marketView.device}
+            onChange={(device) => marketViewPatched({ device })}
+            options={DEVICE_OPTIONS}
+          />
+        </div>
+        <div class="sort">
+          <Select
+            value={$marketView.sort}
+            onChange={(sort) => marketViewPatched({ sort })}
+            options={SORT_OPTIONS}
+          />
+        </div>
       </div>
     {/if}
   </div>
@@ -209,12 +210,18 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 1rem;
     border-bottom: 1px solid oklch(from var(--color-text) l c h / 10%);
+  }
+  .toolbar > :global(.store-tabs) {
+    margin-inline-end: auto;
   }
   .toolbar > :global(.search) {
     width: 13.75rem;
-    margin-inline-start: auto;
+  }
+  .filters {
+    display: flex;
+    gap: 0.75rem;
   }
   .sort {
     width: 8.125rem;
@@ -223,31 +230,30 @@
     width: 9.5rem;
   }
 
+  /* A phone gets three short rows: the section titles, the search (with All / Mine beside it
+     when signed in), then the two filters side by side. */
   @media (max-width: 767px) {
     .toolbar {
       gap: 0.5rem;
-      padding: 0.5rem;
+      padding: 0.25rem 0.75rem 0.625rem;
     }
-    .toolbar > :global(.tabs) {
-      width: 100%;
-
-      :global(button) {
-        flex: 1;
-        /* three 1rem labels split evenly on a 320px screen: the default 0.875rem side
-           padding leaves "Community" an ellipsis */
-        padding-inline: 0.375rem;
-      }
-    }
-    /* two selects don't fit beside the search on a phone — the search takes its own row */
-    .toolbar > :global(.search) {
+    .toolbar > :global(.store-tabs) {
       flex: 1 1 100%;
+    }
+    .toolbar > :global(.search) {
+      flex: 1;
       width: auto;
-      margin-inline-start: 0;
+      min-width: 0;
+    }
+    .filters {
+      flex: 1 1 100%;
+      gap: 0.5rem;
     }
     .device,
     .sort {
       flex: 1;
       width: auto;
+      min-width: 0;
     }
   }
   main {

@@ -14,12 +14,15 @@
   const { accentDialogOpened } = appearanceModel;
   const path = $derived(page.url.pathname);
   const nav = $derived<{ title: string; url: string; icon: IconName; active: boolean }[]>([
-    // one section for the whole shelf: the marketplace lives at the root, /my redirects there
+    // one tab for every shelf — watchfaces, apps, firmware: the store's own header switches
+    // between them (see store-tabs), so the bar stays at four tabs on a phone
     {
-      title: "Watchfaces",
+      title: "Store",
       url: "/",
       icon: "storefront",
-      active: path === "/" || path.startsWith("/market") || path.startsWith("/my"),
+      active:
+        path === "/" ||
+        ["/market", "/my", "/apps", "/firmware", "/user"].some((p) => path.startsWith(p)),
     },
     { title: "Editor", url: "/editor", icon: "edit", active: path.startsWith("/editor") },
   ]);
@@ -84,7 +87,7 @@
   {:else}
     <a href="/login" class:active={path.startsWith("/login") || path.startsWith("/register")}>
       <span class="icon">
-        <Icon name="logout" size={24} />
+        <Icon name="login" size={24} />
       </span>
       Sign in
     </a>

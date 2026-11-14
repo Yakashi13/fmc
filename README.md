@@ -4,8 +4,9 @@ Watchface editor + marketplace for the CMF Watch Pro 2 / Pro 3. SvelteKit (Svelt
 static build (`@sveltejs/adapter-static`). Backend — [`fmc_pocketbase`](../fmc_pocketbase)
 (PocketBase), must be running for auth/marketplace to work.
 
-Pages: landing page (`/`), marketplace (`/market`, `/my`), editor (`/editor`, with
-flashing a watchface to the watch over Web Bluetooth), login/register (`/login`, `/register`).
+Pages: the store — watchfaces (`/`, `/market/[id]`), apps (`/apps`) and firmware
+(`/firmware`) — creator profiles (`/user/[id]`), the editor (`/editor`, with flashing a
+watchface to the watch over Web Bluetooth), login/register (`/login`, `/register`).
 
 ## Development
 

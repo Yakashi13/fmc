@@ -570,17 +570,17 @@
         onChange={(v) =>
           v === "aod" ? (hasAOD ? screenSet("aod") : aodAdded()) : screenSet("main")}
       />
-      <span class="tool-slot" title="Undo (⌘Z)">
+      <span class="tool-slot history history-start" title="Undo (⌘Z)">
         <Button kind="ghost" disabled={!$undoN} onClick={() => undo()}>
           <Icon name="undo" size={22} />
         </Button>
       </span>
-      <span class="tool-slot" title="Redo (⇧⌘Z)">
+      <span class="tool-slot history" title="Redo (⇧⌘Z)">
         <Button kind="ghost" disabled={!$redoN} onClick={() => redo()}>
           <Icon name="redo" size={22} />
         </Button>
       </span>
-      <span class="tool-slot" title="Export .bin">
+      <span class="tool-slot export" title="Export .bin">
         <Button kind="primary" onClick={() => exportBin()}>
           <Icon name="download" size={22} />
           <span class="btn-label">Export .bin</span>
@@ -665,6 +665,26 @@
                this is what the user watches while it does -->
           {#if $loading}
             <div class="canvas-loading"><Loader /></div>
+          {:else if !$doc}
+            <!-- nothing open yet: the dial itself says what to do, instead of leaving a black
+                 disc and two unlabelled toolbar icons to be figured out -->
+            <div class="canvas-empty">
+              <h2>Make a watchface</h2>
+              <div class="canvas-empty-actions">
+                <Button
+                  onClick={() => {
+                    faceDetached();
+                    newFaceRequested();
+                  }}
+                >
+                  <Icon name="note_add" size={22} /> Start blank
+                </Button>
+                <Button kind="secondary" onClick={() => fileInput?.click()}>
+                  <Icon name="folder_open" size={22} /> Open a file
+                </Button>
+              </div>
+              <p>.bin or .aab. Facer and WatchMaker exports are under Import.</p>
+            </div>
           {/if}
         </div>
       </div>
@@ -808,6 +828,34 @@
   .tool-slot {
     display: inline-flex;
   }
+  /* A phone can't fit the toolbar on one row, and left to wrap on its own it broke wherever
+     it ran out of room. So it gets two deliberate rows: files and output on top (import, new
+     … export, save, publish, flash), and what you reach for while drawing underneath (the
+     screen switch … undo, redo). The ::after is the row break; row-gap moves to a margin so
+     the break doesn't leave an empty band when nothing is open and there is no second row. */
+  @media (max-width: 767px) {
+    .toolbar {
+      row-gap: 0;
+
+      &::after {
+        content: "";
+        flex-basis: 100%;
+        order: 1;
+      }
+      :global(.btn) {
+        padding-inline: 0.75rem;
+      }
+    }
+    .toolbar > :global(.tabs),
+    .history {
+      order: 2;
+      margin-top: 0.5rem;
+    }
+    .export,
+    .history-start {
+      margin-inline-start: auto;
+    }
+  }
   @media (min-width: 1024px) {
     .btn-label,
     .wf-name {
@@ -947,6 +995,41 @@
     display: grid;
     place-items: center;
     color: oklch(1 0 0 / 70%);
+  }
+  /* drawn on the dial, which is black in both colour schemes — so the ink is fixed light, and
+     the secondary button (which derives from --color-text) follows it */
+  .canvas-empty {
+    --color-text: oklch(0.95 0 0);
+
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.875rem;
+    /* keep clear of the disc's edge: text in a circle has less room than its box suggests */
+    padding: 18%;
+    text-align: center;
+    color: var(--color-text);
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      line-height: 1.15;
+    }
+    p {
+      margin: 0;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: oklch(from var(--color-text) l c h / 55%);
+    }
+  }
+  .canvas-empty-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-self: stretch;
   }
   /* dev only — same overlay treatment as .hint, pinned to the opposite corner */
   .fps {

@@ -8,6 +8,8 @@
     class?: string;
     disabled?: boolean;
     href?: string;
+    /** With `href`: leave the app — open in a new tab. */
+    external?: boolean;
     onClick?: (e: MouseEvent) => void;
     children?: Snippet;
   }
@@ -18,6 +20,7 @@
     class: className,
     disabled,
     href,
+    external,
     onClick,
     children,
   }: Props = $props();
@@ -27,6 +30,8 @@
   this={href ? "a" : "button"}
   class="btn kind__{kind} size__{size} {className}"
   href={disabled ? undefined : href}
+  target={href && external ? "_blank" : undefined}
+  rel={href && external ? "noopener noreferrer" : undefined}
   type={href ? undefined : type}
   disabled={href ? undefined : disabled}
   aria-disabled={href && disabled ? "true" : undefined}

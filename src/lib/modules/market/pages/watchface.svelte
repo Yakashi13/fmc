@@ -11,7 +11,9 @@
   import { faceTitle } from "$lib/shared/seo";
   import { LiveDial } from "../components/live-dial";
   import { BackBtn } from "$lib/shared/components/back-btn";
-  import { List, ListItem } from "$lib/shared/components/list";
+  import { Page } from "$lib/shared/components/page";
+  import { StatStrip } from "$lib/shared/components/stat-strip";
+  import { compact, day } from "$lib/shared/lib/format";
   import { deviceLabel } from "../lib/devices";
   import { blur } from "svelte/transition";
 
@@ -53,7 +55,6 @@
   const owner = $derived(wf?.expand?.owner);
   const likeCount = $derived($likes.filter((l) => l.watchface === id).length);
   const liked = $derived($likes.some((l) => l.watchface === id && l.user === $user?.id));
-  const day = (v: string) => new Date(v).toLocaleDateString();
 
   // ponytail: Web Share where it exists, clipboard everywhere else — no share-sheet dependency
   let copied = $state(false);
@@ -75,27 +76,40 @@
      one, an unfurler only ever sees the baked one -->
 <svelte:head><title>{faceTitle(wf?.name || "Watchface")}</title></svelte:head>
 
-<div class="page">
-  {#if $marketErr}<p class="error">{$marketErr}</p>{/if}
+<Page>
+  <div class="detail">
+    {#if $marketErr}<p class="error">{$marketErr}</p>{/if}
 
-  <main>
-    <BackBtn href="/" />
+    <!-- back on one side, the two things you do to a face you like on the other -->
+    <div class="topbar">
+      <BackBtn href="/" />
+      {#if wf}
+        <div class="quick">
+          <button class="round" title="Share" aria-label="Share" onclick={share}>
+            <Icon name={copied ? "check" : "ios_share"} size={22} />
+          </button>
+          <button
+            class="round like"
+            title={$user ? "Like" : "Sign in to like"}
+            aria-label="Like"
+            aria-pressed={liked}
+            disabled={!$user}
+            onclick={() => $user && likeToggleRequested({ wf, userId: $user.id })}
+          >
+            <Icon
+              name="favorite"
+              size={22}
+              color={liked ? "var(--color-error)" : undefined}
+              fill={liked}
+            />
+            {compact(likeCount)}
+          </button>
+        </div>
+      {/if}
+    </div>
 
     {#if wf}
       <article class="face">
-        {#if $hasAod}
-          <button
-            class="toggle-aod"
-            class:on={$dialScreen === "aod"}
-            onclick={() => dialScreenSet($dialScreen === "aod" ? "main" : "aod")}
-          >
-            {#key $dialScreen}
-              <div transition:blur={{ duration: 200 }}>
-                <Icon name={$dialScreen === "aod" ? "monitor" : "dark_mode"} size={22} />
-              </div>
-            {/key}
-          </button>
-        {/if}
         <div class="dial">
           <div class="preview">
             {#if $live}
@@ -104,215 +118,185 @@
               <img src={fileUrl(wf, "preview")} alt={wf.name} />
             {/if}
           </div>
+          {#if $hasAod}
+            <button
+              class="round toggle-aod"
+              class:on={$dialScreen === "aod"}
+              title={$dialScreen === "aod" ? "Show the main screen" : "Show the always-on screen"}
+              aria-label="Toggle the always-on screen"
+              onclick={() => dialScreenSet($dialScreen === "aod" ? "main" : "aod")}
+            >
+              {#key $dialScreen}
+                <div transition:blur={{ duration: 200 }}>
+                  <Icon name={$dialScreen === "aod" ? "monitor" : "dark_mode"} size={22} />
+                </div>
+              {/key}
+            </button>
+          {/if}
         </div>
 
         <div class="info">
-          <div class="title-row">
+          <header class="identity">
             <h1 class="name">{wf.name}</h1>
-            {#if wf.type}<Badge>{wf.type}</Badge>{/if}
-            {#if device}<Badge quiet>{device}</Badge>{/if}
+            <div class="byline">
+              {#if owner}
+                <a class="author" href="/user/{wf.owner}" title="Watchfaces by this creator">
+                  <Avatar name={owner.name || "?"} />
+                  <span>{owner.name || "Unknown"}</span>
+                </a>
+              {/if}
+              {#if wf.type}<Badge>{wf.type}</Badge>{/if}
+              {#if device}<Badge quiet>{device}</Badge>{/if}
+            </div>
+          </header>
+
+          <!-- one accent button: getting the face onto the watch. Everything else is quieter. -->
+          <div class="actions">
+            <div class="primary">
+              {#if !$bleInfo}
+                <Button size="large" onClick={() => connectRequested()} disabled={$connecting}>
+                  <Icon name="bluetooth" size={22} />
+                  {$connecting ? "Connecting…" : "Connect watch to install"}
+                </Button>
+              {:else if $installed}
+                <Button size="large" disabled>
+                  <Icon name="check" size={22} /> Installed
+                </Button>
+                <Button
+                  size="large"
+                  kind="secondary"
+                  onClick={() => installRequested(wf)}
+                  disabled={$installing}
+                >
+                  Install again
+                </Button>
+              {:else}
+                <Button size="large" onClick={() => installRequested(wf)} disabled={$installing}>
+                  <Icon name="watch" size={22} />
+                  {$installing ? "Installing…" : "Install watchface"}
+                </Button>
+              {/if}
+            </div>
+            <div class="secondary">
+              <Button kind="secondary" onClick={() => editRequested(wf)}>
+                <Icon name="edit" size={22} />
+                <span>Open in editor</span>
+              </Button>
+              <Button kind="secondary" href={downloadUrl(wf)}>
+                <Icon name="download" size={22} />
+                <span>Download .bin</span>
+              </Button>
+            </div>
           </div>
+
+          <StatStrip
+            items={[
+              { label: "Likes", value: compact(likeCount) },
+              { label: "Downloads", value: compact(wf.downloads) },
+              { label: "Flashed", value: compact(wf.flashes) },
+            ]}
+          />
 
           {#if wf.description}
             <p class="desc">{wf.description}</p>
-          {:else}
-            <p class="desc muted">No description.</p>
           {/if}
 
-          <div class="actions">
-            {#if !$bleInfo}
-              <Button onClick={() => connectRequested()} disabled={$connecting}>
-                {$connecting ? "Connecting…" : "Connect watch"}
-                <Icon name="bluetooth" size={22} />
-              </Button>
-            {:else if $installed}
-              <Button disabled>
-                <Icon name="check" size={22} /> Installed
-              </Button>
-              <Button kind="secondary" onClick={() => installRequested(wf)} disabled={$installing}>
-                Install again
-              </Button>
-            {:else}
-              <Button onClick={() => installRequested(wf)} disabled={$installing}>
-                {$installing ? "Installing…" : "Install watchface"}
-                <Icon name="watch" size={22} />
-              </Button>
-            {/if}
-
-            <Button kind="secondary" onClick={share}>
-              {copied ? "Link copied" : "Share"}
-              <Icon name="link" size={22} />
-            </Button>
-          </div>
-
-          <List>
-            {#if owner}
-              <ListItem clickable>
-                <a class="list-item" href="/user/{wf.owner}" title="Watchfaces by this creator">
-                  <div class="list-key">Author</div>
-                  <div class="list-value">
-                    <span class="creator-name">
-                      {owner.name || "Unknown"}
-                    </span>
-                    <Avatar name={owner.name || "?"} />
-                  </div>
-                </a>
-              </ListItem>
-            {/if}
-            <ListItem>
-              <div class="list-item">
-                <div class="list-key">Likes</div>
-                <div class="list-value">{likeCount}</div>
-              </div>
-            </ListItem>
-            <ListItem>
-              <div class="list-item">
-                <div class="list-key">Downloads</div>
-                <div class="list-value">{wf.downloads || 0}</div>
-              </div>
-            </ListItem>
-            <ListItem>
-              <div class="list-item">
-                <div class="list-key">Flashed</div>
-                <div class="list-value">{wf.flashes || 0}</div>
-              </div>
-            </ListItem>
-            <ListItem>
-              <div class="list-item">
-                <div class="list-key">Published</div>
-                <div class="list-value">{day(wf.created)}</div>
-              </div>
-            </ListItem>
-
-            <ListItem>
-              <div class="list-item">
-                <div class="list-key">Updated</div>
-                <div class="list-value">{day(wf.updated)}</div>
-              </div>
-            </ListItem>
-          </List>
-
-          <div class="actions">
-            <Button onClick={() => editRequested(wf)}>
-              <span> Open in editor </span>
-              <Icon name="edit" size={22} />
-            </Button>
-            <Button kind="secondary" href={downloadUrl(wf)}>
-              <span> Download .bin </span>
-              <Icon name="download" size={22} />
-            </Button>
-
-            <Button
-              class="actions--small-btn"
-              kind="secondary"
-              disabled={!$user}
-              onClick={() => $user && likeToggleRequested({ wf, userId: $user.id })}
-            >
-              {likeCount}
-              <Icon
-                name="favorite"
-                size={22}
-                color={liked ? "var(--color-error)" : undefined}
-                fill={liked}
-              />
-            </Button>
-          </div>
+          <p class="dates">
+            Published {day(wf.created)}
+            {#if day(wf.updated) !== day(wf.created)}· updated {day(wf.updated)}{/if}
+          </p>
         </div>
       </article>
     {:else if $loading}
       <div class="face">
-        <div
-          style="overflow: hidden; border-radius: 10em; display: flex; width: min-content; margin: 0 auto;"
-        >
-          <Skeleton height="18rem" width="18rem" />
+        <div class="dial"><div class="preview"><Skeleton height="100%" /></div></div>
+        <div class="info">
+          <Skeleton height="2.25rem" width="60%" />
+          <Skeleton height="1.25rem" width="40%" />
+          <Skeleton height="3rem" />
+          <Skeleton height="2.5rem" />
+          <Skeleton height="4rem" />
         </div>
-        <div style="height: 2rem"></div>
-        <Skeleton height="1.75rem" width="60%" />
-        <div style="height: 1rem"></div>
-        <Skeleton height="2.25rem" width="40%" />
-        <div style="height: 1rem"></div>
-        <Skeleton height="3rem" />
-        <div style="height: 0.2rem"></div>
-        <Skeleton height="3rem" />
-        <div style="height: 0.2rem"></div>
-        <Skeleton height="3rem" />
-        <div style="height: 0.2rem"></div>
-        <Skeleton height="3rem" />
       </div>
     {:else}
       <p class="empty">Watchface not found.</p>
     {/if}
-  </main>
-</div>
+  </div>
+</Page>
 
 <style>
-  .toggle-aod {
-    position: absolute;
-    right: 0;
-    top: 0;
-    border: 1px solid oklch(from var(--color-text) l c h / 10%);
-    appearance: none;
-    padding: 0;
-    height: 2.5rem;
-    width: 2.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10em;
-    background-color: var(--color-text);
-    color: var(--color-background);
-    transition: var(--spring-transition);
-    cursor: pointer;
-    & :global(.icon) {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      top: 0;
-      right: 0;
-      left: 0;
-      bottom: 0;
-    }
-
-    &.on {
-      background-color: transparent;
-      color: var(--color-text);
-    }
-  }
-  .page {
+  .detail {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    gap: 1rem;
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 1rem 1rem 2rem;
   }
   .error {
     margin: 0;
-    padding: 0.75rem 1rem 0;
     font-size: 0.75rem;
     color: var(--color-error);
   }
-  main {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1rem 1rem 2rem;
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .quick {
+    display: flex;
+    gap: 0.5rem;
+  }
+  /* the page's small round controls: share, like, the always-on toggle */
+  .round {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding: 0 0.625rem;
+    border: none;
+    border-radius: 10em;
+    font: inherit;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text);
+    background: oklch(from var(--color-text) l c h / 8%);
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      transform var(--spring-transition);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: oklch(from var(--color-text) l c h / 14%);
+      }
+    }
+    &:active:not(:disabled) {
+      transform: scale(0.94);
+    }
+    &:disabled {
+      cursor: default;
+      color: oklch(from var(--color-text) l c h / 55%);
+    }
   }
   .face {
-    position: relative;
-    max-width: 31.25rem;
-    width: 50%;
-    margin: 0 auto;
-    min-width: 21.875rem;
-  }
-  .dial {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
+    gap: 1.5rem;
+  }
+  .dial {
+    position: relative;
+    align-self: center;
+    width: min(100%, 20rem);
   }
   .preview {
-    width: 20rem;
     aspect-ratio: 1 / 1;
     overflow: hidden;
-    border-radius: 625rem;
+    border-radius: 50%;
     background: oklch(0 0 0);
 
     img {
@@ -322,95 +306,143 @@
       object-fit: cover;
     }
   }
+  /* tucked into the square's free corner, off the dial itself */
+  .toggle-aod {
+    position: absolute;
+    right: 0;
+    top: 0;
+    padding: 0;
+    background-color: var(--color-text);
+    color: var(--color-background);
+
+    & :global(.icon) {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    &.on {
+      background-color: oklch(from var(--color-text) l c h / 8%);
+      color: var(--color-text);
+    }
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background-color: oklch(from var(--color-text) l c h / 85%);
+      }
+      &.on:hover:not(:disabled) {
+        background-color: oklch(from var(--color-text) l c h / 14%);
+      }
+    }
+  }
   .info {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
+    min-width: 0;
   }
-  .title-row {
+  .identity {
     display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
   }
   .name {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: 2rem;
+    font-size: 2.25rem;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
   }
-
-  .list-item {
+  .byline {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
     align-items: center;
-    text-decoration: none;
-    color: var(--color-text);
-    height: 100%;
-    min-height: 100%;
-    width: 100%;
+    gap: 0.5rem;
   }
+  .author {
+    --avatar-size: 1.5rem;
 
-  .list-key {
-    font-weight: bold;
-  }
-
-  .list-value {
-    font-size: 0.9rem;
-    color: oklch(var(--color-text) l c h / 60%);
-  }
-
-  .creator-name {
-    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    margin-inline-end: 0.25rem;
     font-weight: 500;
+    color: var(--color-text);
+    text-decoration: none;
+
+    span {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    @media (hover: hover) {
+      &:hover span {
+        text-decoration: underline;
+        text-decoration-color: var(--color-accent);
+        text-underline-offset: 0.2em;
+      }
+    }
+  }
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .primary,
+  .secondary {
+    display: flex;
+    gap: 0.5rem;
+
+    > :global(*) {
+      flex: 1;
+      min-width: 0;
+    }
+    :global(span:not(.icon)) {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  }
+  /* side by side while both labels fit, stacked on a narrow phone rather than cut short */
+  .secondary {
+    flex-wrap: wrap;
+
+    > :global(*) {
+      flex: 1 1 10rem;
+    }
   }
   .desc {
     margin: 0;
     white-space: pre-wrap;
-    font-size: 0.875rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
   }
-  .muted {
+  .dates {
+    margin: 0;
+    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
-  }
-  .actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    & :global(button),
-    & :global(a) {
-      & span:first-child {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    }
-
-    & :global(.actions--small-btn) {
-      flex: 0 0 min-content;
-    }
-
-    & > :global(*) {
-      flex: 1;
-      min-width: 0;
-
-      &:has(:global(.icon)) {
-        justify-content: space-between;
-      }
-    }
   }
   .empty {
     padding: 4rem 0;
     text-align: center;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
-  @media (max-width: 767px) {
-    .face {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 1.25rem;
+  /* room for both: the dial stays in view on the left while the details scroll beside it */
+  @media (min-width: 900px) {
+    .detail {
+      padding: 1.5rem 2rem 3rem;
     }
-    .preview {
-      max-width: 15rem;
-      margin-inline: auto;
+    .face {
+      display: grid;
+      grid-template-columns: minmax(0, 24rem) minmax(0, 30rem);
+      justify-content: center;
+      align-items: start;
+      gap: 3.5rem;
+    }
+    .dial {
+      position: sticky;
+      top: 1rem;
+      width: 100%;
     }
   }
 </style>

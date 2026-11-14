@@ -1,0 +1,99 @@
+<script lang="ts">
+  // Markdown from a record (an app's or a firmware's description) as styled prose.
+  //
+  // The text comes from the database, so it gets its own parser rather than the global one:
+  // raw HTML is printed as text instead of being injected, and a link or image may only point
+  // at the web. That leaves {@html} with nothing but the tags marked itself emits.
+  import { Marked } from "marked";
+
+  interface Props {
+    source: string;
+  }
+  const { source }: Props = $props();
+
+  const escape = (s: string) =>
+    s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  const SAFE_URL = /^(https?:|mailto:|\/|#)/i;
+
+  const parser = new Marked({
+    renderer: {
+      html: ({ text }) => escape(text),
+    },
+    walkTokens(token) {
+      if ((token.type === "link" || token.type === "image") && !SAFE_URL.test(token.href))
+        token.href = "#";
+    },
+  });
+
+  const html = $derived(parser.parse(source, { async: false }));
+</script>
+
+<div class="prose">{@html html}</div>
+
+<style>
+  .prose {
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+
+    :global {
+      > :first-child {
+        margin-top: 0;
+      }
+      > :last-child {
+        margin-bottom: 0;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        margin: 1.5rem 0 0.5rem;
+        font-family: var(--font-family);
+        font-stretch: normal;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      p {
+        margin: 0 0 0.75rem;
+      }
+      ul,
+      ol {
+        margin: 0 0 0.75rem;
+        padding-left: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.375rem;
+      }
+      li::marker {
+        color: oklch(from var(--color-text) l c h / 45%);
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.875em;
+        padding: 0.1em 0.35em;
+        border-radius: 0.3rem;
+        background: oklch(from var(--color-text) l c h / 8%);
+      }
+      pre {
+        margin: 0 0 0.75rem;
+        padding: 0.75rem;
+        overflow-x: auto;
+        border-radius: var(--border-radius);
+        background: oklch(from var(--color-text) l c h / 6%);
+
+        code {
+          padding: 0;
+          background: none;
+        }
+      }
+      a {
+        color: var(--color-text);
+        text-decoration-color: var(--color-accent);
+        text-underline-offset: 0.2em;
+      }
+      img {
+        max-width: 100%;
+        border-radius: var(--border-radius);
+      }
+    }
+  }
+</style>

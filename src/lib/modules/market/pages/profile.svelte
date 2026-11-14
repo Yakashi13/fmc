@@ -2,7 +2,10 @@
   import { Avatar } from "$lib/shared/components/avatar";
   import { Button } from "$lib/shared/components/button";
   import { Icon } from "$lib/shared/components/icon";
+  import { Page } from "$lib/shared/components/page";
   import { Skeleton } from "$lib/shared/components/skeleton";
+  import { StatStrip } from "$lib/shared/components/stat-strip";
+  import { compact } from "$lib/shared/lib/format";
   import { fileUrl } from "$lib/shared/api";
   import { marketModel } from "../model";
   import { creatorTitle } from "$lib/shared/seo";
@@ -48,98 +51,98 @@
 
 <svelte:head><title>{creatorTitle(name)}</title></svelte:head>
 
-<div class="page">
+<Page>
   {#if $marketErr}<p class="error">{$marketErr}</p>{/if}
 
-  <main>
-    <header class="profile">
-      {#if $profile}
+  <header class="profile">
+    {#if $profile}
+      <div class="who">
         <Avatar {name} src={avatar} />
         <div class="identity">
           <h1>{name}</h1>
-          {#if $profile.bio}<p class="bio">{$profile.bio}</p>{/if}
           <p class="meta">Joined {joined}</p>
-          <dl class="stats">
-            <div>
-              <dt>Watchfaces</dt>
-              <dd>{$profileItems.length}</dd>
-            </div>
-            <div>
-              <dt>Likes</dt>
-              <dd>{totalLikes}</dd>
-            </div>
-            <div>
-              <dt>Downloads</dt>
-              <dd>{totalDownloads}</dd>
-            </div>
-          </dl>
-          {#if own}
-            <div class="edit">
-              <Button kind="secondary" size="small" onClick={() => profileEditOpened()}>
-                <Icon name="edit" size={18} />
-                Edit profile
-              </Button>
-            </div>
-          {/if}
         </div>
-      {:else if $profileLoading}
-        <Skeleton height="5rem" width="5rem" />
+        {#if own}
+          <Button kind="secondary" onClick={() => profileEditOpened()}>
+            <Icon name="edit" size={18} />
+            <span class="edit-label">Edit profile</span>
+          </Button>
+        {/if}
+      </div>
+      {#if $profile.bio}<p class="bio">{$profile.bio}</p>{/if}
+      <div class="stats">
+        <StatStrip
+          items={[
+            { label: "Watchfaces", value: $profileItems.length },
+            { label: "Likes", value: compact(totalLikes) },
+            { label: "Downloads", value: compact(totalDownloads) },
+          ]}
+        />
+      </div>
+    {:else if $profileLoading}
+      <div class="who">
+        <Skeleton height="4.5rem" width="4.5rem" />
         <div class="identity">
           <Skeleton height="1.5rem" width="10rem" />
-          <Skeleton height="0.875rem" width="14rem" />
+          <Skeleton height="0.875rem" width="7rem" />
         </div>
-      {/if}
-    </header>
+      </div>
+      <Skeleton height="3.75rem" />
+    {/if}
+  </header>
 
-    <WatchfaceList
-      items={$profileItems}
-      loading={$profileLoading}
-      showAuthor={false}
-      empty="Nothing published yet."
-    />
-  </main>
-</div>
+  <WatchfaceList
+    items={$profileItems}
+    loading={$profileLoading}
+    showAuthor={false}
+    empty="Nothing published yet."
+  />
+</Page>
 
 {#if own}<ProfileEditor />{/if}
 
 <style>
-  .page {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
   .error {
     margin: 0;
     padding: 0.75rem 1rem 0;
     font-size: 0.75rem;
     color: var(--color-error);
   }
-  main {
-    overflow-y: auto;
-  }
   .profile {
     display: flex;
-    align-items: flex-start;
-    gap: 1.25rem;
-    padding: 1.5rem 1rem;
-    border-bottom: 1px solid oklch(from var(--color-text) l c h / 10%);
-    --avatar-size: 5rem;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem 1rem 0.5rem;
+  }
+  .who {
+    --avatar-size: 4.5rem;
+
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    :global(.skeleton:first-child) {
+      flex: none;
+      border-radius: 50%;
+    }
   }
   .identity {
     display: flex;
+    flex: 1;
     flex-direction: column;
-    gap: 0.375rem;
+    gap: 0.25rem;
     min-width: 0;
   }
   h1 {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: 1.75rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
   }
   .bio {
     margin: 0;
     max-width: 40rem;
-    font-size: 0.8125rem;
+    line-height: 1.5;
     white-space: pre-line;
     overflow-wrap: anywhere;
   }
@@ -148,30 +151,16 @@
     font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
-  .edit {
-    margin-top: 0.5rem;
-  }
   .stats {
-    display: flex;
-    gap: 0.3rem;
-    margin: 0.5rem 0 0;
-
-    div {
-      display: flex;
-      flex-direction: column-reverse;
-      border-radius: var(--border-radius);
-      background: oklch(from var(--color-text) l c h / 10%);
-      padding: 0.5rem 0.8rem;
+    max-width: 26rem;
+  }
+  @media (max-width: 767px) {
+    .profile {
+      padding: 1rem 0.75rem 0.25rem;
     }
-    dt {
-      font-size: 0.625rem;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      color: oklch(from var(--color-text) l c h / 55%);
-    }
-    dd {
-      margin: 0;
-      font-size: 1.125rem;
+    /* the pencil alone: the name needs the row more than the label does */
+    .edit-label {
+      display: none;
     }
   }
 </style>
