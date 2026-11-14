@@ -10,6 +10,11 @@ export type SignupForm = { name: string; email: string; password: string; confir
 
 // stores
 export const $user = createStore<AuthRecord>(pb.authStore.record);
+// May this account flash firmware and install store apps? `flasher` is set by a superuser and
+// can't be written by the user (users.updateRule in fmc_pocketbase, 1754100000_users_flasher.js).
+// ponytail: a UI gate, not a lock — Web Bluetooth runs in the visitor's own browser, so this
+// keeps a risky path away from people who didn't ask for it; it can't stop a determined one.
+export const $canFlash = $user.map((u) => u?.flasher === true);
 export const $loginPending = authApi.loginFx.pending;
 export const $oauthPending = authApi.oauthFx.pending;
 export const $registerPending = authApi.registerFx.pending;

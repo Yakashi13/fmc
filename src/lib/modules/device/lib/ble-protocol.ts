@@ -28,6 +28,11 @@ export const UUID = {
   shellRead: "77d4ff02-2fe2-2334-0d35-9ccd078f529c",
   shellWrite: "77d4ff01-2fe2-2334-0d35-9ccd078f529c",
   battery: "00002a19-0000-1000-8000-00805f9b34fb",
+  // firmware update: its own pair, next to the command channel (see Watch.flashFirmware). Their
+  // parent service is undocumented — discovery walks every service in SERVICES and keys by
+  // characteristic, so it is found if it sits under one of those (02f00000-…-fe00 is the guess)
+  otaWrite: "02f00000-0000-0000-0000-00000000ff01",
+  otaRead: "02f00000-0000-0000-0000-00000000ff02",
 };
 export const SERVICES: (number | string)[] = [
   0xefe7,
@@ -79,9 +84,30 @@ export const CMD = {
   wfFinishAck1: C(0xffff, 0xa065),
   wfFinishAck2: C(0xffff, 0x9065),
   wfInstalled: C(0xffff, 0xa055),
+  // firmware update (stock CMF OTA; cmf-watch-utils ota_client.py). Which characteristic each
+  // goes to matters as much as the bytes — see Watch.flashFirmware
+  otaBeginReq: C(0xffff, 0x9052),
+  otaBeginRep: C(0xffff, 0xa052),
+  otaStartReq: C(0xffff, 0x9040),
+  otaStartRep: C(0xffff, 0xa040),
+  otaChunkReq: C(0xffff, 0xa042),
+  otaChunkWrite: C(0xffff, 0x9042), // plaintext
+  otaVerdict: C(0xffff, 0xa041),
+  otaCommit: C(0xffff, 0x9041),
+  otaStatus43: C(0xffff, 0xa043), // terminal, meaning undocumented
+  otaStatus44: C(0xffff, 0xa044), // terminal, meaning undocumented
+  // the App Loader stub's install channel (wp2-apps, docs/abi-1.4.md); only INFO is used here
+  stubInfo: C(0xffff, 0x90a0),
+  stubInfoRep: C(0xffff, 0xb0a0),
 };
 // the watch sends authFailed in plaintext (6 bytes — not a multiple of the AES block): it failed to decrypt with the key
-const PLAINTEXT = new Set([CMD.authPairReq, CMD.authPairRep, CMD.wfChunkWrite, CMD.authFailed]);
+const PLAINTEXT = new Set([
+  CMD.authPairReq,
+  CMD.authPairRep,
+  CMD.wfChunkWrite,
+  CMD.otaChunkWrite,
+  CMD.authFailed,
+]);
 export const MARKER = 0xa5;
 
 const AES_IV = new Uint8Array([
@@ -98,7 +124,7 @@ for (let i = 0; i < 256; i++) {
   CRC_T[i] = c >>> 0;
 }
 // standard IEEE CRC32 (init/xor 0xFFFFFFFF) — matches Go's crc32.ChecksumIEEE
-function crc32(d: Uint8Array): number {
+export function crc32(d: Uint8Array): number {
   let c = 0xffffffff;
 
   for (let i = 0; i < d.length; i++) c = CRC_T[(c ^ d[i]) & 0xff] ^ (c >>> 8);
@@ -191,11 +217,13 @@ export class Codec {
       throw new Error("decrypt failed — wrong session key");
     }
   }
-  async encode(key: number, payload: Uint8Array): Promise<Uint8Array[]> {
+  // plainSize: bytes of payload per plaintext frame, for a transfer whose frame size is part of
+  // what was proven on hardware (firmware: 224) rather than derived from the MTU guess
+  async encode(key: number, payload: Uint8Array, plainSize = this.mtu - 20): Promise<Uint8Array[]> {
     let chunks: Uint8Array[] = [];
 
     if (PLAINTEXT.has(key)) {
-      const size = this.mtu - 20;
+      const size = plainSize;
 
       for (let i = 0; i < payload.length; i += size) {
         const ch = payload.slice(i, i + size);

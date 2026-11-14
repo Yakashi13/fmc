@@ -1,5 +1,6 @@
 <script lang="ts">
   // The Apps shelf: installable .wp2app packages for the Watch Pro 2.
+  import { Badge } from "$lib/shared/components/badge";
   import { Icon } from "$lib/shared/components/icon";
   import { Page } from "$lib/shared/components/page";
   import { Skeleton } from "$lib/shared/components/skeleton";
@@ -8,7 +9,13 @@
   import { compact } from "$lib/shared/lib/format";
   import { storeModel } from "../model";
 
-  const { $apps: apps, $appsLoading: loading, $storeErr: storeErr, appsRequested } = storeModel;
+  const {
+    $apps: apps,
+    $appsLoading: loading,
+    $storeErr: storeErr,
+    $appsOnWatch: onWatch,
+    appsRequested,
+  } = storeModel;
 
   appsRequested();
 </script>
@@ -61,6 +68,11 @@
                 {#if app.summary}<span class="desc">{app.summary}</span>{/if}
                 <span class="meta">
                   {#if app.version}<span>v{app.version}</span>{/if}
+                  {#if $onWatch[app.id] === "update"}
+                    <Badge>Update</Badge>
+                  {:else if $onWatch[app.id] === "installed"}
+                    <Badge quiet>Installed</Badge>
+                  {/if}
                   <span class="count">
                     <Icon name="download" size={14} />
                     {compact(app.downloads)}

@@ -3,8 +3,11 @@
 // Two shelves with the same life: a list fetched once per session, and one record behind a
 // detail page. The detail page is a deep link, so it always asks for its record; when the list
 // is already here it shows that copy first and the fetch only refreshes it.
-import { createEvent, createStore, sample, type Effect } from "effector";
+import { combine, createEvent, createStore, sample, type Effect } from "effector";
+import { samePackage, type Wp2Package, type Wp2State } from "$lib/modules/device/lib/wp2";
 import type { RecordModel } from "pocketbase";
+import { authModel } from "$lib/modules/auth/model";
+import { bleModel } from "$lib/modules/device/model";
 import * as storeApi from "./store.api";
 
 export { appDownloadUrl, firmwareDownloadUrl } from "./store.api";
@@ -100,3 +103,96 @@ sample({
   fn: () => false,
   target: $riskAccepted,
 });
+
+// Flashing from the page: only for an account a superuser marked as a flasher, only after the
+// tick, and only an image that's on the record. The bytes are fetched here and handed to the
+// device model, which checks them again and owns the watch.
+export const flashRequested = createEvent();
+export const $imageFetching = storeApi.fetchFirmwareImageFx.pending;
+export const $imageErr = createStore("");
+
+sample({
+  clock: flashRequested,
+  source: { rec: $firmware, may: authModel.$canFlash, accepted: $riskAccepted },
+  filter: ({ rec, may, accepted }) => Boolean(rec?.image) && may && accepted,
+  fn: ({ rec }) => rec!,
+  target: storeApi.fetchFirmwareImageFx,
+});
+sample({
+  clock: storeApi.fetchFirmwareImageFx.doneData,
+  target: bleModel.firmwareFlashRequested,
+});
+sample({
+  clock: storeApi.fetchFirmwareImageFx.failData,
+  fn: (e) => e.message,
+  target: $imageErr,
+});
+sample({
+  clock: [flashRequested, firmwareRequested],
+  fn: () => "",
+  target: $imageErr,
+});
+// a result belongs to the page it happened on
+sample({
+  clock: firmwareRequested,
+  target: bleModel.otaReset,
+});
+
+// ---- what's on the watch: installed / update available ----
+// Read for flashers only (the same gate as flashing): every store page asks once a watch is
+// connected, and a connection made while on one asks too. A stock watch costs one unanswered
+// request (see Watch.readWp2).
+sample({
+  clock: [bleModel.connected, appsRequested, appRequested, firmwaresRequested, firmwareRequested],
+  source: { may: authModel.$canFlash, info: bleModel.$bleInfo, wp2: bleModel.$wp2 },
+  filter: ({ may, info, wp2 }) => may && Boolean(info) && !wp2,
+  target: bleModel.wp2Requested,
+});
+
+// the catalog side of the comparison: each app's package header, fetched once the watch has
+// reported something to compare with
+const $appHeaders = createStore<Record<string, Wp2Package>>({});
+
+sample({
+  clock: [bleModel.$wp2.updates, apps.$list.updates, apps.$one.updates],
+  source: { wp2: bleModel.$wp2, list: apps.$list, one: apps.$one, have: $appHeaders },
+  filter: ({ wp2 }) => Boolean(wp2) && wp2 !== "stock",
+  fn: ({ list, one, have }) => [...list, ...(one ? [one] : [])].filter((rec) => !have[rec.id]),
+  target: storeApi.fetchAppHeadersFx,
+});
+sample({
+  clock: storeApi.fetchAppHeadersFx.doneData,
+  source: $appHeaders,
+  fn: (have, got) => ({ ...have, ...got }),
+  target: $appHeaders,
+});
+
+export type OnWatch = "installed" | "update";
+/** app record id → how its build compares with the one on the watch; absent = not installed */
+export const $appsOnWatch = combine(bleModel.$wp2, $appHeaders, (wp2, headers) => {
+  const out: Record<string, OnWatch> = {};
+
+  if (!wp2 || wp2 === "stock") return out;
+  const installed = Object.values(wp2.apps);
+
+  for (const [id, h] of Object.entries(headers)) {
+    const there = installed.find((p) => p.name === h.name);
+
+    if (there) out[id] = samePackage(there, h) ? "installed" : "update";
+  }
+  return out;
+});
+
+// a firmware record against the watch's stub: null when there's nothing to say — no watch, a
+// stock watch, an image without the stub, or an older one than the watch runs
+const stubState = (wp2: Wp2State | "stock" | null, rec: RecordModel | null): OnWatch | null => {
+  const stub = Number(rec?.stub) || 0;
+
+  if (!wp2 || wp2 === "stock" || !stub) return null;
+  if (stub > wp2.stub.version) return "update";
+  return stub === wp2.stub.version ? "installed" : null;
+};
+export const $firmwareOnWatch = combine(bleModel.$wp2, firmwares.$one, stubState);
+export const $firmwaresOnWatch = combine(bleModel.$wp2, firmwares.$list, (wp2, list) =>
+  Object.fromEntries(list.map((rec) => [rec.id, stubState(wp2, rec)])),
+);

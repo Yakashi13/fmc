@@ -2,8 +2,11 @@
 import { createEffect, createEvent, createStore, sample } from "effector";
 import { reset } from "patronum";
 import { NoFreeSlotError, Watch, type WatchDials, type WatchInfo } from "../lib/ble";
+import { inspectOtaImage } from "../lib/ota-image";
+import type { Wp2State } from "../lib/wp2";
 import { rememberDial, unclaimDial } from "../lib/catalog-names";
 import { assertFlashable, flashWarning } from "$lib/modules/editor/core/format";
+import { dbg } from "../lib/ble-protocol";
 import * as bleApi from "./ble.api";
 
 // what a flash needs: the file, a thumbnail of the face so the watch's id list can show it
@@ -110,6 +113,80 @@ const removeDialFx = createEffect((id: number) => {
   unclaimDial(id);
   watch?.mergeDials();
 });
+
+// ---- firmware update ----
+// Only a Watch Pro 2: the protocol and the images are that board's (JX402), and nothing about
+// another model's OTA is known. The advertised name is the only model id there is.
+const isWatchPro2 = (name: string | null) => /watch pro 2/i.test(name ?? "");
+// the community guide's floor: a watch that dies mid-install is the one case with no way back
+export const OTA_MIN_BATTERY = 50;
+
+export const $otaProgress = createStore<number | null>(null);
+export const $otaResult = createStore<"done" | null>(null);
+export const $otaError = createStore("");
+const otaProgressed = createEvent<number>();
+export const firmwareFlashRequested = createEvent<Uint8Array>();
+export const otaReset = createEvent();
+
+const flashFirmwareFx = createEffect(async (image: Uint8Array) => {
+  const info = inspectOtaImage(image);
+
+  if (!watch) throw new Error("connect the watch first");
+  const name = watch.name;
+
+  if (!isWatchPro2(name))
+    throw new Error(`firmware updates are for the CMF Watch Pro 2 only, this is “${name}”`);
+  if (watch.battery !== null && watch.battery < OTA_MIN_BATTERY)
+    throw new Error(
+      `battery at ${watch.battery}% — charge it to ${OTA_MIN_BATTERY}% and keep it on the charger`,
+    );
+  dbg("ota image:", info);
+  await watch.flashFirmware(image, otaProgressed);
+});
+export const $otaFlashing = flashFirmwareFx.pending;
+
+sample({
+  clock: firmwareFlashRequested,
+  target: flashFirmwareFx,
+});
+sample({
+  clock: otaProgressed,
+  target: $otaProgress,
+});
+sample({
+  clock: flashFirmwareFx.done,
+  fn: () => "done" as const,
+  target: $otaResult,
+});
+sample({
+  clock: flashFirmwareFx.failData,
+  fn: (e) => e.message,
+  target: $otaError,
+});
+reset({ clock: [firmwareFlashRequested, otaReset], target: [$otaProgress, $otaResult, $otaError] });
+
+// ---- what the App Loader firmware reports ----
+// null: not asked yet, or the link is gone; `stock`: asked, and the watch has no stub
+export const $wp2 = createStore<Wp2State | "stock" | null>(null);
+export const wp2Requested = createEvent();
+const readWp2Fx = createEffect(async () => {
+  if (!watch) throw new Error("not connected");
+  return (await watch.readWp2()) ?? ("stock" as const);
+});
+export const $wp2Reading = readWp2Fx.pending;
+
+sample({
+  clock: wp2Requested,
+  source: readWp2Fx.pending,
+  filter: (busy) => !busy,
+  target: readWp2Fx,
+});
+sample({
+  clock: readWp2Fx.doneData,
+  target: $wp2,
+});
+// a flash rewrote what the watch runs, and the watch restarts after it — ask again on reconnect
+reset({ clock: [disconnected, flashFirmwareFx.done], target: $wp2 });
 
 // ---- business logic ----
 sample({

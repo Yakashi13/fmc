@@ -19,7 +19,14 @@
   }
   const { id }: Props = $props();
 
-  const { $app: app, $appLoading: loading, appRequested, appDownloadUrl } = storeModel;
+  const {
+    $app: app,
+    $appLoading: loading,
+    $appsOnWatch: onWatch,
+    appRequested,
+    appDownloadUrl,
+  } = storeModel;
+  const state = $derived($app ? $onWatch[$app.id] : undefined);
 
   $effect(() => {
     appRequested(id);
@@ -53,6 +60,16 @@
         <div class="identity">
           <h1>{$app.name}</h1>
           {#if $app.summary}<p class="summary">{$app.summary}</p>{/if}
+          {#if state}
+            <!-- read from the watch: the build there against this package (store.model) -->
+            <div>
+              {#if state === "update"}
+                <Badge>Update available</Badge>
+              {:else}
+                <Badge quiet>Installed on your watch</Badge>
+              {/if}
+            </div>
+          {/if}
           <p class="by">
             {#if $app.author}{$app.author}{/if}
             {#if $app.author && deviceLabel($app.device)}·{/if}

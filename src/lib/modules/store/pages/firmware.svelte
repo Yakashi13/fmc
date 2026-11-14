@@ -13,6 +13,8 @@
   import { fileUrl } from "$lib/shared/api";
   import { compact, day } from "$lib/shared/lib/format";
   import { deviceLabel } from "$lib/modules/market/lib/devices";
+  import { authModel } from "$lib/modules/auth/model";
+  import { bleModel } from "$lib/modules/device/model";
   import { firmwareKind, testedLabel, testedOnHardware } from "../lib/firmware";
   import { FLASH_LIMITS, WATCH_UTILS_DOCS } from "../lib/links";
   import { storeModel } from "../model";
@@ -29,7 +31,27 @@
     firmwareRequested,
     riskAcceptedSet,
     firmwareDownloadUrl,
+    flashRequested,
+    $imageFetching: imageFetching,
+    $imageErr: imageErr,
+    $firmwareOnWatch: onWatch,
   } = storeModel;
+  const { $canFlash: canFlash } = authModel;
+  const {
+    $bleInfo: watch,
+    $bleStatus: bleStatus,
+    $connecting: connecting,
+    $otaFlashing: flashing,
+    $otaProgress: progress,
+    $otaResult: result,
+    $otaError: otaError,
+    $wp2: wp2,
+    $wp2Reading: wp2Reading,
+    OTA_MIN_BATTERY,
+    connectRequested,
+  } = bleModel;
+  const busy = $derived($imageFetching || $flashing);
+  const error = $derived($imageErr || $otaError);
 
   $effect(() => {
     firmwareRequested(id);
@@ -144,24 +166,96 @@
         </section>
       {/if}
 
-      <section class="how">
-        <!-- flashing is the step FMC doesn't do yet — said at the step itself, with the
+      {#if $canFlash && fw.image}
+        <!-- open to accounts a superuser marked as flashers only (auth.model $canFlash) -->
+        <section class="how flash">
+          <h2>Flash to the watch</h2>
+          <ul class="checklist">
+            <li>The watch is on its charger, at {OTA_MIN_BATTERY}% or more</li>
+            <li>The phone's Bluetooth is off, so it can't grab the watch mid-update</li>
+            <li>This tab stays open and the computer stays awake and close by</li>
+          </ul>
+          {#if !$watch}
+            <Button
+              size="large"
+              kind="secondary"
+              onClick={() => connectRequested()}
+              disabled={$connecting}
+            >
+              <Icon name="bluetooth" size={22} />
+              {$connecting ? "Connecting…" : "Connect the watch"}
+            </Button>
+          {:else}
+            <p class="watch-line">
+              {$watch.name ?? "Watch"}
+              {#if $watch.firmware}· firmware {$watch.firmware}{/if}
+              {#if $watch.battery !== null}· {$watch.battery}%{/if}
+            </p>
+            <!-- what the stub reports; the watch says 1.0.0.73 either way (see wp2.ts) -->
+            <p class="watch-line">
+              {#if $wp2Reading}
+                Checking what the watch runs…
+              {:else if $wp2 === "stock"}
+                Stock firmware, no App Loader
+              {:else if $wp2}
+                App Loader stub {$wp2.stub.version}
+                {#if $wp2.loader}· loader v{$wp2.loader.version}{:else}· no loader installed{/if}
+                · {Object.keys($wp2.apps).length} apps
+              {/if}
+            </p>
+            {#if $onWatch === "update"}
+              <div><Badge>Update available</Badge></div>
+            {:else if $onWatch === "installed"}
+              <div><Badge quiet>Already on your watch</Badge></div>
+            {/if}
+            {#if $result === "done"}
+              <p class="ok">
+                <Icon name="check_circle" size={20} /> Sent. The watch installs it and restarts on its
+                own — leave it on the charger until it's back.
+              </p>
+            {:else}
+              <Button
+                size="large"
+                kind="danger"
+                onClick={() => flashRequested()}
+                disabled={!$riskAccepted || busy}
+              >
+                <Icon name="bolt" size={22} />
+                {$imageFetching
+                  ? "Fetching the image…"
+                  : $flashing
+                    ? "Flashing…"
+                    : "Flash to the watch"}
+              </Button>
+              {#if !$riskAccepted}<p class="muted">Tick the box above first.</p>{/if}
+            {/if}
+          {/if}
+          {#if $flashing}
+            <progress max="100" value={$progress ?? undefined}></progress>
+            <p class="muted">{$bleStatus} Don't close this tab.</p>
+          {/if}
+          {#if error}<p class="err">{error}</p>{/if}
+        </section>
+      {:else}
+        <section class="how">
+          <!-- flashing is the step FMC doesn't do yet — said at the step itself, with the
              button it will be, so nobody hunts for it -->
-        <h2>Flash it <Badge>Coming soon</Badge></h2>
-        <Button size="large" disabled>
-          <Icon name="bolt" size={22} />
-          Flash to the watch
-        </Button>
-        <p>
-          Flashing straight from this page is still in the works. Until it lands, it happens with
-          the community's command-line tools. Their guide covers pairing, the transfer and what to
-          do when it goes wrong.
-        </p>
-        <Button kind="secondary" href={WATCH_UTILS_DOCS} external>
-          <Icon name="menu_book" size={22} />
-          Open the flashing guide
-        </Button>
-      </section>
+          <h2>Flash it <Badge>Coming soon</Badge></h2>
+          <Button size="large" disabled>
+            <Icon name="bolt" size={22} />
+            Flash to the watch
+          </Button>
+          <p>
+            Flashing straight from this page is still in the works. Until it lands, it happens with
+            the community's command-line tools. Their guide covers pairing, the transfer and what to
+            do when it goes wrong.
+          </p>
+          <Button kind="secondary" href={WATCH_UTILS_DOCS} external>
+            <Icon name="menu_book" size={22} />
+            Open the flashing guide
+          </Button>
+        </section>
+      {/if}
 
       <p class="dates">
         {#if fw.author}By {fw.author} ·{/if}
@@ -289,6 +383,29 @@
     > :global(.btn.kind__secondary) {
       align-self: flex-start;
     }
+  }
+  .checklist {
+    margin: 0;
+    padding-inline-start: 1.25rem;
+    line-height: 1.6;
+  }
+  .watch-line,
+  .muted {
+    font-size: 0.75rem;
+    color: oklch(from var(--color-text) l c h / 55%);
+  }
+  .ok {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  .err {
+    color: var(--color-error);
+  }
+  progress {
+    width: 100%;
+    height: 0.375rem;
+    accent-color: var(--color-accent);
   }
   .links {
     display: flex;

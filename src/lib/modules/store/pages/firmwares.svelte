@@ -14,6 +14,7 @@
     $firmwares: firmwares,
     $firmwaresLoading: loading,
     $storeErr: storeErr,
+    $firmwaresOnWatch: onWatch,
     firmwaresRequested,
   } = storeModel;
 
@@ -71,6 +72,11 @@
                 </div>
                 {#if fw.summary}<p class="desc">{fw.summary}</p>{/if}
                 <div class="badges">
+                  {#if $onWatch[fw.id] === "update"}
+                    <Badge>Update</Badge>
+                  {:else if $onWatch[fw.id] === "installed"}
+                    <Badge quiet>Installed</Badge>
+                  {/if}
                   <Badge quiet>{kind.label}</Badge>
                   {#if testedLabel(fw.tested)}
                     <Badge quiet={testedOnHardware(fw.tested)} warn={!testedOnHardware(fw.tested)}>

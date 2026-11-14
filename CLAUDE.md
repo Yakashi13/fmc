@@ -16,10 +16,17 @@ redirects there; `/market/[id]` — a face's showcase page), apps (`/apps`, `/ap
 with a BLE connection to the CMF Watch Pro 2) and auth (`/login`, `/register`).
 
 Apps and firmware are curated: the `apps` and `firmwares` collections are writable only by a
-PocketBase superuser, and the frontend only lists and downloads them. Installing an app or
-flashing an image over BLE is not implemented — the pages send people to the community's CLI
-tools. Don't add an upload form for either without an explicit ask: a firmware image can brick
-a watch.
+PocketBase superuser, and the frontend lists and downloads them. Flashing a firmware image from
+its page (`Watch.flashFirmware`, the stock CMF OTA protocol, port of cmf-watch-utils
+`ota_client.py`) is open only to accounts with `flasher` set on their user record — a superuser
+sets it, the user can't (`auth.model` `$canFlash`); everyone else sees "coming soon" and the CLI
+guide. Every image passes `device/lib/ota-image.ts` (AOTA CRCs, board `jx402_01_3089c`, AGPS
+trailer) before a byte goes out, and only a Watch Pro 2 is offered the update. Installing an
+app over BLE is not implemented. For the same accounts the store reads what the watch runs
+(`Watch.readWp2`: INFO to the wp2-apps stub — a stock watch doesn't answer) and badges apps and
+firmware "Installed" / "Update": an app by its image CRC against the catalog package's header,
+firmware by the record's `stub` number against the stub's reported release. Don't add an upload form for either, and don't widen
+`$canFlash`, without an explicit ask: a firmware image can brick a watch.
 
 ## Architecture
 
@@ -75,7 +82,9 @@ editor/core/
 
 device/lib/
   ble-protocol.ts  # GATT ids, command table, 0xF5 frame codec (AES/CRC)
-  ble.ts           # Web Bluetooth session: connect, pair, upload
+  ble.ts           # Web Bluetooth session: connect, pair, upload, firmware update
+  ota-image.ts     # the AOTA firmware container: verify before offering it to a watch
+  wp2.ts           # what the App Loader stub reports: its release, the loader, the apps by slot
 ```
 
 `Face`/`FaceNode` are the file's own shape, not the editor's: `parseBin` produces them,

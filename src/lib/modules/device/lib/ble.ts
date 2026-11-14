@@ -22,6 +22,16 @@ import {
   UUID,
   verbose,
 } from "./ble-protocol";
+import {
+  APP_SLOTS,
+  LOADER_SLOT,
+  parsePackageHeader,
+  parseStubReply,
+  STATUS_OK,
+  STUB_SLOT,
+  type Wp2Package,
+  type Wp2State,
+} from "./wp2";
 
 export interface WatchInfo {
   /** The advertised name ("CMF Watch Pro 2 …", "CMF Watch Pro 3 …") — the only model id we get */
@@ -54,6 +64,9 @@ export const WF_CAPACITY = 6;
 // capacity from there instead once a second sample confirms it.
 export const WF_CAPACITY_PRO3 = 7;
 // the advertised name is the only model id there is: "CMF Watch Pro 2-1A2B", "CMF Watch 3 Pro-9A9D"
+// bytes of firmware per 0x9042 frame — the size every hardware flash so far used
+const OTA_CHUNK = 224;
+
 export const capacityOf = (name: string | null) =>
   /watch (3 pro|pro 3)/i.test(name ?? "") ? WF_CAPACITY_PRO3 : WF_CAPACITY;
 
@@ -87,6 +100,8 @@ export class Watch {
   handlers = new Map<number, (p: Uint8Array) => void | Promise<void>>();
   rx: Promise<void> = Promise.resolve(); // serializes inbound notifications, see subscribe()
   shellWaiter: ((s: string) => void) | null = null;
+  device: BluetoothDevice | null = null;
+  name: string | null = null; // advertised — the only model id there is
   battery: number | null = null;
   firmware: string | null = null;
   serial: string | null = null;
@@ -141,7 +156,9 @@ export class Watch {
     };
     let device = await pick();
 
-    this.capacity = capacityOf(device.name ?? null);
+    this.device = device;
+    this.name = device.name ?? null;
+    this.capacity = capacityOf(this.name);
 
     (window as unknown as { __wf?: BluetoothDevice }).__wf = device; // ponytail: dev console hook, remove after debugging
     this.status("connecting…");
@@ -227,11 +244,12 @@ export class Watch {
       throw e;
     }
     const subscribe = async () => {
-      for (const key of ["cmdRead", "dataRead", "shellRead"] as const) {
+      for (const key of ["cmdRead", "dataRead", "shellRead", "otaRead"] as const) {
         const ch = this.chars[UUID[key]];
-        // shell service is only needed for first-time pairing; some firmwares hide it
+        // shell service is only needed for first-time pairing; some firmwares hide it. The
+        // firmware-update channel only for a firmware update, which checks for it itself
         if (!ch) {
-          if (key === "shellRead") continue;
+          if (key === "shellRead" || key === "otaRead") continue;
           throw new Error(`characteristic ${key} not found`);
         }
         // write vs writeWithoutResponse decides whether upload frames are acknowledged —
@@ -314,7 +332,7 @@ export class Watch {
       }
       return;
     }
-    if (uuid !== UUID.cmdRead && uuid !== UUID.dataRead) return;
+    if (uuid !== UUID.cmdRead && uuid !== UUID.dataRead && uuid !== UUID.otaRead) return;
     let res;
 
     try {
@@ -326,7 +344,7 @@ export class Watch {
     if (!res) return;
     // an unrecognised key is the whole point of probe() — always dump its payload, that's the
     // only thing that tells you what the command means
-    if (res.key !== CMD.wfChunkReq || verbose())
+    if ((res.key !== CMD.wfChunkReq && res.key !== CMD.otaChunkReq) || verbose())
       dbg(
         "recv",
         cmdName(res.key),
@@ -598,6 +616,158 @@ export class Watch {
     // the id is random and the name only exists inside the file — the caller needs both to
     // record what now sits in that slot (see catalog-names)
     return { id, name };
+  }
+
+  // Firmware update over the stock CMF OTA protocol — port of cmf-watch-utils ota_client.py, the
+  // client that flashed real watches. `image` must have passed inspectOtaImage (ota-image.ts).
+  //
+  //   fff2  0x9052 A5              → A052 01   "may I update"
+  //   ff01  0x9040 01 00 00 5a     → A040 01   start; the 4 bytes are copied from the phone app
+  //   ff02  A042 off len pct       ← the watch pulls ranges, in any order, only what differs
+  //   ff01  0x9042 bytes           → plaintext, 224 bytes a frame, no ack: the next A042 is one
+  //   fff2  0x9041 A5              ← on A041 (01 = image valid): commit; the watch installs and
+  //                                  reboots on its own
+  //
+  // The characteristic is part of the protocol: 0x9040 sent on fff2 with a live session reboots
+  // the watch, which is why there is no "retry on the other channel" here (the reference has
+  // one; it is the suspect in the one unexplained reboot). Nothing is sent before A040, so a
+  // refusal anywhere up to it leaves the watch as it was.
+  async flashFirmware(image: Uint8Array, onProgress: (pct: number) => void = () => {}) {
+    const write = this.chars[UUID.otaWrite];
+
+    if (!write || !this.chars[UUID.otaRead])
+      throw new Error("the watch didn't offer its firmware-update channel — reconnect and retry");
+    const sendOta = async (cmdKey: number, payload: Uint8Array) => {
+      // 224 is the frame size proven on hardware; the MTU-derived size isn't, so don't use it
+      for (const f of await this.codec.encode(cmdKey, payload, OTA_CHUNK)) {
+        try {
+          await write.writeValueWithoutResponse(f as BufferSource);
+        } catch {
+          // a frame over MTU−3 can't go as a write command; a long write (with response)
+          // carries it — the same fallback as the reference client
+          await write.writeValueWithResponse(f as BufferSource);
+        }
+      }
+    };
+
+    this.status("asking the watch to update…");
+    await this.send(CMD.otaBeginReq, new Uint8Array([MARKER]));
+    const r1 = await this.waitFor(CMD.otaBeginRep, 6000);
+
+    if (r1[0] !== 1) throw new Error(`the watch refused the update (${toHex(r1)})`);
+    await sendOta(CMD.otaStartReq, new Uint8Array([0x01, 0x00, 0x00, 0x5a]));
+    const r2 = await this.waitFor(CMD.otaStartRep, 5000);
+
+    if (r2[0] !== 1) throw new Error(`the watch refused to start (${toHex(r2)})`);
+
+    let served = 0;
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        let watchdog: ReturnType<typeof setTimeout>;
+        // a drop mid-transfer won't come back on its own (no resume in the protocol): say so
+        // now instead of after two minutes of watchdog
+        const dropped = () => finish(new Error("the watch disconnected during the update"));
+        let done = false;
+        const finish = (e?: Error) => {
+          if (done) return;
+          done = true;
+          clearTimeout(watchdog);
+          this.device?.removeEventListener("gattserverdisconnected", dropped);
+          if (e) reject(e);
+          else resolve();
+        };
+        // the watch can think for a while between ranges (it writes NAND); two minutes of
+        // silence is the reference client's line for "it's gone"
+        const kick = () => {
+          clearTimeout(watchdog);
+          watchdog = setTimeout(
+            () => finish(new Error("the watch stopped asking for data")),
+            120000,
+          );
+        };
+        const commit = async (verdict?: Uint8Array) => {
+          // without this the update stays staged and is never installed
+          await this.send(CMD.otaCommit, new Uint8Array([MARKER])).catch(() => {});
+          if (verdict && verdict[0] !== 1)
+            finish(new Error(`the watch rejected the image (${toHex(verdict)})`));
+          else finish();
+        };
+
+        this.device?.addEventListener("gattserverdisconnected", dropped);
+        kick();
+        this.handlers.set(CMD.otaChunkReq, async (p) => {
+          if (done || p.length < 8) return;
+          kick();
+          const dv = new DataView(p.buffer, p.byteOffset);
+          const off = dv.getUint32(0),
+            len = dv.getUint32(4);
+
+          // a zero range is the other way the watch says "that's all"
+          if (off === 0 && len === 0) return commit();
+          if (off >= image.length) return dbg("ota: range past the image", off, len);
+          const end = Math.min(off + len, image.length);
+
+          try {
+            await sendOta(CMD.otaChunkWrite, image.subarray(off, end));
+          } catch (e) {
+            return finish(e as Error);
+          }
+          served += end - off;
+          // the watch skips what it already has, so bytes sent says little; its own percent
+          // byte (the ninth, as in the watchface upload) is the honest number when present
+          const pct = p.length > 8 ? p[8] : Math.round((served / image.length) * 100);
+
+          onProgress(Math.min(pct, 99));
+          this.status(`updating firmware… ${pct}%`);
+        });
+        this.handlers.set(CMD.otaVerdict, (p) => commit(p));
+        for (const k of [CMD.otaStatus43, CMD.otaStatus44])
+          this.handlers.set(k, (p) =>
+            finish(new Error(`the watch stopped the update (${cmdName(k)} ${toHex(p)})`)),
+          );
+      });
+    } finally {
+      for (const k of [CMD.otaChunkReq, CMD.otaVerdict, CMD.otaStatus43, CMD.otaStatus44])
+        this.handlers.delete(k);
+      dbg("ota: served", served, "of", image.length);
+    }
+    onProgress(100);
+    this.status("firmware sent — the watch installs it and restarts");
+  }
+
+  // What the App Loader stub reports — null for stock firmware, which doesn't answer INFO (see
+  // wp2.ts). Read-only: INFO only reads a slot's header (it also drops an install the stub had
+  // open, and nothing here opens one).
+  async readWp2(): Promise<Wp2State | null> {
+    const info = async (slot: number, ms: number) => {
+      await this.send(CMD.stubInfo, new Uint8Array([slot]));
+      return this.waitFor(CMD.stubInfoRep, ms);
+    };
+    let stubReply: Uint8Array;
+
+    try {
+      // a stub answers at once; stock stays silent — 2.5 s is the price of asking a stock watch
+      stubReply = await info(STUB_SLOT, 2500);
+    } catch {
+      return null;
+    }
+    const stub = parseStubReply(stubReply);
+    const read = async (slot: number): Promise<Wp2Package | null> => {
+      const r = await info(slot, 4000);
+
+      return r[0] === STATUS_OK ? parsePackageHeader(r.subarray(1)) : null;
+    };
+    const loader = await read(LOADER_SLOT);
+    const apps: Record<number, Wp2Package> = {};
+
+    for (let slot = 0; slot < APP_SLOTS; slot++) {
+      const p = await read(slot);
+
+      if (p) apps[slot] = p;
+    }
+    dbg("wp2:", { stub, loader, apps });
+    return { stub, loader, apps };
   }
 
   // There was a probe()/sweep() pair here for guessing at undocumented commands. Removed after
