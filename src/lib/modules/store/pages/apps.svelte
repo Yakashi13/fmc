@@ -7,6 +7,7 @@
   import { StoreTabs } from "$lib/shared/components/store-tabs";
   import { fileUrl } from "$lib/shared/api";
   import { compact } from "$lib/shared/lib/format";
+  import { MAKE_AN_APP } from "../lib/links";
   import { storeModel } from "../model";
 
   const {
@@ -87,6 +88,19 @@
         {/each}
       {/if}
     </ul>
+
+    <!-- the shelf is the wp2-apps repository: a merged PR there is an app here -->
+    <a class="loader-note make" href={MAKE_AN_APP} target="_blank" rel="noopener noreferrer">
+      <span class="glyph"><Icon name="code" size={24} /></span>
+      <span class="text">
+        <span class="title">Make your own app</span>
+        <span class="desc">
+          Apps are Rust, in the open wp2-apps repository. Open a pull request — once it's merged,
+          your app shows up here.
+        </span>
+      </span>
+      <Icon name="open_in_new" size={22} class="go" />
+    </a>
   </div>
 </Page>
 
@@ -252,6 +266,20 @@
     }
     .list {
       grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  /* the way in for authors, after the shelf: neutral, so it doesn't compete with the setup note */
+  .loader-note.make {
+    background: oklch(from var(--color-text) l c h / 5%);
+
+    @media (hover: hover) {
+      &:hover {
+        background: oklch(from var(--color-text) l c h / 9%);
+      }
+    }
+    .glyph {
+      color: var(--color-text);
+      background: oklch(from var(--color-text) l c h / 10%);
     }
   }
 </style>
