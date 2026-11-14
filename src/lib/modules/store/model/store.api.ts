@@ -16,13 +16,27 @@ export const loadFirmwaresFx = createEffect(() =>
 );
 export const loadFirmwareFx = createEffect((id: string) => pb.collection("firmwares").getOne(id));
 
-// The image itself, for a flash from the page. Through the download hook like a download, so a
-// flash counts too.
-export const fetchFirmwareImageFx = createEffect(async (rec: RecordModel) => {
-  const res = await fetch(firmwareDownloadUrl(rec));
+// The image itself. Firmware is served to flashers only (fmc_pocketbase store.pb.js), so the
+// request carries the session — a plain link can't, which is why the page's download goes
+// through here too. Through the download hook either way, so a flash counts as a download.
+const fetchImage = async (rec: RecordModel) => {
+  const res = await fetch(firmwareDownloadUrl(rec), {
+    headers: { Authorization: pb.authStore.token },
+  });
 
   if (!res.ok) throw new Error(`couldn't fetch the image (${res.status})`);
   return new Uint8Array(await res.arrayBuffer());
+};
+export const fetchFirmwareImageFx = createEffect(fetchImage);
+// …and saved as a file, under the name it has on the server
+export const saveFirmwareImageFx = createEffect(async (rec: RecordModel) => {
+  const url = URL.createObjectURL(new Blob([(await fetchImage(rec)) as BlobPart]));
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = String(rec.image || "firmware.bin");
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 });
 
 // the hook behind these bumps `downloads` and redirects to the file

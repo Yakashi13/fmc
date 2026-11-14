@@ -20,7 +20,8 @@ PocketBase superuser, and the frontend lists and downloads them. Flashing a firm
 its page (`Watch.flashFirmware`, the stock CMF OTA protocol, port of cmf-watch-utils
 `ota_client.py`) is open only to accounts with `flasher` set on their user record — a superuser
 sets it, the user can't (`auth.model` `$canFlash`); everyone else sees "coming soon" and the CLI
-guide. Every image passes `device/lib/ota-image.ts` (AOTA CRCs, board `jx402_01_3089c`, AGPS
+guide. The image file itself is served to the same accounts only (fmc_pocketbase `store.pb.js`),
+so the page fetches it with the session instead of linking it. Every image passes `device/lib/ota-image.ts` (AOTA CRCs, board `jx402_01_3089c`, AGPS
 trailer) before a byte goes out, and only a Watch Pro 2 is offered the update. Installing an
 app over BLE is not implemented. For the same accounts the store reads what the watch runs
 (`Watch.readWp2`: INFO to the wp2-apps stub — a stock watch doesn't answer) and badges apps and

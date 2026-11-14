@@ -108,6 +108,16 @@ sample({
 // tick, and only an image that's on the record. The bytes are fetched here and handed to the
 // device model, which checks them again and owns the watch.
 export const flashRequested = createEvent();
+export const downloadRequested = createEvent();
+export const $imageSaving = storeApi.saveFirmwareImageFx.pending;
+
+sample({
+  clock: downloadRequested,
+  source: { rec: $firmware, may: authModel.$canFlash, accepted: $riskAccepted },
+  filter: ({ rec, may, accepted }) => Boolean(rec?.image) && may && accepted,
+  fn: ({ rec }) => rec!,
+  target: storeApi.saveFirmwareImageFx,
+});
 export const $imageFetching = storeApi.fetchFirmwareImageFx.pending;
 export const $imageErr = createStore("");
 
@@ -123,12 +133,12 @@ sample({
   target: bleModel.firmwareFlashRequested,
 });
 sample({
-  clock: storeApi.fetchFirmwareImageFx.failData,
+  clock: [storeApi.fetchFirmwareImageFx.failData, storeApi.saveFirmwareImageFx.failData],
   fn: (e) => e.message,
   target: $imageErr,
 });
 sample({
-  clock: [flashRequested, firmwareRequested],
+  clock: [flashRequested, downloadRequested, firmwareRequested],
   fn: () => "",
   target: $imageErr,
 });

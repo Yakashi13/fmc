@@ -30,8 +30,9 @@
     $riskAccepted: riskAccepted,
     firmwareRequested,
     riskAcceptedSet,
-    firmwareDownloadUrl,
     flashRequested,
+    downloadRequested,
+    $imageSaving: imageSaving,
     $imageFetching: imageFetching,
     $imageErr: imageErr,
     $firmwareOnWatch: onWatch,
@@ -111,7 +112,17 @@
 
       <StatStrip items={stats} />
 
-      {#if fw.image}
+      {#if fw.image && !$canFlash}
+        <!-- the image is served to flashers only (fmc_pocketbase store.pb.js) — say so instead
+             of a download that would answer 403 -->
+        <section class="how">
+          <h2>Not available yet</h2>
+          <p>
+            While flashing from FMC is new, this image is open to a few testers only. The source is
+            linked below, and the guide further down covers flashing an image yourself.
+          </p>
+        </section>
+      {:else if fw.image}
         <section class="risk">
           <h2><Icon name="warning" size={22} /> Before you download</h2>
           <p>
@@ -130,11 +141,11 @@
           <Button
             size="large"
             kind="danger"
-            href={firmwareDownloadUrl(fw)}
-            disabled={!$riskAccepted}
+            onClick={() => downloadRequested()}
+            disabled={!$riskAccepted || $imageSaving}
           >
             <Icon name="download" size={22} />
-            Download image
+            {$imageSaving ? "Downloading…" : "Download image"}
           </Button>
         </section>
       {/if}
