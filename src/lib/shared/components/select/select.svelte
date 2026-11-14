@@ -62,17 +62,27 @@
     align-items: center;
     gap: 0.5rem;
     width: 100%;
-    height: 2.25rem;
-    padding: 0 0.75rem;
+    height: var(--control-height);
+    padding: 0 0.625rem;
     font: inherit;
     font-size: 1rem;
     color: var(--color-text);
     text-align: start;
-    background: oklch(from var(--color-text) l c h / 5%);
-    border: 1px solid transparent;
-    border-radius: 10em;
+    background: oklch(from var(--color-text) l c h / 4%);
+    border: 1px solid oklch(from var(--color-text) l c h / 10%);
+    border-radius: var(--border-radius);
     cursor: pointer;
     outline: none;
+    transition: border-color 0.15s ease;
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        border-color: oklch(from var(--color-text) l c h / 22%);
+      }
+    }
+    &:focus-visible {
+      border-color: var(--color-accent);
+    }
 
     &:disabled {
       opacity: 0.5;

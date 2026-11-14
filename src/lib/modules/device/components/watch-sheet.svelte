@@ -93,18 +93,21 @@
   {:else}
     <div class="section">
       <p class="desc">{$bleStatus}</p>
-      <div class="info">
-        <p>
-          <Icon name="battery_full" size={16} color="var(--color-accent)" />
-          Battery: {$bleInfo.battery ?? "?"}%
-        </p>
-        <p>
-          <Icon name="memory" size={16} color={muted} /> Firmware: {$bleInfo.firmware ?? "?"}
-        </p>
-        <p>
-          <Icon name="tag" size={16} color={muted} /> Serial: {$bleInfo.serial ?? "?"}
-        </p>
-      </div>
+      <!-- what the watch says about itself, as a small spec sheet: label left, value right -->
+      <dl class="info">
+        <div>
+          <dt><Icon name="battery_full" size={16} color="var(--color-accent)" /> Battery</dt>
+          <dd>{$bleInfo.battery ?? "?"}%</dd>
+        </div>
+        <div>
+          <dt><Icon name="memory" size={16} color={muted} /> Firmware</dt>
+          <dd>{$bleInfo.firmware ?? "?"}</dd>
+        </div>
+        <div>
+          <dt><Icon name="tag" size={16} color={muted} /> Serial</dt>
+          <dd>{$bleInfo.serial ?? "?"}</dd>
+        </div>
+      </dl>
     </div>
 
     {#if $dials}
@@ -182,16 +185,38 @@
     }
   }
   .info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    font-size: 0.75rem;
+    margin: 0;
+    border: 1px solid oklch(from var(--color-text) l c h / 10%);
+    border-radius: var(--border-radius);
 
-    p {
+    div {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.5rem 0.75rem;
+
+      & + div {
+        border-top: 1px solid oklch(from var(--color-text) l c h / 10%);
+      }
+    }
+    dt {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: oklch(from var(--color-text) l c h / 55%);
+    }
+    dd {
       margin: 0;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
     }
   }
   .badges {

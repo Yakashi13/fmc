@@ -73,28 +73,30 @@
   }
   input::-webkit-slider-runnable-track,
   input::-moz-range-track {
-    height: 0.3rem;
+    height: 0.1875rem;
     border-radius: 999px;
     background: var(--rail);
   }
+  /* a fine instrument slider: a thin rail and a small knob in the page's ink, ringed in the
+     page's background so it reads against the filled part of the rail as well as the empty */
   input::-webkit-slider-thumb {
     appearance: none;
-    width: 1.5rem;
-    height: 1.5rem;
-    margin-top: calc((0.3rem - 1.5rem) / 2); /* centres the thumb on the track */
-    border: none;
+    width: 0.875rem;
+    height: 0.875rem;
+    margin-top: calc((0.1875rem - 0.875rem) / 2); /* centres the thumb on the track */
+    border: 2px solid var(--color-background);
     border-radius: 50%;
-    background: oklch(1 0 0);
-    box-shadow: 0 1px 4px oklch(from var(--color-background) l c h / 45%);
+    background: var(--color-text);
+    box-shadow: 0 0 0 1px var(--color-text);
     transition: transform var(--spring-transition, 0.15s ease);
   }
   input::-moz-range-thumb {
-    width: 1.125rem;
-    height: 1.125rem;
-    border: none;
+    width: 0.625rem;
+    height: 0.625rem;
+    border: 2px solid var(--color-background);
     border-radius: 50%;
-    background: var(--color-background);
-    box-shadow: 0 1px 4px oklch(from var(--color-text) l c h / 45%);
+    background: var(--color-text);
+    box-shadow: 0 0 0 1px var(--color-text);
     transition: transform var(--spring-transition, 0.15s ease);
   }
   input:active::-webkit-slider-thumb {
@@ -125,7 +127,8 @@
   .readout {
     flex-shrink: 0;
     width: 4.5ch;
-    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
     text-align: end;
     color: oklch(from var(--color-text) l c h / 55%);
     font-variant-numeric: tabular-nums;

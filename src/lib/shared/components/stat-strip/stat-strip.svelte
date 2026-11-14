@@ -42,7 +42,10 @@
       }
     }
     dt {
-      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
       color: oklch(from var(--color-text) l c h / 55%);
       overflow: hidden;
       white-space: nowrap;

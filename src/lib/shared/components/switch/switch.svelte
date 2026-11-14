@@ -26,11 +26,11 @@
   }
   /* an iOS-style pill: the thumb is wider than tall and squishes wider still while pressed */
   .switch {
-    --size: 1.4rem;
+    --size: 1rem;
     --track: 2;
     --knob: 1;
-    --squish: 1.1;
-    --padding: 0.2rem;
+    --squish: 1.15;
+    --padding: 0.1875rem;
 
     padding: var(--padding);
     width: calc(var(--size) * var(--track));

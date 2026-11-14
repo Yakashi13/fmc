@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { PanelSection } from "$lib/shared/components/panel-section";
   import { Input } from "$lib/shared/components/input";
   import { Switch } from "$lib/shared/components/switch";
   import { Icon } from "$lib/shared/components/icon";
@@ -64,107 +65,113 @@
 </script>
 
 <div class="panel">
-  <div class="switch-row">
-    <Switch checked={$sim.live} onChange={(v) => simPatched({ live: v })} />
-    <button type="button" class="check-label" onclick={() => simPatched({ live: !$sim.live })}
-      >live time</button
-    >
-  </div>
-  {#if !$sim.live}
-    <Input
-      type="datetime-local"
-      step={1}
-      value={localISO($sim.time)}
-      onInput={(v) => simPatched({ time: new Date(v).getTime() })}
-    />
-  {/if}
-  <div class="switch-row">
-    <Switch checked={$sim.is24h} onChange={(v) => simPatched({ is24h: v })} />
-    <button type="button" class="check-label" onclick={() => simPatched({ is24h: !$sim.is24h })}
-      >24-hour format</button
-    >
-  </div>
-  <div class="switch-row">
-    <Switch
-      checked={$sim.showSlotPlaceholders}
-      onChange={(v) => simPatched({ showSlotPlaceholders: v })}
-    />
-    <button
-      type="button"
-      class="check-label"
-      onclick={() => simPatched({ showSlotPlaceholders: !$sim.showSlotPlaceholders })}
-      >widget-slot placeholders</button
-    >
-  </div>
-  <div>
-    <span class="muted-label">Accent color</span>
-    <!-- the watch offers a fixed set, so this mirrors it rather than opening a color wheel;
-         recolors widgets flagged via meta[7]===4, see metaInfo in lib/sources.ts -->
-    <div class="accent-row">
+  <PanelSection title="Clock">
+    <div class="switch-row">
+      <Switch checked={$sim.live} onChange={(v) => simPatched({ live: v })} />
+      <button type="button" class="check-label" onclick={() => simPatched({ live: !$sim.live })}
+        >live time</button
+      >
+    </div>
+    {#if !$sim.live}
+      <Input
+        type="datetime-local"
+        step={1}
+        value={localISO($sim.time)}
+        onInput={(v) => simPatched({ time: new Date(v).getTime() })}
+      />
+    {/if}
+    <div class="switch-row">
+      <Switch checked={$sim.is24h} onChange={(v) => simPatched({ is24h: v })} />
+      <button type="button" class="check-label" onclick={() => simPatched({ is24h: !$sim.is24h })}
+        >24-hour format</button
+      >
+    </div>
+  </PanelSection>
+  <PanelSection title="Display">
+    <div class="switch-row">
+      <Switch
+        checked={$sim.showSlotPlaceholders}
+        onChange={(v) => simPatched({ showSlotPlaceholders: v })}
+      />
       <button
         type="button"
-        class="swatch none"
-        class:on={!$sim.accentColor}
-        title="No accent — draw the colors baked into the file"
-        aria-label="No accent"
-        onclick={() => simPatched({ accentColor: null })}
+        class="check-label"
+        onclick={() => simPatched({ showSlotPlaceholders: !$sim.showSlotPlaceholders })}
+        >widget-slot placeholders</button
       >
-        <Icon name="close" size={12} />
-      </button>
-      {#each ACCENT_PALETTE as c}
+    </div>
+    <div>
+      <span class="muted-label">Accent color</span>
+      <!-- the watch offers a fixed set, so this mirrors it rather than opening a color wheel;
+           recolors widgets flagged via meta[7]===4, see metaInfo in lib/sources.ts -->
+      <div class="accent-row">
         <button
           type="button"
-          class="swatch"
-          class:on={$sim.accentColor === c}
-          style="background: {c}"
-          title={c}
-          aria-label={c}
-          onclick={() => simPatched({ accentColor: c })}
-        ></button>
-      {/each}
+          class="swatch none"
+          class:on={!$sim.accentColor}
+          title="No accent — draw the colors baked into the file"
+          aria-label="No accent"
+          onclick={() => simPatched({ accentColor: null })}
+        >
+          <Icon name="close" size={12} />
+        </button>
+        {#each ACCENT_PALETTE as c}
+          <button
+            type="button"
+            class="swatch"
+            class:on={$sim.accentColor === c}
+            style="background: {c}"
+            title={c}
+            aria-label={c}
+            onclick={() => simPatched({ accentColor: c })}
+          ></button>
+        {/each}
+      </div>
     </div>
-  </div>
-  {#if shown.length}
-    <div class="fields-grid">
-      {#each shown as [key, label, goalLabel]}
-        <div>
-          <span class="muted-label">{label}</span>
-          <Input
-            type="number"
-            value={String($sim[key])}
-            onInput={(v) => simPatched({ [key]: v === "" ? "" : +v })}
-          />
-        </div>
-        {#if goalLabel}
-          {@const goal = METRIC_GOAL[key]!}
+  </PanelSection>
+  <PanelSection title="Values">
+    {#if shown.length}
+      <div class="fields-grid">
+        {#each shown as [key, label, goalLabel]}
           <div>
-            <span class="muted-label" title="what a percentage ring on this metric divides by"
-              >{goalLabel}</span
-            >
+            <span class="muted-label">{label}</span>
             <Input
               type="number"
-              value={String($sim[goal])}
-              onInput={(v) => simPatched({ [goal]: v === "" ? "" : +v })}
+              value={String($sim[key])}
+              onInput={(v) => simPatched({ [key]: v === "" ? "" : +v })}
             />
           </div>
-        {/if}
-      {/each}
-    </div>
-  {/if}
-  {#if shownTimes.length}
-    <div class="fields-grid">
-      {#each shownTimes as [key, label]}
-        <div>
-          <span class="muted-label">{label}</span>
-          <Input
-            type="time"
-            value={hhmm($sim[key])}
-            onInput={(v) => v && simPatched({ [key]: minutes(v) })}
-          />
-        </div>
-      {/each}
-    </div>
-  {/if}
+          {#if goalLabel}
+            {@const goal = METRIC_GOAL[key]!}
+            <div>
+              <span class="muted-label" title="what a percentage ring on this metric divides by"
+                >{goalLabel}</span
+              >
+              <Input
+                type="number"
+                value={String($sim[goal])}
+                onInput={(v) => simPatched({ [goal]: v === "" ? "" : +v })}
+              />
+            </div>
+          {/if}
+        {/each}
+      </div>
+    {/if}
+    {#if shownTimes.length}
+      <div class="fields-grid">
+        {#each shownTimes as [key, label]}
+          <div>
+            <span class="muted-label">{label}</span>
+            <Input
+              type="time"
+              value={hhmm($sim[key])}
+              onInput={(v) => v && simPatched({ [key]: minutes(v) })}
+            />
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </PanelSection>
 
   <!-- The escape hatch, folded away: every source the face reads, addressable one by one, for
        pinning a hand or driving two widgets on the same metric apart. A value here WINS over the
@@ -201,10 +208,12 @@
 
 <style>
   .panel {
+    /* a dense surface: every field in here is shorter than the app's default */
+    --control-height: 1.875rem;
+
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
   }
   .switch-row {
     display: flex;
@@ -223,8 +232,11 @@
   }
   .muted-label {
     display: block;
-    margin-bottom: 0.25rem;
-    font-size: 0.625rem;
+    margin-bottom: 0.375rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   /* one row, scrolled — wrapping left a lone swatch stranded on a second line */
@@ -268,11 +280,15 @@
     gap: 0.5rem 0.75rem;
   }
   .raw {
+    padding-block: 0.875rem;
+    border-top: 1px solid oklch(from var(--color-text) l c h / 10%);
+
     summary {
       cursor: pointer;
-      font-size: 0.625rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: oklch(from var(--color-text) l c h / 55%);
     }

@@ -65,12 +65,26 @@
     align-items: center;
     gap: 0.375rem;
     width: 100%;
-    height: 2.25rem;
-    padding: 0 0.75rem;
-    background: oklch(from var(--color-text) l c h / 5%);
-    border-radius: 10em;
-    transition: border-color 0.15s ease;
+    height: var(--control-height);
+    padding: 0 0.625rem;
+    background: oklch(from var(--color-text) l c h / 4%);
+    /* an instrument's field, not a pill: a hairline box that lights up when it has the caret */
+    border: 1px solid oklch(from var(--color-text) l c h / 10%);
+    border-radius: var(--border-radius);
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease;
     cursor: text;
+
+    @media (hover: hover) {
+      &:hover {
+        border-color: oklch(from var(--color-text) l c h / 22%);
+      }
+    }
+    &:focus-within {
+      border-color: var(--color-accent);
+      background: oklch(from var(--color-text) l c h / 2%);
+    }
 
     &:has(input:disabled) {
       opacity: 0.5;
@@ -78,7 +92,9 @@
   }
   .tag {
     flex-shrink: 0;
-    font-size: 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
     color: oklch(from var(--color-text) l c h / 45%);
     user-select: none;
   }

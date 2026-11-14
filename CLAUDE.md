@@ -175,6 +175,19 @@ and `frames` sections; `PropsPanel.svelte` is the container and owns the shared 
   (`watchface-list`), a detail page is one column with a single accent button (the action that
   puts the thing on the watch) and its numbers in a `stat-strip/`, not a list of rows. New
   routed pages use `page/` rather than re-deriving the under-the-tab-bar scroll.
+- Controls are an instrument's, not a form's (the look is borrowed from the cmf-watch-utils
+  web emulator): `input/` and `select/` are hairline boxes at `--border-radius`, never pills;
+  `slider/` is a thin rail with a small ringed knob; `switch/` is small. Their height is
+  `--control-height` — a dense surface (the editor's inspector and simulator) lowers it on its
+  own container instead of restyling the controls. Buttons stay pills.
+- A side panel is a stack of `panel-section/`s: a mono small-caps title over its controls, a
+  hairline between sections; a section with nothing to render hides itself. Small labels over
+  a field or under a number are mono, uppercase, `0.6875rem`.
+- A dial the user is looking at as a watch (the editor canvas, the showcase page) sits in
+  `watch-case/` — the Watch Pro 2 front render from `static/frames/` (Nothing's artwork, the
+  one the cmf-watch-utils emulator uses) with the children laid over its display. The
+  component's box is the metal case; strap and crown hang outside it. Thumbnails in a grid
+  stay bare discs.
 - Theme is automatic via `prefers-color-scheme` (dark overrides in tokens.css). Don't add
   a `.dark` class on `<html>`.
 - The catalog dialog in the editor was removed intentionally — don't restore it. Catalog

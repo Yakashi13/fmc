@@ -12,6 +12,7 @@
   import { LiveDial } from "../components/live-dial";
   import { BackBtn } from "$lib/shared/components/back-btn";
   import { Page } from "$lib/shared/components/page";
+  import { WatchCase } from "$lib/shared/components/watch-case";
   import { StatStrip } from "$lib/shared/components/stat-strip";
   import { compact, day } from "$lib/shared/lib/format";
   import { deviceLabel } from "../lib/devices";
@@ -111,13 +112,13 @@
     {#if wf}
       <article class="face">
         <div class="dial">
-          <div class="preview">
+          <WatchCase>
             {#if $live}
               <LiveDial face={$live} screen={$dialScreen} />
             {:else}
-              <img src={fileUrl(wf, "preview")} alt={wf.name} />
+              <img class="still" src={fileUrl(wf, "preview")} alt={wf.name} />
             {/if}
-          </div>
+          </WatchCase>
           {#if $hasAod}
             <button
               class="round toggle-aod"
@@ -209,7 +210,7 @@
       </article>
     {:else if $loading}
       <div class="face">
-        <div class="dial"><div class="preview"><Skeleton height="100%" /></div></div>
+        <div class="dial"><div class="skeleton-dial"><Skeleton height="100%" /></div></div>
         <div class="info">
           <Skeleton height="2.25rem" width="60%" />
           <Skeleton height="1.25rem" width="40%" />
@@ -288,29 +289,35 @@
     flex-direction: column;
     gap: 1.5rem;
   }
+  /* the box is the watch's case; the strap of the render hangs above and below it, which is
+     what the block margin makes room for */
   .dial {
     position: relative;
     align-self: center;
-    width: min(100%, 20rem);
+    width: min(78%, 19rem);
+
+    /* a percentage margin measures the containing block's width — here, the dial's own */
+    > :global(.case) {
+      margin-block: 24%;
+    }
   }
-  .preview {
+  .still {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .skeleton-dial {
     aspect-ratio: 1 / 1;
     overflow: hidden;
     border-radius: 50%;
-    background: oklch(0 0 0);
-
-    img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
   }
-  /* tucked into the square's free corner, off the dial itself */
+  /* tucked into the square's free corner, off the dial itself — the bottom one, because the
+     case's crown sits at the top right */
   .toggle-aod {
     position: absolute;
     right: 0;
-    top: 0;
+    bottom: 0;
     padding: 0;
     background-color: var(--color-text);
     color: var(--color-background);

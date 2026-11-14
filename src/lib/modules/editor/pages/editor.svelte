@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { WatchCase } from "$lib/shared/components/watch-case";
   import { Button } from "$lib/shared/components/button";
   import { Tabs } from "$lib/shared/components/tabs";
   import { Dialog } from "$lib/shared/components/dialog";
@@ -651,41 +652,45 @@
 
     <section class="canvas-section">
       <div class="canvas-scroll">
-        <div class="canvas-frame">
-          <canvas
-            bind:this={canvas}
-            width={SCREEN}
-            height={SCREEN}
-            class="canvas"
-            onpointerdown={onDown}
-            onpointermove={onMove}
-            onpointerup={onUp}
-          ></canvas>
-          <!-- the market opens the editor before the .bin has even arrived (see editRequested) —
+        <div class="canvas-clip">
+          <div class="canvas-frame">
+            <WatchCase>
+              <canvas
+                bind:this={canvas}
+                width={SCREEN}
+                height={SCREEN}
+                class="canvas"
+                onpointerdown={onDown}
+                onpointermove={onMove}
+                onpointerup={onUp}
+              ></canvas>
+              <!-- the market opens the editor before the .bin has even arrived (see editRequested) —
                this is what the user watches while it does -->
-          {#if $loading}
-            <div class="canvas-loading"><Loader /></div>
-          {:else if !$doc}
-            <!-- nothing open yet: the dial itself says what to do, instead of leaving a black
+              {#if $loading}
+                <div class="canvas-loading"><Loader /></div>
+              {:else if !$doc}
+                <!-- nothing open yet: the dial itself says what to do, instead of leaving a black
                  disc and two unlabelled toolbar icons to be figured out -->
-            <div class="canvas-empty">
-              <h2>Make a watchface</h2>
-              <div class="canvas-empty-actions">
-                <Button
-                  onClick={() => {
-                    faceDetached();
-                    newFaceRequested();
-                  }}
-                >
-                  <Icon name="note_add" size={22} /> Start blank
-                </Button>
-                <Button kind="secondary" onClick={() => fileInput?.click()}>
-                  <Icon name="folder_open" size={22} /> Open a file
-                </Button>
-              </div>
-              <p>.bin or .aab. Facer and WatchMaker exports are under Import.</p>
-            </div>
-          {/if}
+                <div class="canvas-empty">
+                  <h2>Make a watchface</h2>
+                  <div class="canvas-empty-actions">
+                    <Button
+                      onClick={() => {
+                        faceDetached();
+                        newFaceRequested();
+                      }}
+                    >
+                      <Icon name="note_add" size={22} /> Start blank
+                    </Button>
+                    <Button kind="secondary" onClick={() => fileInput?.click()}>
+                      <Icon name="folder_open" size={22} /> Open a file
+                    </Button>
+                  </div>
+                  <p>.bin or .aab. Facer and WatchMaker exports are under Import.</p>
+                </div>
+              {/if}
+            </WatchCase>
+          </div>
         </div>
       </div>
       {#if perf && $doc}
@@ -948,7 +953,7 @@
      off the dial. The tinted background and the hint stay put (the section doesn't scroll), so
      the hint still wraps to what's visible, not to the scrolled-out canvas width. */
   .canvas-section {
-    --canvas-min: 16rem;
+    --canvas-min: 21rem;
 
     position: relative;
     min-width: 0;
@@ -963,24 +968,26 @@
     inset: 0;
     display: flex;
     overflow: auto;
-    /* padding on the SCROLLER, not the section: it keeps the dial's ring and glow off the edge
-       without the scrollbar leaving the section's own border edge */
+  }
+  /* the sizing box for the watch's case (see watch-case): the display is about three quarters
+     of it, so the box is wider than the dial used to be. The strap and crown hang outside the
+     box and are cut by .canvas-clip, so they never become something to scroll to. */
+  .canvas-clip {
+    display: flex;
+    flex: 1;
+    min-width: max-content;
+    min-height: max-content;
+    overflow: hidden;
+    /* the padding that keeps the watch off the edges lives here now, inside the clip */
     padding: 1.5rem;
   }
   .canvas-frame {
-    position: relative; /* the loading overlay sits on the dial */
     aspect-ratio: 1;
-    width: min(70vh, 90%, 35rem);
+    width: min(88vh, 100%, 44rem);
     min-width: var(--canvas-min);
     min-height: var(--canvas-min);
     max-height: 100%;
     flex-shrink: 0;
-    overflow: hidden;
-    border-radius: 50%;
-    background: oklch(0 0 0);
-    box-shadow:
-      0 0 0 0.5rem oklch(0.28 0 0),
-      0 0 3.125rem oklch(0 0 0 / 60%);
     margin: auto;
   }
   .canvas {
