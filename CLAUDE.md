@@ -11,7 +11,7 @@ same domain as the backend (see `fmc_pocketbase/README.md`).
 App: the store at the root, three shelves under one "Store" tab — watchfaces (`/`, with
 `?mine` for the signed-in user's own shelf and `?community` for the links panel; `/my`
 redirects there; `/market/[id]` — a face's showcase page), apps (`/apps`, `/apps/[id]` —
-`.wp2app` packages from cmf-tech-community/wp2-apps) and firmware (`/firmware`,
+`.wp2app` packages published from cmf-tech-community/apps, built with the wp2-apps SDK) and firmware (`/firmware`,
 `/firmware/[id]` — OTA images); creator profiles (`/user/[id]`), watchface editor (`/editor`,
 with a BLE connection to the CMF Watch Pro 2) and auth (`/login`, `/register`).
 

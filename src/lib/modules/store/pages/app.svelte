@@ -12,7 +12,7 @@
   import { compact, day } from "$lib/shared/lib/format";
   import { deviceLabel } from "$lib/modules/market/lib/devices";
   import { bleModel } from "$lib/modules/device/model";
-  import { APP_GUIDE } from "../lib/links";
+  import { MAKE_AN_APP } from "../lib/links";
   import { storeModel } from "../model";
 
   interface Props {
@@ -190,7 +190,7 @@
                 <Icon name="code" size={20} /> Source
               </Button>
             {/if}
-            <Button kind="secondary" href={APP_GUIDE} external>
+            <Button kind="secondary" href={MAKE_AN_APP} external>
               <Icon name="menu_book" size={20} /> Write your own app
             </Button>
           </div>

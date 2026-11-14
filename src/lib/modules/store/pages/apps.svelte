@@ -89,14 +89,14 @@
       {/if}
     </ul>
 
-    <!-- the shelf is the wp2-apps repository: a merged PR there is an app here -->
+    <!-- the shelf is the cmf-tech-community/apps repository: a merged PR there is an app here -->
     <a class="loader-note make" href={MAKE_AN_APP} target="_blank" rel="noopener noreferrer">
       <span class="glyph"><Icon name="code" size={24} /></span>
       <span class="text">
         <span class="title">Make your own app</span>
         <span class="desc">
-          Apps are Rust, in the open wp2-apps repository. Open a pull request — once it's merged,
-          your app shows up here.
+          Apps are Rust, in the open community apps repository. Open a pull request — once it's
+          merged, your app shows up here.
         </span>
       </span>
       <Icon name="open_in_new" size={22} class="go" />
