@@ -16,22 +16,21 @@ redirects there; `/market/[id]` — a face's showcase page), apps (`/apps`, `/ap
 with a BLE connection to the CMF Watch Pro 2) and auth (`/login`, `/register`).
 
 Apps and firmware are curated: the `apps` and `firmwares` collections are writable only by a
-PocketBase superuser, and the frontend lists and downloads them. Flashing a firmware image from
-its page (`Watch.flashFirmware`, the stock CMF OTA protocol, port of cmf-watch-utils
-`ota_client.py`) is open only to accounts with `flasher` set on their user record — a superuser
-sets it, the user can't (`auth.model` `$canFlash`); everyone else sees "coming soon" and the CLI
-guide. The image file itself is served to the same accounts only (fmc_pocketbase `store.pb.js`),
-so the page fetches it with the session instead of linking it. A loader record (`kind: loader`, the App Loader's
-`loader.wp2app`) sits on the same shelf but never goes down the OTA path — its Install sends it
-to slot L like an app. The firmware page is one action block — a red at-your-own-risk plate, the tick,
-Download and Install, one progress bar — with everything else folded under Details. Every image passes `device/lib/ota-image.ts` (AOTA CRCs, board `jx402_01_3089c`, AGPS
-trailer) before a byte goes out, and only a Watch Pro 2 is offered the update. Installing an
-app or the loader (`Watch.installPackage`: BEGIN/DATA/END to the wp2-apps stub, checked first by
-`planInstall` in `wp2.ts` the way the stub checks it) is open to the same accounts. For them the store reads what the watch runs
-(`Watch.readWp2`: INFO to the wp2-apps stub — a stock watch doesn't answer) and badges apps and
-firmware "Installed" / "Update": an app by its image CRC against the catalog package's header,
-firmware by the record's `stub` number against the stub's reported release. Don't add an upload form for either, and don't widen
-`$canFlash`, without an explicit ask: a firmware image can brick a watch.
+PocketBase superuser; the frontend lists them, downloads them, and puts them on a watch. Flashing
+a firmware image from its page (`Watch.flashFirmware`, the stock CMF OTA protocol, port of
+cmf-watch-utils `ota_client.py`) waits for the at-your-own-risk tick, and every image passes
+`device/lib/ota-image.ts` (AOTA CRCs, board `jx402_01_3089c`, AGPS trailer) before a byte goes
+out; only a Watch Pro 2 at 50% or more is offered the update. Installing an app or the App Loader
+(`Watch.installPackage`: BEGIN/DATA/END to the wp2-apps stub, checked first by `planInstall` in
+`wp2.ts` the way the stub checks it) writes only the App Loader's files, never the firmware. The
+store reads what the watch runs (`Watch.readWp2`: INFO to the stub — a stock watch doesn't
+answer) and badges apps and firmware "Installed" / "Update": an app or the App Loader by its
+build CRC against the catalog package's header, firmware by the record's `stub` number against
+the stub's reported release. The App Loader record (`kind: loader`) sits on the firmware shelf
+but never goes down the OTA path. A detail page is one action block — a red at-your-own-risk
+plate for firmware, Download and Install, one progress bar — with everything else folded under
+Details. Don't add an upload form for either without an explicit ask: a firmware image can brick
+a watch.
 
 ## Architecture
 

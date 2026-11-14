@@ -11,7 +11,6 @@
   import { fileUrl, pb } from "$lib/shared/api";
   import { compact, day } from "$lib/shared/lib/format";
   import { deviceLabel } from "$lib/modules/market/lib/devices";
-  import { authModel } from "$lib/modules/auth/model";
   import { bleModel } from "$lib/modules/device/model";
   import { APP_GUIDE } from "../lib/links";
   import { storeModel } from "../model";
@@ -32,7 +31,6 @@
     $imageErr: fetchErr,
   } = storeModel;
   const state = $derived($app ? $onWatch[$app.id] : undefined);
-  const { $canFlash: canFlash } = authModel;
   const {
     $bleInfo: watch,
     $connecting: connecting,
@@ -96,8 +94,7 @@
         </div>
       </header>
 
-      <!-- Download and Install side by side; Install goes over the App Loader's own channel and
-           is open to flashers only (auth.model $canFlash), like flashing -->
+      <!-- Download and Install side by side; Install goes over the App Loader's own channel -->
       <section class="act">
         <div class="buttons">
           <Button
@@ -109,7 +106,7 @@
             <Icon name="download" size={22} />
             Download
           </Button>
-          {#if $canFlash && !$watch}
+          {#if !$watch}
             <Button size="large" onClick={() => connectRequested()} disabled={$connecting}>
               <Icon name="bluetooth" size={22} />
               {$connecting ? "Connecting…" : "Connect"}
@@ -118,7 +115,7 @@
             <Button
               size="large"
               onClick={() => appInstallRequested()}
-              disabled={!$canFlash || !$app.package || busy || state === "installed"}
+              disabled={!$app.package || busy || state === "installed"}
             >
               <Icon name={state === "update" ? "upgrade" : "install_desktop"} size={22} />
               {state === "update" ? "Update" : state === "installed" ? "Installed" : "Install"}
@@ -138,9 +135,7 @@
           <p class="ok"><Icon name="check_circle" size={20} /> Installed — open it from Apps.</p>
         {/if}
         {#if error}<p class="err">{error}</p>{/if}
-        {#if !$canFlash}
-          <p class="muted">Installing from FMC is open to testers only for now.</p>
-        {:else if $wp2 === "stock"}
+        {#if $wp2 === "stock"}
           <p class="muted">
             The watch runs stock firmware — <a href="/firmware">flash the patched firmware</a> first.
           </p>

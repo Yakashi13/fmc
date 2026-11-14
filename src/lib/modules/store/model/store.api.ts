@@ -16,18 +16,15 @@ export const loadFirmwaresFx = createEffect(() =>
 );
 export const loadFirmwareFx = createEffect((id: string) => pb.collection("firmwares").getOne(id));
 
-// The image itself. Firmware is served to flashers only (fmc_pocketbase store.pb.js), so the
-// request carries the session — a plain link can't, which is why the page's download goes
-// through here too. Through the download hook either way, so a flash counts as a download.
+// The image itself, through the download hook so a flash counts as a download. The page's
+// Download button goes through here too, to show progress on a 57 MB file.
 // A full image is ~57 MB, so the body is read as a stream and `onProgress` gets 0–100 as it comes.
 export interface ImageFetch {
   rec: RecordModel;
   onProgress: (pct: number) => void;
 }
 const fetchImage = async ({ rec, onProgress }: ImageFetch) => {
-  const res = await fetch(firmwareDownloadUrl(rec), {
-    headers: { Authorization: pb.authStore.token },
-  });
+  const res = await fetch(firmwareDownloadUrl(rec));
 
   if (!res.ok || !res.body) throw new Error(`couldn't fetch the image (${res.status})`);
   const total = Number(res.headers.get("content-length")) || 0;
@@ -50,16 +47,14 @@ const fetchImage = async ({ rec, onProgress }: ImageFetch) => {
   return all;
 };
 export const fetchFirmwareImageFx = createEffect(fetchImage);
-// The header of a loader record's package, to compare with the loader the watch reports. The file
-// is protected like every firmware file, so this asks for a file token (flashers only get one
-// that works) and only the first 64 bytes.
+// The header of a loader record's package, to compare with the loader the watch reports — only
+// the first 64 bytes, straight from the file (looking isn't downloading).
 export const fetchLoaderHeadersFx = createEffect(async (recs: RecordModel[]) => {
-  const token = await pb.files.getToken();
   const out: Record<string, Wp2Package> = {};
 
   await Promise.all(
     recs.map(async (rec) => {
-      const res = await fetch(`${fileUrl(rec, "image")}?token=${token}`, {
+      const res = await fetch(fileUrl(rec, "image"), {
         headers: { Range: "bytes=0-63" },
       });
 

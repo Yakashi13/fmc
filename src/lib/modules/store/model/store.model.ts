@@ -6,7 +6,6 @@
 import { combine, createEvent, createStore, sample, type Effect } from "effector";
 import { samePackage, type Wp2Package, type Wp2State } from "$lib/modules/device/lib/wp2";
 import type { RecordModel } from "pocketbase";
-import { authModel } from "$lib/modules/auth/model";
 import { bleModel } from "$lib/modules/device/model";
 import { isLoader } from "../lib/firmware";
 import * as storeApi from "./store.api";
@@ -105,8 +104,7 @@ sample({
   target: $riskAccepted,
 });
 
-// Flashing from the page: only for an account a superuser marked as a flasher, only after the
-// tick, and only an image that's on the record. The bytes are fetched here and handed to the
+// Flashing from the page: only after the tick, and only an image that's on the record. The bytes are fetched here and handed to the
 // device model, which checks them again and owns the watch.
 export const flashRequested = createEvent();
 // 0–100 while the image comes down, null otherwise — the flash's own progress is the device model's
@@ -122,8 +120,8 @@ export const $imageSaving = storeApi.saveFirmwareImageFx.pending;
 
 sample({
   clock: downloadRequested,
-  source: { rec: $firmware, may: authModel.$canFlash, accepted: $riskAccepted },
-  filter: ({ rec, may, accepted }) => Boolean(rec?.image) && may && accepted,
+  source: { rec: $firmware, accepted: $riskAccepted },
+  filter: ({ rec, accepted }) => Boolean(rec?.image) && accepted,
   fn: ({ rec }) => ({ rec: rec!, onProgress: imageProgressed }),
   target: storeApi.saveFirmwareImageFx,
 });
@@ -132,10 +130,9 @@ export const $imageErr = createStore("");
 
 sample({
   clock: flashRequested,
-  source: { rec: $firmware, may: authModel.$canFlash, accepted: $riskAccepted },
+  source: { rec: $firmware, accepted: $riskAccepted },
   // a loader package isn't an OTA image (the image gate would refuse it anyway)
-  filter: ({ rec, may, accepted }) =>
-    Boolean(rec?.image) && !isLoader(rec?.kind) && may && accepted,
+  filter: ({ rec, accepted }) => Boolean(rec?.image) && !isLoader(rec?.kind) && accepted,
   fn: ({ rec }) => ({ rec: rec!, onProgress: imageProgressed }),
   target: storeApi.fetchFirmwareImageFx,
 });
@@ -171,13 +168,12 @@ sample({
 });
 
 // ---- what's on the watch: installed / update available ----
-// Read for flashers only (the same gate as flashing): every store page asks once a watch is
-// connected, and a connection made while on one asks too. A stock watch costs one unanswered
+// Every store page asks once a watch is connected, and a connection made while on one asks too. A stock watch costs one unanswered
 // request (see Watch.readWp2).
 sample({
   clock: [bleModel.connected, appsRequested, appRequested, firmwaresRequested, firmwareRequested],
-  source: { may: authModel.$canFlash, info: bleModel.$bleInfo, wp2: bleModel.$wp2 },
-  filter: ({ may, info, wp2 }) => may && Boolean(info) && !wp2,
+  source: { info: bleModel.$bleInfo, wp2: bleModel.$wp2 },
+  filter: ({ info, wp2 }) => Boolean(info) && !wp2,
   target: bleModel.wp2Requested,
 });
 
@@ -265,8 +261,8 @@ export const $firmwaresOnWatch = combine(
 );
 
 // ---- installing a package: an app from its page, the loader from the firmware shelf ----
-// Same gate as flashing (flashers only). The loader also wants the tick, like every firmware
-// record; an app doesn't — it can't touch the firmware.
+// The loader wants the tick, like every firmware record; an app doesn't — it can't touch the
+// firmware.
 export const appInstallRequested = createEvent();
 export const loaderInstallRequested = createEvent();
 export const $packageFetching = combine(
@@ -277,15 +273,14 @@ export const $packageFetching = combine(
 
 sample({
   clock: appInstallRequested,
-  source: { rec: apps.$one, may: authModel.$canFlash },
-  filter: ({ rec, may }) => Boolean(rec?.package) && may,
-  fn: ({ rec }) => rec!,
+  source: apps.$one,
+  filter: (rec): rec is RecordModel => Boolean(rec?.package),
   target: storeApi.fetchAppPackageFx,
 });
 sample({
   clock: loaderInstallRequested,
-  source: { rec: $firmware, may: authModel.$canFlash, accepted: $riskAccepted },
-  filter: ({ rec, may, accepted }) => Boolean(rec?.image) && isLoader(rec?.kind) && may && accepted,
+  source: { rec: $firmware, accepted: $riskAccepted },
+  filter: ({ rec, accepted }) => Boolean(rec?.image) && isLoader(rec?.kind) && accepted,
   fn: ({ rec }) => ({ rec: rec!, onProgress: imageProgressed }),
   target: storeApi.fetchLoaderPackageFx,
 });

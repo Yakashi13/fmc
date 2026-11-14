@@ -13,7 +13,6 @@
   import { fileUrl } from "$lib/shared/api";
   import { compact, day } from "$lib/shared/lib/format";
   import { deviceLabel } from "$lib/modules/market/lib/devices";
-  import { authModel } from "$lib/modules/auth/model";
   import { bleModel } from "$lib/modules/device/model";
   import { firmwareKind, isLoader, testedLabel, testedOnHardware } from "../lib/firmware";
   import { FLASH_LIMITS, WATCH_UTILS_DOCS } from "../lib/links";
@@ -40,7 +39,6 @@
     $imageErr: imageErr,
     $firmwareOnWatch: onWatch,
   } = storeModel;
-  const { $canFlash: canFlash } = authModel;
   const {
     $bleInfo: watch,
     $bleStatus: bleStatus,
@@ -127,7 +125,7 @@
           </span>
         </div>
 
-        {#if $canFlash && fw.image}
+        {#if fw.image}
           <label class="accept">
             <Checkbox checked={$riskAccepted} onChange={(v) => riskAcceptedSet(v)} />
             <span>I accept the risk</span>
@@ -139,12 +137,12 @@
             kind="secondary"
             size="large"
             onClick={() => downloadRequested()}
-            disabled={!$canFlash || !fw.image || !$riskAccepted || busy}
+            disabled={!fw.image || !$riskAccepted || busy}
           >
             <Icon name="download" size={22} />
             Download
           </Button>
-          {#if $canFlash && !$watch}
+          {#if !$watch}
             <Button size="large" onClick={() => connectRequested()} disabled={$connecting}>
               <Icon name="bluetooth" size={22} />
               {$connecting ? "Connecting…" : "Connect"}
@@ -153,7 +151,7 @@
             <Button
               size="large"
               onClick={() => (loader ? loaderInstallRequested() : flashRequested())}
-              disabled={!$canFlash || !fw.image || !$riskAccepted || busy || done}
+              disabled={!fw.image || !$riskAccepted || busy || done}
             >
               <Icon name="bolt" size={22} />
               Install
@@ -185,9 +183,6 @@
 
         <!-- one quiet line: who may, what the watch runs, how it compares -->
         <p class="muted state">
-          {#if !$canFlash}
-            Open to testers only for now.
-          {/if}
           {#if $watch}
             {#if $wp2Reading}
               Checking the watch…
