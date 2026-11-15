@@ -114,7 +114,7 @@ export const FULL_BLEED_R = 230;
 const radians = (deg: number) => ((deg - 90) * Math.PI) / 180;
 const sweepOf = (spec: ArcSpec) => ((spec.end - spec.start) * Math.PI) / 180;
 
-/** 0x5b (and image-backed 0x5a): draw the ring bitmap clipped to the filled sector. */
+/** 0x5b (and image-backed 0x5a): draw the ring bitmap clipped to the filled part of its band. */
 export function drawSector(
   ctx: Ctx,
   b: Drawable,
@@ -141,14 +141,22 @@ export function drawSector(
   const a0 = radians(spec.start);
   const sweep = sweepOf(spec);
 
+  // The watch shows only a band `spec.width` px in from the circle's edge, not a pie down to the
+  // centre — art inside it never appears. Measured against the corpus's baked previews: this
+  // brings Time_Wheel's ring (band 7 on a 283px ring image) from 5.6% to 3.6% off, and leaves the
+  // other 15 stock faces with an image ring where they were. A band as wide as the radius is the
+  // old pie.
+  const r = Math.min(W, H) / 2;
+  const inner = Math.max(0, r - spec.width);
+  const a1 = a0 + sweep * frac;
+
   ctx.save();
-  if (frac < 0.999 || Math.abs(sweep) < 2 * Math.PI - 0.01) {
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, Math.hypot(b.width, b.height), a0, a0 + sweep * frac, sweep < 0);
-    ctx.closePath();
-    ctx.clip();
-  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, a0, a1, sweep < 0);
+  if (inner) ctx.arc(cx, cy, inner, a1, a0, sweep >= 0);
+  else ctx.lineTo(cx, cy);
+  ctx.closePath();
+  ctx.clip();
   ctx.drawImage(b, bx, by);
   ctx.restore();
 }

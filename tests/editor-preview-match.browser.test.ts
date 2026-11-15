@@ -22,6 +22,7 @@ import defaultUrl from "./__fixtures__/Default__273__Activity_Mood.bin?url";
 import diwaliUrl from "./__fixtures__/Diwali__295__Vortex.bin?url";
 import elaborate2Url from "./__fixtures__/Multifunction__304__Elaborate_2.bin?url";
 import dichotomyUrl from "./__fixtures__/Default__276__Dichotomy.bin?url";
+import timeWheelUrl from "./__fixtures__/Analog__372__Time_Wheel.bin?url";
 
 // Frozen per-file demo time — the real clock would make hands/digits differ every run.
 // Thresholds are per-file, not one shared bound: the baked preview is a real device
@@ -163,6 +164,16 @@ const CASES = [
     url: dichotomyUrl,
     time: "2026-01-09T10:09:30",
     maxDiffRatio: 0.025,
+  },
+  // A 0x5b battery ring whose 283px art carries more than its band: the watch shows only the
+  // 7px band in from the circle's edge (spec.width), and drawing the whole sector down to the
+  // centre put the art's inner rings on screen too — 5.6% off. Remaining diff is the hands'
+  // baked second and the ring's live battery value.
+  {
+    name: "Analog__372__Time_Wheel",
+    url: timeWheelUrl,
+    time: "2026-01-09T10:09:30",
+    maxDiffRatio: 0.045,
   },
 ];
 
