@@ -31,7 +31,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BUILD = join(ROOT, "build");
 
 // prod serves the SPA and PocketBase from one origin, so one variable normally covers both
-const SITE = (process.env.SITE_URL || "https://fmc.freethinkel.dev").replace(/\/$/, "");
+const SITE = (process.env.SITE_URL || "https://fmc.tools").replace(/\/$/, "");
 const PB = (process.env.PB_URL || SITE).replace(/\/$/, "");
 
 const DEFAULT_IMAGE = `${SITE}/og-default.png`;

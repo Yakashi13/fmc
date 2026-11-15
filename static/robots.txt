@@ -5,4 +5,4 @@ Disallow: /register
 # a signed-in user's own drafts — nothing there for a crawler, and half of it is unpublished
 Disallow: /my
 
-Sitemap: https://fmc.freethinkel.dev/sitemap.xml
+Sitemap: https://fmc.tools/sitemap.xml
