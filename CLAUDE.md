@@ -32,7 +32,10 @@ build CRC against the catalog package's header, firmware by the record's `stub` 
 the stub's reported release. The App Loader record (`kind: loader`) sits on the firmware shelf
 but never goes down the OTA path. A detail page is one action block — a red at-your-own-risk
 plate for firmware, Download and Install, one progress bar — with everything else folded under
-Details. Don't add an upload form for either without an explicit ask: a firmware image can brick
+Details. The Developer panel (`dev-sheet`, a button in the connected watch panel) is the developer's way around the catalog: a local `.wp2app`
+or OTA image picked from disk (`devModel`, a File System Access handle so "Install again" re-reads
+a rebuild) goes through the same `planInstall` / `checkOtaTarget` gates — nothing is uploaded.
+Don't add an upload form for either without an explicit ask: a firmware image can brick
 a watch.
 
 ## Architecture
@@ -221,6 +224,12 @@ and `frames` sections; `PropsPanel.svelte` is the container and owns the shared 
   (`77d4ff01`/`77d4ff02`) didn't change though. Not verified on other physical watches:
   if pairing stops finding the shell service, look up the current UUID the same way
   (`chrome://bluetooth-internals`) and add it to `SERVICES`.
+- iOS goes through Bluefy (a WKWebView browser with its own Web Bluetooth). Its quirks: it
+  rejects the first `requestDevice` (manufacturerData filter, numeric UUIDs), so `pick()` retries
+  with name + one filter per service as full strings; it reports UUIDs uppercase and short
+  ("FFF2"), so every characteristic lookup goes through `fullUuid`; and it rejects with non-Errors
+  (`errText`). A watch some app on the phone already holds doesn't show up at all. beacio was
+  tried and dropped — don't bring it back.
 - No dev bridge or external process is needed — pairing (`AT GETSECRET` →
   `authPairReq`/`authPairRep` → session key) happens entirely over Web Bluetooth.
 

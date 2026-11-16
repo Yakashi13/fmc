@@ -6,7 +6,7 @@ import { checkOtaTarget } from "../lib/ota-image";
 import type { Wp2State } from "../lib/wp2";
 import { rememberDial, unclaimDial } from "../lib/catalog-names";
 import { assertFlashable, flashWarning } from "$lib/modules/editor/core/format";
-import { dbg } from "../lib/ble-protocol";
+import { dbg, dbgListeners, errText } from "../lib/ble-protocol";
 import * as bleApi from "./ble.api";
 
 // what a flash needs: the file, a thumbnail of the face so the watch's id list can show it
@@ -65,7 +65,10 @@ export const dialRemoved = createEvent<number>();
 // part of what happened.
 export const connected = createEvent<WatchInfo>();
 export const flashDone = createEvent<WatchInfo | null>();
-export const flashFailed = createEvent<{ watch: WatchInfo | null; error: Error }>();
+export const flashFailed = createEvent<{
+  watch: WatchInfo | null;
+  error: Error;
+}>();
 export const forgetRequested = createEvent();
 
 // ---- effects ----
@@ -164,7 +167,10 @@ sample({
   fn: (e) => e.message,
   target: $otaError,
 });
-reset({ clock: [firmwareFlashRequested, otaReset], target: [$otaProgress, $otaResult, $otaError] });
+reset({
+  clock: [firmwareFlashRequested, otaReset],
+  target: [$otaProgress, $otaResult, $otaError],
+});
 
 // ---- what the App Loader firmware reports ----
 // null: not asked yet, or the link is gone; `stock`: asked, and the watch has no stub
@@ -242,6 +248,20 @@ reset({
   target: [$installed, $installError],
 });
 
+// ---- the log ----
+// what ble.ts said (status lines included — Watch.status logs them), for a browser without devtools (an iOS BLE browser):
+// the watch panel's Copy log hands it over. ponytail: last 300 lines, in memory only
+export const $log = createStore<string[]>([]);
+const logged = createEvent<string>();
+
+dbgListeners.add(logged);
+sample({
+  clock: logged,
+  source: $log,
+  fn: (log, line) => [...log.slice(-299), line],
+  target: $log,
+});
+
 // ---- business logic ----
 sample({
   clock: statusChanged,
@@ -250,12 +270,17 @@ sample({
 
 sample({
   clock: connectFx.failData,
-  fn: (e) => `error: ${e.message}`,
+  // errText: an iOS BLE browser rejects with non-Errors, whose .message is undefined
+  fn: (e) => `error: ${errText(e)}`,
   target: statusChanged,
 });
 
+// one picker at a time: a second requestDevice while one is open is what a double tap on iOS
+// sends, and a Web BLE browser rejects it
 sample({
   clock: connectRequested,
+  source: connectFx.pending,
+  filter: (busy) => !busy,
   target: connectFx,
 });
 
@@ -333,7 +358,10 @@ const sizeDeclined = sample({
   filter: Boolean,
 });
 
-reset({ clock: [sizeConfirmed, sizeWarningClosed, disconnected], target: $sizeWarning });
+reset({
+  clock: [sizeConfirmed, sizeWarningClosed, disconnected],
+  target: $sizeWarning,
+});
 reset({
   clock: [slotDialogClosed, sizeDeclined, flashFx.done, disconnected],
   target: $pendingBin,

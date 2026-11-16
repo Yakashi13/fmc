@@ -6,13 +6,14 @@
 // wrong: which command goes to which characteristic, in which order.
 import { expect, test } from "vitest";
 import { Watch } from "$lib/modules/device/lib/ble";
-import { CMD, Codec, crc32, UUID } from "$lib/modules/device/lib/ble-protocol";
+import { CMD, Codec, crc32, fullUuid, UUID } from "$lib/modules/device/lib/ble-protocol";
 import {
   BOARDS,
   checkOtaTarget,
   inspectOtaImage,
   OTA_BOARD,
 } from "$lib/modules/device/lib/ota-image";
+import { sniff } from "$lib/modules/device/model/dev.model";
 
 // ---- a minimal, valid image: ota.xml + TEMP.bin + an AGPS trailer ----
 const le32 = (d: Uint8Array, off: number, v: number) =>
@@ -91,6 +92,23 @@ test("refuses an image for a board no known watch has", () => {
 });
 
 // ---- the board gate: image vs the watch on the line vs the record being flashed ----
+test("/dev tells an image from a package from anything else", () => {
+  expect(sniff(buildImage()).kind).toBe("firmware");
+  const pkg = new Uint8Array(64);
+
+  pkg.set(new TextEncoder().encode("WP2A"));
+  pkg.set(new TextEncoder().encode("clock"), 8);
+  expect(sniff(pkg)).toMatchObject({ kind: "package", what: "app “clock” v0" });
+  expect(() => sniff(new Uint8Array(64))).toThrow(/neither/);
+});
+
+test("Bluefy's uppercase and short UUIDs key the same characteristics as Chromium's", () => {
+  expect(fullUuid("FFF2")).toBe(UUID.cmdWrite);
+  expect(fullUuid("02F00000-0000-0000-0000-00000000FFE1")).toBe(UUID.dataWrite);
+  expect(fullUuid(0x2a19)).toBe(UUID.battery);
+  expect(fullUuid(UUID.shellRead)).toBe(UUID.shellRead);
+});
+
 const WP2 = "CMF Watch Pro 2-9A9D";
 const WP3 = "CMF Watch Pro 3-1B2C"; // the Watch 3 Pro also advertises as "CMF Watch 3 Pro"
 const wp2Image = () => buildImage({ board: BOARDS.watch_pro_2.board });

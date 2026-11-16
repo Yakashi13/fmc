@@ -1,5 +1,3 @@
-// beacio bootstrap: bridges navigator.bluetooth to the Safari extension on iOS, no-op in Chrome
-import "@beacio/core/auto";
 import { enabled as analyticsEnabled } from "$lib/modules/analytics/lib/aptabase";
 
 // cookie-free analytics — a no-op build unless VITE_APTABASE_KEY is set. Loaded lazily: the

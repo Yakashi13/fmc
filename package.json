@@ -20,7 +20,6 @@
   },
   "dependencies": {
     "@aptabase/web": "0.5.0",
-    "@beacio/core": "^1.2.0",
     "effector": "^23.4.4",
     "marked": "^18.1.1",
     "patronum": "^2.3.0",

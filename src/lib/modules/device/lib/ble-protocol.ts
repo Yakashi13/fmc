@@ -15,6 +15,22 @@ export const dbg = (...a: unknown[]) => {
     for (const l of dbgListeners) l(line);
   }
 };
+/** A rejection as text: an iOS BLE browser (Bluefy) rejects with things that aren't Errors. */
+export const errText = (e: unknown): string =>
+  e instanceof Error
+    ? `${e.name}: ${e.message}`
+    : typeof e === "string"
+      ? e
+      : (JSON.stringify(e) ?? String(e));
+/**
+ * Any UUID as the full lowercase string the tables here use. Chromium hands back that form; an
+ * iOS BLE browser (Bluefy) hands back uppercase, and 16/32-bit ids in their short form ("FFF2").
+ */
+export const fullUuid = (u: number | string) => {
+  const s = typeof u === "number" ? u.toString(16) : u.toLowerCase();
+
+  return s.length <= 8 ? `${s.padStart(8, "0")}-0000-1000-8000-00805f9b34fb` : s;
+};
 export const verbose = () => (window as { fmcBleVerbose?: boolean } & Window).fmcBleVerbose;
 // keys are (c1 << 16) | c2 and c1 is 0xffff, so they come out negative — print them unsigned
 export const cmdName = (key: number) =>

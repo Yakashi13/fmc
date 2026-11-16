@@ -6,10 +6,11 @@
   import { AdaptivePopover } from "$lib/shared/components/adaptive-popover";
   import { Button } from "$lib/shared/components/button";
   import { Icon } from "$lib/shared/components/icon";
-  import { bleModel } from "../model";
+  import { bleModel, devModel } from "../model";
   import { dialLabel, dialPreview, dialTitle, flashedOn } from "../lib/catalog-names";
   import { capacityOf } from "../lib/ble";
   import WatchSelector from "./watch-selector.svelte";
+  import DevSheet from "./dev-sheet.svelte";
 
   interface Props {
     trigger: Snippet<[{ open: boolean; toggle: () => void; connected: boolean }]>;
@@ -39,7 +40,19 @@
     dialRemoved,
     $connecting: connecting,
     $forgetting: forgetting,
+    $log: log,
   } = bleModel;
+  const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
+  const copyLog = () =>
+    navigator.clipboard
+      .writeText([ua, `bluetooth: ${typeof navigator.bluetooth}`, ...$log].join("\n"))
+      .catch(() => {});
+
+  // one panel at a time: the watch panel steps aside for the Developer one
+  function openDev() {
+    onClose();
+    devModel.panelOpened();
+  }
 
   const muted = "oklch(from var(--color-text) l c h / 55%)";
 </script>
@@ -51,7 +64,6 @@
   title={$bleInfo ? ($bleInfo.name ?? "CMF Watch") : "Connect your watch"}
   {onClose}
 >
-  <!-- ponytail: don't gate on navigator.bluetooth at render time — the Safari polyfill injects later; the real check is in ble.ts on click -->
   {#if !$bleInfo}
     <div class="section">
       <p class="desc">CMF Watch Pro 2 / Pro 3 over Web Bluetooth.</p>
@@ -69,6 +81,12 @@
           </Button>
         </span>
         {#if $bleStatus}<span class="status">{$bleStatus}</span>{/if}
+        {#if $log.length}
+          <Button kind="ghost" size="small" onClick={copyLog}>
+            <Icon name="content_copy" size={20} />
+            Copy log
+          </Button>
+        {/if}
       </div>
       <!-- the honest version of "is this safe?", said here rather than left to a launch thread -->
       <details class="before">
@@ -81,6 +99,10 @@
           <li>
             FMC can't write firmware. Watchfaces go through the watch's own installer, and the watch
             can refuse them.
+          </li>
+          <li>
+            On an iPhone, use Bluefy, and first swipe away every app that holds the watch, like
+            Nothing X or a fitness app. In Settings → Bluetooth the watch should read Not Connected.
           </li>
           <li>
             If Nothing X loses the watch afterwards, pair it again. Turn Bluetooth off and on,
@@ -108,6 +130,12 @@
           <dd>{$bleInfo.serial ?? "?"}</dd>
         </div>
       </dl>
+      <div class="row">
+        <Button kind="ghost" size="small" onClick={openDev}>
+          <Icon name="code" size={20} />
+          Developer
+        </Button>
+      </div>
     </div>
 
     {#if $dials}
@@ -133,6 +161,8 @@
     {/if}
   {/if}
 </AdaptivePopover>
+
+<DevSheet />
 
 <style>
   .section {

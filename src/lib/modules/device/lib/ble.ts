@@ -22,6 +22,8 @@ import {
   UUID,
   verbose,
   crc32,
+  errText,
+  fullUuid,
 } from "./ble-protocol";
 import {
   APP_SLOTS,
@@ -138,18 +140,40 @@ export class Watch {
   // rescue: stop right after auth — a watch wedged on a bad face may never answer fwGet/a055,
   // and the only thing the caller wants to send is factoryReset
   async connect({ rescue = false } = {}): Promise<WatchInfo> {
-    if (!navigator.bluetooth) throw new Error("Web Bluetooth unavailable — use Chrome or Edge");
+    if (!navigator.bluetooth)
+      throw new Error(
+        "Web Bluetooth unavailable — use Chrome or Edge (on an iPhone, a Web BLE browser such as Bluefy)",
+      );
     this.status("requesting device…");
     // like in fmc CLI: the advertisement doesn't always carry the service, so match by name and by manufacturer id too
     const pick = async () => {
-      const d = await navigator.bluetooth.requestDevice({
-        filters: [
-          { services: [0xefe7] },
-          { namePrefix: "CMF Watch" },
-          { manufacturerData: [{ companyIdentifier: 0x0ccb }] },
-        ],
-        optionalServices: SERVICES,
-      });
+      let d: BluetoothDevice;
+
+      try {
+        d = await navigator.bluetooth.requestDevice({
+          filters: [
+            { services: [0xefe7] },
+            { namePrefix: "CMF Watch" },
+            { manufacturerData: [{ companyIdentifier: 0x0ccb }] },
+          ],
+          optionalServices: SERVICES,
+        });
+      } catch (e) {
+        dbg("requestDevice failed:", errText(e));
+        // the picker closed without a choice (Chromium's NotFoundError), or no permission
+        if (e instanceof Error && /NotFound|Security|Abort/.test(e.name)) throw e;
+        // ponytail: a Web BLE browser outside Chromium (Bluefy) refuses some of the above —
+        // likely the manufacturerData filter or numeric UUIDs; ask again with the plainest form
+        d = await navigator.bluetooth.requestDevice({
+          // this form is the one Bluefy took (3.9.3, iOS 18.7). A watch another app on the phone
+          // holds stays invisible to it whatever the filters — the help page says to free it
+          filters: [
+            { namePrefix: "CMF Watch" },
+            ...SERVICES.map((u) => ({ services: [fullUuid(u)] })),
+          ],
+          optionalServices: SERVICES.map(fullUuid),
+        });
+      }
 
       dbg("device chosen:", d.name, d.id);
       d.addEventListener("gattserverdisconnected", () => {
@@ -202,7 +226,7 @@ export class Watch {
             "→",
             cc.map((c) => c.uuid),
           );
-          for (const ch of cc) this.chars[ch.uuid] = ch;
+          for (const ch of cc) this.chars[fullUuid(ch.uuid)] = ch;
         } catch (e) {
           dbg("service", svc.uuid, "characteristics failed:", (e as Error).message);
         }
@@ -216,7 +240,7 @@ export class Watch {
         ),
       );
     };
-    // the Safari polyfill only allows connect right after the picker selection —
+    // some Web Bluetooth outside Chromium (an iOS BLE browser) only allows connect right after the picker selection —
     // after a disconnect it throws "not offered to this origin"; in that case we show the picker again
     const connectOrRepick = async (what: string) => {
       try {
@@ -274,7 +298,7 @@ export class Watch {
           // then rejected the finished file at random. ponytail: one chain for both
           // characteristics; split per channel only if cmd traffic ever needs to overtake an
           // upload, which today it never does.
-          this.rx = this.rx.then(() => this.onNotify(ch.uuid, bytes)).catch(() => {});
+          this.rx = this.rx.then(() => this.onNotify(fullUuid(ch.uuid), bytes)).catch(() => {});
         });
       }
     };

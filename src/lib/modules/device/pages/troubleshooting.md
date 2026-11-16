@@ -56,7 +56,20 @@ FMC shows what the watch said. Usually the watch is full, the slot you picked wa
 
 ## Which browsers work
 
-Connecting needs Web Bluetooth, which means Chrome or Edge on desktop, or Chrome on Android. Firefox doesn't support it. No browser on iOS does either. The editor still works there, you just can't install from it.
+Connecting needs Web Bluetooth, which means Chrome or Edge on desktop, or Chrome on Android. Firefox doesn't support it. On an iPhone, Safari and Chrome don't either, but Bluefy does (see below).
+
+## On an iPhone: Bluefy
+
+Safari has no Web Bluetooth, and every other iPhone browser runs on the same engine. [Bluefy](https://apps.apple.com/app/bluefy-web-ble-browser/id1492822055), a free browser from the App Store, adds it.
+
+1. Install Bluefy and open this site in it.
+2. **Let go of the watch first.** While another app on the iPhone holds the watch, Bluefy can't see it and its picker comes up empty. Open Settings → Bluetooth: if the watch says **Connected**, an app is holding it, usually Nothing X or a fitness app that syncs workouts. Swipe that app away in the app switcher until the watch reads **Not Connected**. Forgetting the watch in Settings doesn't help, because the app connects it again.
+3. In Bluefy, open the watch panel and press **Connect**. Pick the watch, and confirm the pairing on the watch if it asks.
+4. Keep Bluefy in front and the screen on until an install finishes. The link drops when the browser goes to the background.
+
+When you're done, close the tab, and the other app can have the watch back.
+
+<p class="note">If it still doesn't connect, press <strong>Copy log</strong> in the watch panel and paste it into an <a href="https://github.com/freethinkel/fmc/issues">issue</a>.</p>
 
 ---
 
