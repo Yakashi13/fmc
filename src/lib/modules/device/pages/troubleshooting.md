@@ -4,7 +4,6 @@ FMC talks to your watch straight from the browser, with no phone app in between.
 
 ## What FMC can and cannot do
 
-- **It cannot write firmware.** The protocol FMC speaks has one firmware command, and it only asks the watch which version it runs. There is nothing that writes. You can check this yourself in [`ble-protocol.ts`](https://github.com/freethinkel/fmc/blob/main/src/lib/modules/device/lib/ble-protocol.ts), where `fwGet` and `fwRet` are the whole firmware story.
 - **It installs watchfaces through the watch's own installer.** The upload follows the same steps the official app takes. FMC starts an install, describes the file, sends it in chunks and finishes. The watch answers every step and can refuse the file. When it does, FMC shows you the refusal and stops.
 - **A bad watchface is the worst case we know of, and it can be bad.** Usually the watch refuses the file, or installs it and it looks wrong, and you delete it on the watch. Once, a face with an image far larger than the screen made a Watch 3 Pro restart in a loop. See "The watch restarts in a loop" below.
 - **We won't tell you nothing can go wrong.** We build and test FMC on a CMF Watch Pro 2. Firmware we haven't seen may behave differently, and we can't promise anything about it. If something breaks, [tell us](https://github.com/freethinkel/fmc/issues). The Nothing X fix below exists because someone did.

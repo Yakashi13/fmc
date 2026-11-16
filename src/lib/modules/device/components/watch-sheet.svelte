@@ -96,10 +96,7 @@
             The watch talks to one app at a time. Close Nothing X before you connect, and close this
             tab when you're done.
           </li>
-          <li>
-            FMC can't write firmware. Watchfaces go through the watch's own installer, and the watch
-            can refuse them.
-          </li>
+          <li>Watchfaces go through the watch's own installer, and the watch can refuse them.</li>
           <li>
             On an iPhone, use Bluefy, and first swipe away every app that holds the watch, like
             Nothing X or a fitness app. In Settings → Bluetooth the watch should read Not Connected.
