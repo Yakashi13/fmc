@@ -1,11 +1,12 @@
 # Before you connect
 
-FMC talks to your watch straight from the browser, with no phone app in between. This page covers what it can change on the watch, what it can't, and the two problems people actually run into.
+FMC talks to your watch straight from the browser, with no phone app in between. This page covers what it changes on the watch and the problems people have actually run into.
 
 ## What FMC can and cannot do
 
 - **It installs watchfaces through the watch's own installer.** The upload follows the same steps the official app takes. FMC starts an install, describes the file, sends it in chunks and finishes. The watch answers every step and can refuse the file. When it does, FMC shows you the refusal and stops.
-- **A bad watchface is the worst case we know of, and it can be bad.** Usually the watch refuses the file, or installs it and it looks wrong, and you delete it on the watch. Once, a face with an image far larger than the screen made a Watch 3 Pro restart in a loop. See "The watch restarts in a loop" below.
+- **Firmware is the risky part.** From the firmware shelf, FMC flashes unofficial images over the air, and a bad one can brick a watch. FMC offers an image only to a Watch Pro 2 at 50% battery or more, checks the image's checksums and that it was built for that watch, and waits for you to tick that you accept the risk.
+- **Watchfaces can go wrong too.** Usually the watch refuses the file, or installs it and it looks wrong, and you delete it on the watch. Once, a face with an image far larger than the screen made a Watch 3 Pro restart in a loop. See "The watch restarts in a loop" below.
 - **We won't tell you nothing can go wrong.** We build and test FMC on a CMF Watch Pro 2. Firmware we haven't seen may behave differently, and we can't promise anything about it. If something breaks, [tell us](https://github.com/freethinkel/fmc/issues). The Nothing X fix below exists because someone did.
 
 ## Only one app can hold the watch at a time
@@ -45,7 +46,7 @@ If your watch is already stuck in the loop, we don't have a confirmed fix yet. T
 2. If the face shows up even briefly, long-press it and swipe it away. If you have time, also turn off the always-on display in settings.
 3. If the watch goes black after the logo but still shows up in the Bluetooth picker, try the [rescue page](/rescue): it sends a factory reset the moment the watch lets us in, and asks for nothing else. Use the browser you installed the face from.
 4. Let the battery run out completely, then charge it and try again.
-5. If none of that works, contact Nothing support. The firmware itself is untouched, so this is a repair they can do.
+5. If none of that works, contact Nothing support. A watchface doesn't touch the firmware, so this is a repair they can do.
 
 <p class="note">If one of these steps worked for you, or something else did, please <a href="https://github.com/freethinkel/fmc/issues">tell us</a> so we can put it at the top of this list.</p>
 

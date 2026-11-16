@@ -240,8 +240,11 @@
             <h3>Before you install</h3>
             <ul class="checklist">
               <li>Watch on its charger, at {OTA_MIN_BATTERY}% or more</li>
-              <li>Phone's Bluetooth off, so it can't grab the watch mid-update</li>
-              <li>This tab open, the computer awake and close by</li>
+              <li>
+                No other app connected to the watch (Nothing X, a fitness app), so nothing grabs it
+                mid-update
+              </li>
+              <li>This tab open and the screen on, close to the watch</li>
             </ul>
           {/if}
           {#if kind.hint || fw.base}
