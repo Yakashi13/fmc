@@ -5,7 +5,8 @@ on:
     branches: [main]
   pull_request:
 
-# No deploy job: prod lives on a home server GitHub can't reach; `make deploy` by hand.
+# No deploy job: prod lives on a home server GitHub can't reach. kuzyo polls main and
+# deploys a commit once this workflow passes on it (deploy/autodeploy.sh).
 jobs:
   check:
     runs-on: ubuntu-latest
