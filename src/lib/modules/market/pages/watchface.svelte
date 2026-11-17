@@ -12,6 +12,7 @@
   import { LiveDial } from "../components/live-dial";
   import { BackBtn } from "$lib/shared/components/back-btn";
   import { Page } from "$lib/shared/components/page";
+  import { Prose } from "$lib/shared/components/prose";
   import { WatchCase } from "$lib/shared/components/watch-case";
   import { StatStrip } from "$lib/shared/components/stat-strip";
   import { compact, day } from "$lib/shared/lib/format";
@@ -199,7 +200,7 @@
           />
 
           {#if wf.description}
-            <p class="desc">{wf.description}</p>
+            <Prose source={wf.description} ugc />
           {/if}
 
           <p class="dates">
@@ -417,12 +418,6 @@
     > :global(*) {
       flex: 1 1 10rem;
     }
-  }
-  .desc {
-    margin: 0;
-    white-space: pre-wrap;
-    line-height: 1.5;
-    overflow-wrap: anywhere;
   }
   .dates {
     margin: 0;

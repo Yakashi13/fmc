@@ -31,3 +31,22 @@ test("a link that isn't to the web is defused", async () => {
 
   expect(hrefs).toEqual(["#", "https://example.com", "/firmware"]);
 });
+
+test("a bare URL becomes a link that opens in a new tab", async () => {
+  const screen = await render(Prose, { source: "Fonts from https://example.com/fonts, thanks!" });
+  const a = screen.container.querySelector("a");
+
+  expect(a?.getAttribute("href")).toBe("https://example.com/fonts");
+  expect(a?.getAttribute("target")).toBe("_blank");
+  expect(a?.getAttribute("rel")).toBe("noopener");
+});
+
+test("user text keeps its line breaks and its links are nofollow", async () => {
+  const screen = await render(Prose, {
+    source: "line one\nline two https://example.com",
+    ugc: true,
+  });
+
+  expect(screen.container.querySelector("br")).not.toBeNull();
+  expect(screen.container.querySelector("a")?.getAttribute("rel")).toBe("nofollow ugc noopener");
+});

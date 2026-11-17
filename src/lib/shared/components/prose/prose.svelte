@@ -1,31 +1,51 @@
 <script lang="ts">
-  // Markdown from a record (an app's or a firmware's description) as styled prose.
+  // Markdown from a record (an app's, a firmware's or a watchface's description) as styled prose.
   //
   // The text comes from the database, so it gets its own parser rather than the global one:
   // raw HTML is printed as text instead of being injected, and a link or image may only point
-  // at the web. That leaves {@html} with nothing but the tags marked itself emits.
-  import { Marked } from "marked";
+  // at the web. That leaves {@html} with nothing but the tags marked itself emits. Bare URLs
+  // become links on their own (GFM autolinks); a link off the site opens in a new tab.
+  //
+  // `ugc`: text any user wrote (a watchface's description): its single line breaks are kept,
+  // since it was typed as plain text long before it rendered as markdown, and its links are
+  // nofollow, so the shelf isn't a place to buy search rank.
+  import { Marked, type Tokens } from "marked";
 
   interface Props {
     source: string;
+    ugc?: boolean;
   }
-  const { source }: Props = $props();
+  const { source, ugc = false }: Props = $props();
 
   const escape = (s: string) =>
-    s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    s
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
   const SAFE_URL = /^(https?:|mailto:|\/|#)/i;
 
-  const parser = new Marked({
-    renderer: {
-      html: ({ text }) => escape(text),
-    },
-    walkTokens(token) {
-      if ((token.type === "link" || token.type === "image") && !SAFE_URL.test(token.href))
-        token.href = "#";
-    },
-  });
+  const make = (rel: string, breaks: boolean) =>
+    new Marked({
+      breaks,
+      renderer: {
+        html: ({ text }) => escape(text),
+        link({ href, title, tokens }: Tokens.Link) {
+          const away = /^https?:/i.test(href) ? ` target="_blank" rel="${rel}"` : "";
+          const t = title ? ` title="${escape(title)}"` : "";
 
-  const html = $derived(parser.parse(source, { async: false }));
+          return `<a href="${escape(href)}"${t}${away}>${this.parser.parseInline(tokens)}</a>`;
+        },
+      },
+      walkTokens(token) {
+        if ((token.type === "link" || token.type === "image") && !SAFE_URL.test(token.href))
+          token.href = "#";
+      },
+    });
+  const curated = make("noopener", false);
+  const users = make("nofollow ugc noopener", true);
+
+  const html = $derived((ugc ? users : curated).parse(source, { async: false }));
 </script>
 
 <div class="prose">{@html html}</div>

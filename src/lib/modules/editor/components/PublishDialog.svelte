@@ -59,7 +59,7 @@
         onChange={(device) => publishFormPatched({ device })}
       />
     </Field>
-    <Field label="Description">
+    <Field label="Description" hint="Markdown works; links become clickable.">
       <Textarea
         value={$form.description}
         rows={3}
