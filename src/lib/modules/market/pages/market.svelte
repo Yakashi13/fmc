@@ -13,6 +13,7 @@
   import { CommunityPanel } from "../components/community-panel";
   import { CreatorShelf } from "../components/creator-shelf";
   import { DEVICES, matchesDevice } from "../lib/devices";
+  import CompanionPromo from "$lib/modules/store/components/companion-promo.svelte";
 
   const { $user: user } = authModel;
   const {
@@ -178,6 +179,7 @@
       if (!restoring && scroller) marketViewPatched({ scrollTop: scroller.scrollTop });
     }}
   >
+    {#if tab === "all"}<CompanionPromo />{/if}
     {#if community}
       <CommunityPanel />
     {:else if $marketView.sort === "creators"}

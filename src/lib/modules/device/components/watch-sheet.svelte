@@ -159,6 +159,11 @@
       </div>
     {/if}
   {/if}
+  <a class="companion" href="/companion" onclick={onClose}>
+    <Icon name="smartphone" size={18} />
+    FMC Companion mobile app
+    <Icon name="chevron_right" size={18} />
+  </a>
 </AdaptivePopover>
 
 <DevSheet />
@@ -254,6 +259,22 @@
     /* six 64px dials never fit the sheet's width — scroll them sideways rather than wrap */
     overflow-x: auto;
     padding-bottom: 0.25rem;
+  }
+  .companion {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid oklch(from var(--color-text) l c h / 10%);
+    font-size: 0.875rem;
+    color: var(--color-text);
+    text-decoration: none;
+
+    & :global(.icon:last-child) {
+      margin-inline-start: auto;
+      color: oklch(from var(--color-text) l c h / 50%);
+    }
   }
   .none {
     font-size: 0.625rem;
