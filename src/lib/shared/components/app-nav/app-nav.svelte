@@ -22,7 +22,9 @@
       icon: "storefront",
       active:
         path === "/" ||
-        ["/market", "/my", "/apps", "/firmware", "/user"].some((p) => path.startsWith(p)),
+        ["/market", "/my", "/apps", "/firmware", "/user", "/companion"].some((p) =>
+          path.startsWith(p),
+        ),
     },
     { title: "Editor", url: "/editor", icon: "edit", active: path.startsWith("/editor") },
   ]);

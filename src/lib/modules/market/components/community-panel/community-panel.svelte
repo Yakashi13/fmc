@@ -12,13 +12,19 @@
     {#each COMMUNITY_LINKS as link (link.id)}
       <li>
         {#if link.url}
-          <a class="tile" href={link.url} target="_blank" rel="noopener noreferrer">
+          {@const external = !link.url.startsWith("/")}
+          <a
+            class="tile"
+            href={link.url}
+            target={external ? "_blank" : undefined}
+            rel={external ? "noopener noreferrer" : undefined}
+          >
             <span class="glyph"><Icon name={link.icon} size={24} /></span>
             <span class="text">
               <span class="title">{link.title}</span>
               {#if link.description}<span class="desc">{link.description}</span>{/if}
             </span>
-            <Icon name="open_in_new" size={20} class="out" />
+            <Icon name={external ? "open_in_new" : "chevron_right"} size={20} class="out" />
           </a>
         {:else}
           <div class="tile soon" aria-disabled="true">

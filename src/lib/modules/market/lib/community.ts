@@ -1,6 +1,7 @@
 // The links on the "Join Community" tab of the front page.
 //
-// A link with a `url` is a live tile that opens in a new tab. A link with `url: null` is a
+// A link with a `url` is a live tile; an external one opens in a new tab, a site path ("/…")
+// stays in the app. A link with `url: null` is a
 // "Coming soon" placeholder: to publish one, fill in its `url` (and change the title,
 // description and icon as you like) — no other file needs to change. Add or remove entries
 // to taste; they are shown in this order.
@@ -16,6 +17,13 @@ export interface CommunityLink {
 }
 
 export const COMMUNITY_LINKS: readonly CommunityLink[] = [
+  {
+    id: "companion",
+    title: "FMC Companion phone app",
+    description: "Watch faces, watch apps and firmware from your phone. Android beta, iOS soon.",
+    icon: "smartphone",
+    url: "/companion",
+  },
   {
     id: "reddit",
     title: "r/CMFWatchMods on Reddit",
