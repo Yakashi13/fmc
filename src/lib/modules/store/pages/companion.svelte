@@ -94,11 +94,17 @@
       </li>
     </ul>
 
-    <a class="source" href={REPO} target="_blank" rel="noopener noreferrer">
-      <Icon name="code" size={18} />
-      Source on GitHub
-      <Icon name="open_in_new" size={16} />
-    </a>
+    <footer>
+      <a href={REPO} target="_blank" rel="noopener noreferrer">
+        <Icon name="code" size={18} />
+        Source on GitHub
+        <Icon name="open_in_new" size={16} />
+      </a>
+      <a href="/privacy">
+        <Icon name="shield" size={18} />
+        Privacy policy
+      </a>
+    </footer>
   </article>
 </Page>
 
@@ -189,12 +195,18 @@
       color: oklch(from var(--color-text) l c h / 45%);
     }
   }
-  .source {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
+  footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
     margin-top: 2rem;
-    color: var(--color-text);
-    text-decoration: none;
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--color-text);
+      text-decoration: none;
+    }
   }
 </style>
