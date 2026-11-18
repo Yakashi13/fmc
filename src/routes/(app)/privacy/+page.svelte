@@ -10,7 +10,10 @@
 
 <svelte:head>
   <title>Privacy — FMC</title>
-  <meta name="description" content="What fmc.tools and the FMC Companion app collect, and what they don't." />
+  <meta
+    name="description"
+    content="What fmc.tools and the FMC Companion app collect, and what they don't."
+  />
 </svelte:head>
 
 <div class="page">

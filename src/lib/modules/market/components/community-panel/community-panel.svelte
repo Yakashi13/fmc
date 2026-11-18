@@ -48,7 +48,9 @@
         <!-- rel="me" lets Mastodon verify this site on the profile -->
         <a class="tile" href={link.url} target="_blank" rel="me noopener noreferrer">
           <span class="glyph brand">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={link.path} /></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
+              ><path d={link.path} /></svg
+            >
           </span>
           <span class="text">
             <span class="title">{link.title}</span>
