@@ -1,7 +1,7 @@
 <script lang="ts">
   // The "Join Community" tab: one panel of links. What is listed is data — see lib/community.ts.
   import { Icon } from "$lib/shared/components/icon";
-  import { COMMUNITY_LINKS } from "../../lib/community";
+  import { AUTHOR_LINKS, COMMUNITY_LINKS } from "../../lib/community";
 </script>
 
 <section class="panel">
@@ -38,6 +38,27 @@
       </li>
     {/each}
   </ul>
+
+  <h2 class="author">Made by freethinkel</h2>
+  <p class="lead">Follow along for new features, previews and the occasional watchface.</p>
+
+  <ul>
+    {#each AUTHOR_LINKS.filter((l) => l.url) as link (link.id)}
+      <li>
+        <!-- rel="me" lets Mastodon verify this site on the profile -->
+        <a class="tile" href={link.url} target="_blank" rel="me noopener noreferrer">
+          <span class="glyph brand">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={link.path} /></svg>
+          </span>
+          <span class="text">
+            <span class="title">{link.title}</span>
+            <span class="desc">{link.handle}</span>
+          </span>
+          <Icon name="open_in_new" size={20} class="out" />
+        </a>
+      </li>
+    {/each}
+  </ul>
 </section>
 
 <style>
@@ -49,6 +70,10 @@
   h2 {
     margin: 0;
     font-size: 1.25rem;
+
+    &.author {
+      margin-top: 2rem;
+    }
   }
   .lead {
     margin: 0.25rem 0 1rem;
@@ -98,6 +123,16 @@
     border-radius: 50%;
     background: var(--color-accent);
     color: var(--color-on-accent);
+
+    &.brand {
+      background: oklch(from var(--color-text) l c h / 10%);
+      color: var(--color-text);
+
+      & svg {
+        width: 1.375rem;
+        height: 1.375rem;
+      }
+    }
   }
   .text {
     display: flex;
