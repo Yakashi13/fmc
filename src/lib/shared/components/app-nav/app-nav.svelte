@@ -213,8 +213,6 @@
 
 <style>
   nav {
-    /* it sits out page transitions (global.css) */
-    view-transition-name: app-nav;
     position: fixed;
     inset-inline: 0;
     bottom: 0;
@@ -356,7 +354,12 @@
          centred, so four tabs don't spread into a strip */
       max-width: 26rem;
       margin-inline: auto;
-      bottom: var(--dock-inset);
+      /* absolute in the app shell, not fixed: Safari neither paints a fixed box below its
+         layout viewport nor shows the page under its toolbar while one sits at the bottom
+         edge (global.css). The shell never scrolls, so this holds as still as fixed did;
+         --under-bar is how much of the shell lies below the visible viewport. */
+      position: absolute;
+      bottom: calc(var(--under-bar) + var(--dock-inset));
       height: 4rem;
       padding: 0 var(--pad);
       border: 1px solid oklch(from var(--color-text) l c h / 10%);

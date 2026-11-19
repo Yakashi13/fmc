@@ -79,7 +79,9 @@
     position: fixed;
     z-index: 60;
     inset-inline: 0;
-    bottom: calc(var(--dock-space) + 0.75rem);
+    /* fixed, so against the visible viewport: without the part of the page that lies under
+       Safari's toolbar, which --dock-space counts in */
+    bottom: calc(var(--dock-space) - var(--under-bar) + 0.75rem);
     display: flex;
     align-items: center;
     gap: 0.625rem;

@@ -24,13 +24,17 @@
 }
 
 /* The document itself never scrolls: every page brings its own scroller (page/, the shelves,
-   the editor's panels), so only content moves and the chrome stays put. 100vh, so content
-   still runs on under Safari's floating toolbar (100dvh stops at its edge and leaves a bare
-   strip behind it). What let the page slide was a document taller than the screen with
-   nothing holding it: overflow does. */
+   the editor's panels), so only content moves and the chrome stays put; overflow: hidden is
+   what holds a document taller than the screen still. 100vh plus --page-bleed (tokens.css),
+   so content runs on under Safari's floating toolbar, all the way to the screen's edge: the
+   layout viewport stops at the toolbar's top (714 of a 754 lvh on an iPhone 17, with another
+   ~60 of screen below that). Safari paints in-flow content down there even with the root
+   clipped — what it does not paint is anything position: fixed, and one fixed box at the
+   bottom edge makes it lay an opaque bar under its toolbar instead of the page. Hence the
+   phone's dock is absolute, not fixed (app-nav). */
 html,
 body {
-  height: 100vh;
+  height: calc(100vh + var(--page-bleed));
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -245,39 +249,6 @@ details[open] > summary::after {
 a,
 img {
   -webkit-user-drag: none;
-}
-
-/* Page transitions (the root layout starts one per navigation): the old page sinks back and
-   fades while the new one rises into place. The app chrome — the dock, the rail — carries its
-   own name, so it holds still while the page under it changes. */
-::view-transition-old(root) {
-  animation: 0.18s ease-in both page-out;
-}
-::view-transition-new(root) {
-  animation: 0.32s cubic-bezier(0.16, 1, 0.3, 1) both page-in;
-}
-::view-transition-group(app-nav) {
-  animation: none;
-  z-index: 1;
-}
-@keyframes page-out {
-  to {
-    opacity: 0;
-    scale: 0.985;
-  }
-}
-@keyframes page-in {
-  from {
-    opacity: 0;
-    translate: 0 0.75rem;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
 }
 
 /* a drag in progress owns the cursor everywhere, and doesn't select text on the way (hold-cursor.ts) */

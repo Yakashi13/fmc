@@ -19,6 +19,8 @@
 
 <style>
   .shell {
+    /* the phone's dock is positioned against it */
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;

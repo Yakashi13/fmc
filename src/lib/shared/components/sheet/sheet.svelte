@@ -206,6 +206,8 @@
     </div>
     <div class="tail"></div>
   </div>
+  <!-- last, so it is the topmost fixed box at the top edge: that is the one Safari reads -->
+  <div class="edge" aria-hidden="true"></div>
 </dialog>
 
 <style>
@@ -242,6 +244,28 @@
     /* --travel jumps straight to 1 on open; short enough that a drag still looks like it's
        driving the fade itself */
     transition: opacity 0.2s ease-out;
+  }
+  /* iOS Safari tints its status bar and toolbar from a solid fixed box touching the top edge of
+     the viewport, and treats a viewport-sized dimming layer (the overlay above) as an overlay
+     it keeps its old colour under — a bright band over a dimmed page. So a strip of the colour
+     the scrim looks like over the page, there only while the dialog is open. 12px tall with 5px
+     on screen is the least Safari samples. It must stay a direct child of the dialog: under an
+     ancestor with a transform or a filter it would no longer be fixed to the viewport.
+     https://gist.github.com/caelinsutch/4a484b1754344e330290eb364d6f008a */
+  .edge {
+    position: fixed;
+    inset-inline: 0;
+    top: -7px;
+    height: 12px;
+    pointer-events: none;
+    /* opaque, so mixed rather than faded: the same 40% black the overlay lays over the page,
+       following the swipe the way the overlay's opacity does */
+    background-color: color-mix(
+      in srgb,
+      black calc(var(--travel) * 40%),
+      var(--color-background, Canvas)
+    );
+    transition: background-color 0.2s ease-out;
   }
   .scroll {
     position: relative;

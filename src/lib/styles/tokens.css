@@ -30,22 +30,29 @@
   --nav-rail-width: 6rem;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  /* how far the dock floats off the bottom edge. An iPhone's safe area (~34px) is mostly air
-     above a home indicator that sits in its lowest ~13px, so the dock dips into it rather
-     than stacking a margin on top of it; with no safe area it keeps 0.5rem */
+  /* how far the dock floats off the bottom edge. A safe area is mostly air above a home
+     indicator that sits in its lowest part, so the dock dips into it rather than stacking a
+     margin on top of it; with no safe area it keeps 0.5rem */
   --dock-inset: max(0.5rem, calc(var(--safe-area-bottom) - 1.25rem));
-  /* In a Safari tab on an iPhone the safe area is 0 and Safari itself parks fixed elements
-     ~17pt above its floating toolbar, so 0.5rem on top of that leaves the dock ~25pt up. It
-     dips into that gap instead, ~9pt clear of the toolbar (sized from iPhone screenshots,
-     Safari 26). iOS only: in another browser the viewport ends at the screen's edge, and a
-     negative inset would push the dock off it. */
-  @media (display-mode: browser) {
-    @supports (-webkit-touch-callout: none) {
-      --dock-inset: -0.5rem;
+  /* iOS (the only engine with -webkit-touch-callout): an iPhone's safe area is ~34px with the
+     indicator in its lowest ~13px, and the dock stands 0.75rem into it, clear of the bar. In a
+     Safari tab with the toolbar showing the safe area is 0 and so is the inset: Safari clips
+     the page at the bottom of the layout viewport (measured on Safari 26: innerHeight 635 of
+     a 735 lvh), so a dock dipping below that edge towards the toolbar loses its bottom. */
+  @supports (-webkit-touch-callout: none) {
+    --dock-inset: max(0rem, calc(var(--safe-area-bottom) - 0.75rem));
+  }
+  /* how far the page runs on below the layout viewport: see html, body in global.css */
+  --page-bleed: 0px;
+  @supports (-webkit-touch-callout: none) {
+    @media (display-mode: browser) {
+      --page-bleed: 5rem;
     }
   }
-  /* the strip a page keeps clear for the dock: the dock, its gap, and its lift */
-  --dock-space: calc(var(--nav-bar-height) + var(--dock-inset));
+  /* what of the page's own box lies below the layout viewport, where the dock can't follow */
+  --under-bar: calc(100vh + var(--page-bleed) - 100dvh);
+  /* the strip a page keeps clear for the dock: the dock, its gap, its lift, and that */
+  --dock-space: calc(var(--nav-bar-height) + var(--dock-inset) + var(--under-bar));
 
   --font-family: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-display: "Doto", "Geist Mono", ui-monospace, monospace;
