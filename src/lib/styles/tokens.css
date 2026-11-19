@@ -3,27 +3,52 @@
 
 :root {
   font-size: 16px;
-  --color-accent: #ffc700;
-  --color-text: #1c1c1c;
-  --color-background: #f2f2f2;
+  --color-accent: #d71921;
+  --color-text: #0a0a0a;
+  --color-background: #f0f0f0;
+  /* what floats over the page — a dialog, a sheet, a menu: one step off the background, so
+     it reads as a layer on true black without a shadow */
+  --color-surface: #fff;
   --color-error: #d71921;
   /* the editor canvas's selection boxes/handles and snap guides — read once by the page,
      drawn on <canvas> */
   --color-selection: #4af;
   --color-guide: #ff44ff88;
 
-  --color-on-accent: var(--color-text);
-  --border-radius: 0.6rem;
-  /* one height for every field-like control (input, select). A dense surface — the editor's
-     inspector — sets it lower on its own container instead of restyling each control. */
-  --control-height: 2.25rem;
-  --nav-bar-height: 5rem;
+  /* ink on an accent surface: white on a dark accent, black on a light one — the accent is
+     the user's pick (appearance), so the ink follows its lightness instead of a scheme */
+  --color-on-accent: oklch(from var(--color-accent) clamp(0, (0.68 - l) * 1000, 1) 0 0);
+  --border-radius: 1rem;
+  /* a tile: a card, a banner, a sheet — the widget corner */
+  --border-radius-tile: 1.5rem;
+  /* one height for every field-like control (input, select, segmented, menu row, round icon
+     link). A dense surface — the editor's inspector — sets it lower on its own container
+     instead of restyling each control. 2.5rem under a cursor; a phone raises it, below. */
+  --control-height: 2.5rem;
+  /* the phone's dock: 4rem tall plus a 0.5rem gap above it */
+  --nav-bar-height: 4.5rem;
   --nav-rail-width: 6rem;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  /* how far the dock floats off the bottom edge. An iPhone's safe area (~34px) is mostly air
+     above a home indicator that sits in its lowest ~13px, so the dock dips into it rather
+     than stacking a margin on top of it; with no safe area it keeps 0.5rem */
+  --dock-inset: max(0.5rem, calc(var(--safe-area-bottom) - 1.25rem));
+  /* In a Safari tab on an iPhone the safe area is 0 and Safari itself parks fixed elements
+     ~17pt above its floating toolbar, so 0.5rem on top of that leaves the dock ~25pt up. It
+     dips into that gap instead, ~9pt clear of the toolbar (sized from iPhone screenshots,
+     Safari 26). iOS only: in another browser the viewport ends at the screen's edge, and a
+     negative inset would push the dock off it. */
+  @media (display-mode: browser) {
+    @supports (-webkit-touch-callout: none) {
+      --dock-inset: -0.5rem;
+    }
+  }
+  /* the strip a page keeps clear for the dock: the dock, its gap, and its lift */
+  --dock-space: calc(var(--nav-bar-height) + var(--dock-inset));
 
   --font-family: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-display: "Noto Serif", Georgia, serif;
+  --font-display: "Doto", "Geist Mono", ui-monospace, monospace;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --spring-transition: 0.5s
     linear(
@@ -135,15 +160,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-accent: #ffc700;
-    --color-text: #f2f2f2;
-    --color-background: #131313;
-    --color-on-accent: var(--color-background);
+    --color-text: #f4f4f4;
+    --color-background: #000;
+    --color-surface: #141414;
   }
 }
 
-@media (min-width: 768px) {
+/* under a finger every control clears the 44px touch target */
+@media (max-width: 767px) {
   :root {
-    font-size: 14px;
+    --control-height: 2.75rem;
   }
 }

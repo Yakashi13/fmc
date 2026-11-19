@@ -24,7 +24,7 @@ This one looks like a bricked watch. It isn't. The phone has a Bluetooth pairing
 3. Forget the watch in the phone's Bluetooth settings.
 4. Put the watch in pairing mode and add it again in Nothing X.
 
-<p class="note">A user reported this in <a href="https://github.com/freethinkel/fmc/issues/27">issue #27</a>. Another user replied with these steps a few hours later, and nobody has needed a factory reset.</p>
+<p class="note type-caption">A user reported this in <a href="https://github.com/freethinkel/fmc/issues/27">issue #27</a>. Another user replied with these steps a few hours later, and nobody has needed a factory reset.</p>
 
 ## Deleting a watchface on the watch
 
@@ -48,7 +48,7 @@ If your watch is already stuck in the loop, we don't have a confirmed fix yet. T
 4. Let the battery run out completely, then charge it and try again.
 5. If none of that works, contact Nothing support. A watchface doesn't touch the firmware, so this is a repair they can do.
 
-<p class="note">If one of these steps worked for you, or something else did, please <a href="https://github.com/freethinkel/fmc/issues">tell us</a> so we can put it at the top of this list.</p>
+<p class="note type-caption">If one of these steps worked for you, or something else did, please <a href="https://github.com/freethinkel/fmc/issues">tell us</a> so we can put it at the top of this list.</p>
 
 ## When the watch refuses an upload
 
@@ -69,7 +69,7 @@ Safari has no Web Bluetooth, and every other iPhone browser runs on the same eng
 
 When you're done, close the tab, and the other app can have the watch back.
 
-<p class="note">If it still doesn't connect, press <strong>Copy log</strong> in the watch panel and paste it into an <a href="https://github.com/freethinkel/fmc/issues">issue</a>.</p>
+<p class="note type-caption">If it still doesn't connect, press <strong>Copy log</strong> in the watch panel and paste it into an <a href="https://github.com/freethinkel/fmc/issues">issue</a>.</p>
 
 ---
 

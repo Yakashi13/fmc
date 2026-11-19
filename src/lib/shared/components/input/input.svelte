@@ -39,8 +39,9 @@
 
 <!-- the box carries the field chrome; label/unit live inside it, Figma-inspector style -->
 <label class="box">
-  {#if label}<span class="tag">{label}</span>{/if}
+  {#if label}<span class="tag type-label">{label}</span>{/if}
   <input
+    class="type-body"
     type={type ?? "text"}
     {placeholder}
     {disabled}
@@ -56,7 +57,7 @@
     oninput={() => onInput?.(value)}
     onchange={() => onChange?.(value)}
   />
-  {#if unit}<span class="tag">{unit}</span>{/if}
+  {#if unit}<span class="tag type-label">{unit}</span>{/if}
 </label>
 
 <style>
@@ -66,24 +67,25 @@
     gap: 0.375rem;
     width: 100%;
     height: var(--control-height);
-    padding: 0 0.625rem;
-    background: oklch(from var(--color-text) l c h / 4%);
-    /* an instrument's field, not a pill: a hairline box that lights up when it has the caret */
-    border: 1px solid oklch(from var(--color-text) l c h / 10%);
+    padding: 0 0.875rem;
+    /* a tinted box, no border: a quiet edge shows only while it has the caret */
+    background: oklch(from var(--color-text) l c h / 7%);
+    border: none;
     border-radius: var(--border-radius);
     transition:
-      border-color 0.15s ease,
+      box-shadow 0.15s ease,
       background-color 0.15s ease;
     cursor: text;
 
     @media (hover: hover) {
       &:hover {
-        border-color: oklch(from var(--color-text) l c h / 22%);
+        background: oklch(from var(--color-text) l c h / 10%);
       }
     }
     &:focus-within {
-      border-color: var(--color-accent);
-      background: oklch(from var(--color-text) l c h / 2%);
+      /* one quiet line on the box's own edge and a step lighter fill — no halo around it */
+      background: oklch(from var(--color-text) l c h / 12%);
+      box-shadow: inset 0 0 0 1px oklch(from var(--color-text) l c h / 35%);
     }
 
     &:has(input:disabled) {
@@ -92,9 +94,6 @@
   }
   .tag {
     flex-shrink: 0;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    text-transform: uppercase;
     color: oklch(from var(--color-text) l c h / 45%);
     user-select: none;
   }
@@ -105,8 +104,6 @@
     padding: 0;
     border: none;
     background: transparent;
-    font: inherit;
-    font-size: 1rem;
     color: var(--color-text);
     outline: none;
 

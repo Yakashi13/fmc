@@ -1,7 +1,7 @@
 <script lang="ts">
   // A select built on Menu, so the dropdown is the same surface as every other popup in the
   // app — and, where anchor positioning exists, lives in the top layer instead of being clipped
-  // by a panel's scroll container. The chosen row carries a check, like a macOS pop-up button.
+  // by a panel's scroll container. The chosen row is the one in full ink, closed by an accent dot.
   import { Icon } from "$lib/shared/components/icon";
   import { Menu, MenuItem } from "$lib/shared/components/menu";
 
@@ -23,28 +23,15 @@
 </script>
 
 <span class="field">
-  <Menu align="end">
+  <Menu align="start">
     {#snippet trigger({ open, toggle })}
-      <button
-        type="button"
-        class="select"
-        class:open
-        {disabled}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onclick={toggle}
-      >
+      <button type="button" class="select type-body" class:open {disabled} onclick={toggle}>
         <span class="label">{current?.short ?? current?.label ?? ""}</span>
         <Icon name="chevron_right" size={20} class="chevron" />
       </button>
     {/snippet}
     {#each options as opt (opt.value)}
-      <MenuItem onClick={() => pick(opt.value)}>
-        <span class="check" class:on={opt.value === value}>
-          <Icon name="check" size={20} />
-        </span>
-        {opt.label}
-      </MenuItem>
+      <MenuItem checked={opt.value === value} onClick={() => pick(opt.value)}>{opt.label}</MenuItem>
     {/each}
   </Menu>
 </span>
@@ -63,25 +50,27 @@
     gap: 0.5rem;
     width: 100%;
     height: var(--control-height);
-    padding: 0 0.625rem;
-    font: inherit;
-    font-size: 1rem;
+    padding: 0 0.875rem;
     color: var(--color-text);
     text-align: start;
-    background: oklch(from var(--color-text) l c h / 4%);
-    border: 1px solid oklch(from var(--color-text) l c h / 10%);
+    background: oklch(from var(--color-text) l c h / 7%);
+    border: none;
     border-radius: var(--border-radius);
     cursor: pointer;
     outline: none;
-    transition: border-color 0.15s ease;
+    transition:
+      box-shadow 0.15s ease,
+      background-color 0.15s ease;
 
     @media (hover: hover) {
       &:hover:not(:disabled) {
-        border-color: oklch(from var(--color-text) l c h / 22%);
+        background: oklch(from var(--color-text) l c h / 10%);
       }
     }
     &:focus-visible {
-      border-color: var(--color-accent);
+      /* one quiet line on the box's own edge and a step lighter fill — no halo around it */
+      background: oklch(from var(--color-text) l c h / 12%);
+      box-shadow: inset 0 0 0 1px oklch(from var(--color-text) l c h / 35%);
     }
 
     &:disabled {
@@ -96,20 +85,18 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  /* one chevron glyph, pointed down — the menu's items inherit the open state from Menu */
+  /* one chevron glyph, pointed down; it turns over while the list is open */
   .select :global(.chevron) {
     flex: none;
     rotate: 90deg;
     color: oklch(from var(--color-text) l c h / 55%);
+    transition: rotate 0.2s ease;
   }
-  .check {
-    display: inline-flex;
-    width: 1.125rem;
-    color: var(--color-accent);
-    visibility: hidden;
+  .select.open {
+    background: oklch(from var(--color-text) l c h / 12%);
 
-    &.on {
-      visibility: visible;
+    :global(.chevron) {
+      rotate: -90deg;
     }
   }
 </style>

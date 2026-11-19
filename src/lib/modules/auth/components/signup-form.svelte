@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Text } from "$lib/shared/components/text";
   import { Button } from "$lib/shared/components/button";
   import { Field } from "$lib/shared/components/field";
   import { Input } from "$lib/shared/components/input";
@@ -60,10 +61,10 @@
     />
   </Field>
   {#if $err}
-    <p class="error">{$err}</p>
+    <Text as="p" variant="caption" tone="error">{$err}</Text>
   {/if}
   <Button type="submit" kind="primary" disabled={$busy}>Create Account</Button>
-  <p class="link">Already have an account? <a href="/login">Sign in</a></p>
+  <p class="link type-caption">Already have an account? <a href="/login">Sign in</a></p>
 </form>
 
 <style>
@@ -72,15 +73,9 @@
     flex-direction: column;
     gap: 0.75rem;
   }
-  .error {
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--color-error);
-  }
   .link {
     margin: 0;
     text-align: center;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
 
     a {

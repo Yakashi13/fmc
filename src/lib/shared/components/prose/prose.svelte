@@ -52,7 +52,6 @@
 
 <style>
   .prose {
-    line-height: 1.6;
     overflow-wrap: anywhere;
 
     :global {
@@ -67,10 +66,6 @@
       h3,
       h4 {
         margin: 1.5rem 0 0.5rem;
-        font-family: var(--font-family);
-        font-stretch: normal;
-        font-size: 1rem;
-        font-weight: 600;
       }
       p {
         margin: 0 0 0.75rem;
@@ -82,6 +77,7 @@
         border-left: 3px solid var(--color-accent);
         border-radius: calc(var(--border-radius) / 2);
         background: oklch(from var(--color-accent) l c h / 10%);
+        border: 1px solid oklch(from var(--color-accent) l c h / 40%);
 
         p:last-child {
           margin-bottom: 0;
@@ -99,11 +95,10 @@
         color: oklch(from var(--color-text) l c h / 45%);
       }
       code {
-        font-family: var(--font-mono);
-        font-size: 0.875em;
         padding: 0.1em 0.35em;
         border-radius: 0.3rem;
         background: oklch(from var(--color-text) l c h / 8%);
+        border: 1px solid oklch(from var(--color-text) l c h / 12%);
       }
       pre {
         margin: 0 0 0.75rem;
@@ -111,6 +106,7 @@
         overflow-x: auto;
         border-radius: var(--border-radius);
         background: oklch(from var(--color-text) l c h / 6%);
+        border: 1px solid oklch(from var(--color-text) l c h / 12%);
 
         code {
           padding: 0;

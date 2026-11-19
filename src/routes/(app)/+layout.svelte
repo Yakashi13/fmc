@@ -1,5 +1,9 @@
 <script lang="ts">
   import { AppNav } from "$lib/shared/components/app-nav";
+  import { Snackbar } from "$lib/shared/components/snackbar";
+  import { marketModel } from "$lib/modules/market/model";
+
+  const { $marketErr: marketErr, marketErrDismissed } = marketModel;
 
   let { children } = $props();
 </script>
@@ -10,6 +14,8 @@
     {@render children()}
   </main>
 </div>
+<!-- one for the whole app: a failed load or like says so wherever the user has got to -->
+<Snackbar message={$marketErr} onDismiss={() => marketErrDismissed()} />
 
 <style>
   .shell {
@@ -33,7 +39,7 @@
   @media (max-width: 767px) {
     main {
       /* keep content clear of the fixed bottom tab bar */
-      padding-bottom: calc(var(--nav-bar-height) + var(--safe-area-bottom));
+      padding-bottom: var(--dock-space);
     }
   }
 </style>

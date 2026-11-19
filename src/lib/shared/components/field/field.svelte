@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Text } from "$lib/shared/components/text";
   import type { Snippet } from "svelte";
   interface Props {
     label?: string;
@@ -10,31 +11,21 @@
 </script>
 
 <label class="field">
-  {#if label}<span class="label">{label}</span>{/if}
+  {#if label}<Text variant="label" tone="muted">{label}</Text>{/if}
   {@render children?.()}
   {#if error}
-    <span class="error">{error}</span>
+    <Text variant="caption" tone="error">{error}</Text>
   {:else if hint}
-    <span class="hint">{hint}</span>
+    <Text variant="caption" tone="muted">{hint}</Text>
   {/if}
 </label>
 
 <style>
+  /* a mono small-caps label over the control, a hint or an error under it */
   .field {
     display: flex;
     flex-direction: column;
-    gap: 0.375rem;
-  }
-  .label {
-    font-size: 1rem;
-    font-weight: 500;
-  }
-  .error {
-    font-size: 0.625rem;
-    color: var(--color-error);
-  }
-  .hint {
-    font-size: 0.625rem;
-    color: oklch(from var(--color-text) l c h / 55%);
+    gap: 0.5rem;
+    min-width: 0;
   }
 </style>

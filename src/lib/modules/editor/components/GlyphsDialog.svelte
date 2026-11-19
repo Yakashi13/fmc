@@ -61,13 +61,14 @@
           onChange={(family) => glyphFormPatched({ family })}
         />
         <span class="tool" title="Upload a .ttf / .otf / .woff">
-          <Button kind="secondary" onClick={() => fileEl?.click()}>
+          <Button kind="secondary" square onClick={() => fileEl?.click()}>
             <Icon name="upload" size={22} />
           </Button>
         </span>
         <span class="tool" title="Pick from the fonts installed on this machine">
           <Button
             kind="secondary"
+            square
             disabled={$localPending}
             onClick={() => installedFontsRequested()}
           >
@@ -111,26 +112,29 @@
       </Field>
     </div>
     <div class="grid">
-      <Field label="Color">
-        <div class="row">
-          <input
-            class="swatch"
-            type="color"
-            value={$form.color}
-            aria-label="Glyph color"
-            oninput={(e) => glyphFormPatched({ color: e.currentTarget.value })}
-          />
-          <Input
-            value={$form.color}
-            maxlength={7}
-            onInput={(color) => glyphFormPatched({ color })}
-          />
-        </div>
-      </Field>
+      <div class="wide">
+        <Field label="Color">
+          <!-- the swatch sits inside the field's box, in front of the hex it opens a picker for -->
+          <div class="color">
+            <input
+              class="swatch"
+              type="color"
+              value={$form.color}
+              aria-label="Glyph color"
+              oninput={(e) => glyphFormPatched({ color: e.currentTarget.value })}
+            />
+            <Input
+              value={$form.color}
+              maxlength={7}
+              onInput={(color) => glyphFormPatched({ color })}
+            />
+          </div>
+        </Field>
+      </div>
       <Field label="Style">
-        <label class="check">
+        <label class="check type-body">
           <Checkbox checked={$form.italic} onChange={(italic) => glyphFormPatched({ italic })} />
-          italic
+          Italic
         </label>
       </Field>
     </div>
@@ -142,15 +146,15 @@
   <div class="preview">
     <canvas bind:this={canvasEl}></canvas>
   </div>
-  <p class="info">
+  <p class="info type-caption">
     {#if $preview}
       {$preview.bitmaps.length} sprites · {$preview.w}×{$preview.h} px ·
       {($preview.bytes / 1024).toFixed(1)} KB in the file
     {/if}
   </p>
 
-  <div class="footer">
-    <Button kind="ghost" onClick={() => glyphDialogClosed()}>Cancel</Button>
+  {#snippet actions()}
+    <Button kind="secondary" onClick={() => glyphDialogClosed()}>Cancel</Button>
     <Button
       kind="primary"
       disabled={!labelsOf($form).length}
@@ -158,27 +162,30 @@
     >
       Replace frames
     </Button>
-  </div>
+  {/snippet}
 </Dialog>
 
 <style>
   .fields {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
   }
   .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
+  }
+  .wide {
+    grid-column: span 2;
   }
   .row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 
-    & :global(select),
-    & :global(input) {
+    > :global(:first-child) {
+      flex: 1;
       min-width: 0;
     }
   }
@@ -186,28 +193,53 @@
     flex-shrink: 0;
     display: inline-flex;
   }
+  /* a field-sized box like the inputs beside it, so the row lines up */
   .check {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
+    gap: 0.625rem;
+    height: var(--control-height);
+    padding: 0 0.875rem;
+    border-radius: var(--border-radius);
+    background: oklch(from var(--color-text) l c h / 7%);
     cursor: pointer;
   }
+  /* the hex field with its swatch laid over the start of the box */
+  .color {
+    position: relative;
+
+    :global(.box) {
+      padding-inline-start: 2.75rem;
+    }
+  }
   .swatch {
-    flex-shrink: 0;
-    width: 1.875rem; /* the row's height — everything in here is button-sized */
-    height: 1.875rem;
+    position: absolute;
+    top: 50%;
+    inset-inline-start: 0.625rem;
+    z-index: 1;
+    width: 1.5rem;
+    height: 1.5rem;
     padding: 0;
-    border: 1px solid oklch(from var(--color-text) l c h / 12%);
-    border-radius: var(--border-radius);
-    background: transparent;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    translate: 0 -50%;
     cursor: pointer;
+
+    &::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    &::-webkit-color-swatch,
+    &::-moz-color-swatch {
+      border: 1px solid oklch(from var(--color-text) l c h / 20%);
+      border-radius: 50%;
+    }
   }
   /* the watch panel is black, and white-on-white would preview as nothing at all */
   .preview {
-    margin-top: 0.75rem;
-    padding: 0.5rem;
-    border-radius: var(--border-radius);
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: var(--border-radius-tile);
     background: oklch(0 0 0);
     overflow-x: auto;
   }
@@ -217,14 +249,7 @@
     height: auto;
   }
   .info {
-    margin: 0.375rem 0 0;
-    font-size: 0.625rem;
+    margin: 0.5rem 0 0;
     color: oklch(from var(--color-text) l c h / 55%);
-  }
-  .footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    margin-top: 1rem;
   }
 </style>

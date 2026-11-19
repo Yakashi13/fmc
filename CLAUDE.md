@@ -9,10 +9,11 @@ same-origin (`location.origin`) without it, which is what prod uses — through 
 same domain as the backend (see `fmc_pocketbase/README.md`).
 
 App: the store at the root, three shelves under one "Store" tab — watchfaces (`/`, with
-`?mine` for the signed-in user's own shelf and `?community` for the links panel; `/my`
+`?mine` for the signed-in user's own shelf; `/my`
 redirects there; `/market/[id]` — a face's showcase page), apps (`/apps`, `/apps/[id]` —
 `.wp2app` packages published from cmf-tech-community/apps, built with the wp2-apps SDK) and firmware (`/firmware`,
-`/firmware/[id]` — OTA images); creator profiles (`/user/[id]`), watchface editor (`/editor`,
+`/firmware/[id]` — OTA images), plus a Community section (`/community`, links out; the old
+`/?community` redirects there); creator profiles (`/user/[id]`), watchface editor (`/editor`,
 with a BLE connection to the CMF Watch Pro 2) and auth (`/login`, `/register`).
 
 Apps and firmware are curated: the `apps` and `firmwares` collections are writable only by a
@@ -49,10 +50,10 @@ src/lib/
     styles/       # tokens.css — design tokens, the only source of colors/type/motion
     lib/          # tiny pure helpers shared by modules (format.ts: compact numbers, dates)
     components/   # one folder per component (button/, input/, dialog/, …) + barrel index.ts;
-                  # app chrome: app-nav/ (bottom bar on a phone, left rail on md+),
-                  # store-tabs/ (the store's section titles — every shelf page opens with it),
+                  # app chrome: app-nav/ (floating dock on a phone, left rail on md+),
+                  # store-tabs/ (the store's sections, a segmented row — every shelf page opens with it),
                   # page/ (a routed page's frame: header + one scroller that runs under the
-                  # phone's glass tab bar); prose/ (a record's markdown, sanitized)
+                  # phone's floating dock); prose/ (a record's markdown, sanitized)
   modules/<feature>/   # auth, market, store (apps + firmware), editor, device
     model/        # <feature>.model.ts + index.ts (export * as fooModel)
     core/         # editor only: the domain, split by concern (see the map below)
@@ -158,28 +159,43 @@ and `frames` sections; `PropsPanel.svelte` is the container and owns the shared 
 
 ## UI
 
-- Design tokens in `lib/styles/tokens.css`: `--color-accent` (#ff5c00), `--color-text`,
-  `--color-background`, `--color-error`, `--color-on-accent` (ink on an accent surface — the
-  dark shade in both schemes), `--color-selection` (#4af) and `--color-guide` (#ff44ff88), the
-  editor canvas's selection boxes/handles and snap guides — read once via `getComputedStyle`,
-  since a canvas can't take a var,
-  `--border-radius`, `--font-family`, `--font-display` (Unbounded, display headings only),
-  `--font-mono`, `--spring-transition`. Never hardcode a hex in a component — derive every shade via
-  relative color: `oklch(from var(--color-text) l c h / 55%)` (muted text), `/ 12%`
-  (borders), `/ 6%` (tinted surfaces).
+- The look is Nothing OS: monochrome, true black in the dark scheme, dot-matrix display type,
+  and red kept for signals. Design tokens in `lib/styles/tokens.css`: `--color-text`,
+  `--color-background` (#000 dark), `--color-surface` (what floats over the page: dialog, sheet,
+  menu), `--color-accent` (#d71921 — a dot, a ring, a link; never the fill of a main action,
+  which is ink: `--color-text` under `--color-background`), `--color-on-accent` (white or black,
+  derived from the accent's lightness, since the user can pick the accent), `--color-error`,
+  `--color-selection` (#4af) and `--color-guide` (#ff44ff88), the editor canvas's selection
+  boxes/handles and snap guides — read once via `getComputedStyle`, since a canvas can't take a
+  var, `--border-radius` (controls), `--border-radius-tile` (cards, banners, dialogs),
+  `--font-family` (Geist, self-hosted in `static/fonts/`), `--font-display` (Doto, dot matrix:
+  the `display`/`title` steps and counts only — below ~1.5rem it stops reading),
+  `--font-mono` (Geist Mono: badges and small labels), `--spring-transition`. Buttons take
+  `.type-button` (body size, 600), `size="small"` + `.type-button-small` on a dense surface;
+  icon-only controls are round, 2.75rem on a phone and a notch smaller with a cursor (from md up: a button and `--control-height` are 2.5rem, a small button and a close × 2rem, a large one 3rem; the phone raises them to clear 44px). A button squares off while pressed (a spring on
+  `border-radius`), and an inspector toggle stays squared while on — the shape is the state. Never hardcode a
+  hex in a component — derive every shade via relative color:
+  `oklch(from var(--color-text) l c h / 55%)` (muted text), `/ 12%` (borders), `/ 7%` (tinted
+  surfaces; less disappears on black). A cover with no picture is a dot grid, not a colour wash.
 - All sizes — `rem`, never `px`: `:root { font-size: 16px }` in tokens.css is the single
   scale knob for the whole UI (1rem = 16px, so 8px → `0.5rem`, 12px → `0.75rem`). Exceptions
   that stay in `px`: hairline borders/outlines (`1px`, `2px`) and media-query breakpoints
   (they measure the viewport, not the type scale).
 - Body text and every control — button, input, select, textarea, menu row, tab, field label —
-  run at `1rem` (16px, 18px on a phone); only secondary text goes smaller, snapped to the 1px
-  step (`0.75rem` = 12px, `0.625rem` = 10px). Everything moves together when `:root` changes.
-  Fields are >=16px on their own now, so no iOS zoom guard is needed in global.css.
+  run at the body step: `1rem` (16px) on a phone, `0.9375rem` (15px) from md up, where
+  global.css takes the whole `.type-*` scale a notch down with the controls; only secondary
+  text goes smaller, snapped to the 1px step (`0.75rem` = 12px, `0.625rem` = 10px). Everything
+  moves together when `:root` changes. A phone's fields stay >=16px, so no iOS zoom guard is
+  needed in global.css.
 - Components: Svelte 5 runes, typed `interface Props` + `$props()`, `Snippet` children
   via `{@render}`, callback props (`onClick`, `onChange`), `$bindable()` for form values;
   no event dispatchers. Scoped `<style>` with native `&`-nesting (Lightning CSS via Vite
   `css.transformer` handles targets/minify — no PostCSS, no Tailwind).
-- Overlays are native-platform: `dialog/` wraps `<dialog>` (modal + `side` drawer),
+- Overlays are native-platform: `dialog/` wraps `<dialog>` — a centred modal on md+, the
+  swipeable `sheet/` on a phone, so everything over a phone screen rises from the bottom
+  (the editor's Tree/Props/Sim panels included); a sheet's title and close button go in its
+  `header` snippet, outside the scroller, so they never scroll away; a `menu/` opens to the
+  side with more room and is never larger than the room it has;
   `select/` is a `menu/` with a check on the chosen row; `menu/` is a popover anchored to its
   trigger (CSS anchor positioning, top layer), absolute-positioned in a relative parent as the
   fallback; `adaptive-popover/` is the watch panel's shell — a drawer beside the rail on
@@ -191,14 +207,15 @@ and `frames` sections; `PropsPanel.svelte` is the container and owns the shared 
   no map to edit and no build step. A name the font doesn't know renders as its own word, so
   `tests/ui-icon.browser.test.ts` measures every name the app spells.
 - Phone first for the store: the watchface grid is two dials across on a phone
-  (`watchface-list`), a detail page is one column with a single accent button (the action that
+  (`watchface-list`), a detail page is one column with a single ink button (the action that
   puts the thing on the watch) and its numbers in a `stat-strip/`, not a list of rows. New
   routed pages use `page/` rather than re-deriving the under-the-tab-bar scroll.
 - Controls are an instrument's, not a form's (the look is borrowed from the cmf-watch-utils
-  web emulator): `input/` and `select/` are hairline boxes at `--border-radius`, never pills;
+  web emulator): `input/`, `select/` and `textarea/` are borderless tinted boxes at `--border-radius` (an ink ring on focus), never pills;
   `slider/` is a thin rail with a small ringed knob; `switch/` is small. Their height is
   `--control-height` — a dense surface (the editor's inspector and simulator) lowers it on its
-  own container instead of restyling the controls. Buttons stay pills.
+  own container and marks it `data-dense` instead of restyling the controls; menu rows follow
+  `--control-height` too. Buttons, tabs and badges are pills.
 - A side panel is a stack of `panel-section/`s: a mono small-caps title over its controls, a
   hairline between sections; a section with nothing to render hides itself. Small labels over
   a field or under a number are mono, uppercase, `0.6875rem`.

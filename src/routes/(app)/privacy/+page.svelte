@@ -17,7 +17,7 @@
 </svelte:head>
 
 <div class="page">
-  <article>{@html html}</article>
+  <article class="type-doc">{@html html}</article>
 </div>
 
 <style>
@@ -33,23 +33,18 @@
   article :global {
     h1 {
       margin: 0 0 0.75rem;
-      font-family: var(--font-display);
-      font-size: 1.75rem;
     }
     h1 + p {
       color: oklch(from var(--color-text) l c h / 75%);
     }
     h2 {
       margin: 2rem 0 0.75rem;
-      font-size: 1.25rem;
     }
     h3 {
       margin: 1.5rem 0 0.5rem;
-      font-size: 1.0625rem;
     }
     p {
       margin: 0 0 0.75rem;
-      line-height: 1.6;
     }
     ul {
       margin: 0 0 0.75rem;
@@ -57,14 +52,9 @@
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      line-height: 1.6;
     }
     li::marker {
       color: oklch(from var(--color-text) l c h / 45%);
-    }
-    code {
-      font-family: var(--font-mono);
-      font-size: 0.875em;
     }
     a {
       color: var(--color-accent);

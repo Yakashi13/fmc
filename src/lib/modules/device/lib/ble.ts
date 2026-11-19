@@ -154,7 +154,7 @@ export class Watch {
   async connect({ rescue = false } = {}): Promise<WatchInfo> {
     if (!navigator.bluetooth)
       throw new Error(
-        "Web Bluetooth unavailable — use Chrome or Edge (on an iPhone, a Web BLE browser such as Bluefy)",
+        "Web Bluetooth isn't available here — open this page in Chrome or Edge, or in Bluefy on an iPhone",
       );
     this.status("requesting device…");
     // like in fmc CLI: the advertisement doesn't always carry the service, so match by name and by manufacturer id too

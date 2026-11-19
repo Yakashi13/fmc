@@ -54,7 +54,7 @@
 
 {#if slotInfo}
   <div>
-    <span class="muted-label">widget slot — active metric</span>
+    <span class="type-label muted-label">widget slot — active metric</span>
     <Select
       value={String(slotInfo.activeIdx)}
       options={slotOptions}
@@ -67,7 +67,7 @@
        placeholder, [1..count] are the companion-app picker icons, one per metric of
        the 0x5f list — see drawSlotPlaceholder in lib/render.ts -->
   <div>
-    <span class="muted-label">placeholder (widget-edit screen only)</span>
+    <span class="type-label muted-label">placeholder (widget-edit screen only)</span>
     <div class="images">{@render thumb(images[0])}</div>
   </div>
 {:else if images && images.length > 1}
@@ -76,7 +76,7 @@
        on the watch. Listed with its index (and, where the format fixes them, the value
        each slot must hold) and reorderable by drag. -->
   <div>
-    <span class="muted-label">frames — index = value</span>
+    <span class="type-label muted-label">frames — index = value</span>
     <div class="frames">
       {#each images as ri, i}
         <div
@@ -118,9 +118,9 @@
             }}
             onEnd={onGripEnd}
           />
-          <span class="frame-idx">{i}</span>
+          <span class="frame-idx type-caption type-mono">{i}</span>
           {@render thumb(ri)}
-          {#if frameLabels}<span class="thumb-cap">{frameLabels[i] ?? ""}</span>{/if}
+          {#if frameLabels}<span class="thumb-cap type-caption">{frameLabels[i] ?? ""}</span>{/if}
           {#if dropIdx === i}
             <!-- own element, not a row border: the line marks the gap the frame lands in -->
             <span class="drop-line" class:below={i > (dragIdx ?? -1)}></span>
@@ -140,7 +140,7 @@
      filled sector like any 0x5b ring, and the thumbnail above takes over. -->
 {#if layer.kind === "ring" && !images.length}
   <div>
-    <span class="muted-label">ring art</span>
+    <span class="type-label muted-label">ring art</span>
     <!-- hidden input + a real Button, same as the tree panel's own add-image control -->
     <input
       bind:this={ringFile}
@@ -153,17 +153,19 @@
         if (file) ringImageAdded({ id: layer.id, file });
       }}
     />
-    <Button kind="secondary" onClick={() => ringFile?.click()}>
+    <Button size="small" kind="secondary" onClick={() => ringFile?.click()}>
       <Icon name="add_photo_alternate" size={22} />
       use a ring bitmap
     </Button>
-    <p class="hint-xs">a full ring, drawn at 100% — the watch clips it to the filled sector</p>
+    <p class="type-caption hint-xs">
+      a full ring, drawn at 100% — the watch clips it to the filled sector
+    </p>
   </div>
 {/if}
 
 {#if $progressLine?.id === layer.id}
   <div>
-    <span class="muted-label">progress line color</span>
+    <span class="type-label muted-label">progress line color</span>
     <!-- onchange, not oninput: every pick redraws all 101 frames and is one undo step -->
     <input
       class="swatch"
@@ -177,7 +179,7 @@
 
 {#if layer.kind === "number" || layer.kind === "image" || frameLabels}
   <div class="row">
-    <Button kind="secondary" onClick={() => glyphDialogOpened(layer.id)}>
+    <Button size="small" kind="secondary" onClick={() => glyphDialogOpened(layer.id)}>
       <Icon name="text_fields" />
       regenerate from a font
     </Button>
@@ -229,8 +231,6 @@
   .frame-idx {
     width: 1rem;
     flex-shrink: 0;
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .images {
@@ -249,7 +249,6 @@
     cursor: pointer;
   }
   .thumb-cap {
-    font-size: 0.625rem;
     text-align: center;
     color: oklch(from var(--color-text) l c h / 55%);
   }

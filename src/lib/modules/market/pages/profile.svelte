@@ -23,7 +23,6 @@
     $profileItems: profileItems,
     $profileLoading: profileLoading,
     $likes: likes,
-    $marketErr: marketErr,
     profileLoadRequested,
   } = marketModel;
   const { $user: user } = authModel;
@@ -52,15 +51,13 @@
 <svelte:head><title>{creatorTitle(name)}</title></svelte:head>
 
 <Page>
-  {#if $marketErr}<p class="error">{$marketErr}</p>{/if}
-
   <header class="profile">
     {#if $profile}
       <div class="who">
         <Avatar {name} src={avatar} />
         <div class="identity">
-          <h1>{name}</h1>
-          <p class="meta">Joined {joined}</p>
+          <h1 class="type-title">{name}</h1>
+          <p class="meta type-caption">Joined {joined}</p>
         </div>
         {#if own}
           <Button kind="secondary" onClick={() => profileEditOpened()}>
@@ -81,7 +78,7 @@
       </div>
     {:else if $profileLoading}
       <div class="who">
-        <Skeleton height="4.5rem" width="4.5rem" />
+        <Skeleton height="4.5rem" width="4.5rem" round />
         <div class="identity">
           <Skeleton height="1.5rem" width="10rem" />
           <Skeleton height="0.875rem" width="7rem" />
@@ -102,12 +99,6 @@
 {#if own}<ProfileEditor />{/if}
 
 <style>
-  .error {
-    margin: 0;
-    padding: 0.75rem 1rem 0;
-    font-size: 0.75rem;
-    color: var(--color-error);
-  }
   .profile {
     display: flex;
     flex-direction: column;
@@ -120,11 +111,6 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-
-    :global(.skeleton:first-child) {
-      flex: none;
-      border-radius: 50%;
-    }
   }
   .identity {
     display: flex;
@@ -135,20 +121,16 @@
   }
   h1 {
     margin: 0;
-    font-size: 1.75rem;
-    line-height: 1.15;
     overflow-wrap: anywhere;
   }
   .bio {
     margin: 0;
     max-width: 40rem;
-    line-height: 1.5;
     white-space: pre-line;
     overflow-wrap: anywhere;
   }
   .meta {
     margin: 0;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .stats {

@@ -35,10 +35,11 @@
     color: transparent;
     transition: all 0.15s ease;
   }
+  /* checked is ink, like every other "on" fill but the switch */
   input:checked + .box {
-    background: var(--color-accent);
-    border-color: var(--color-accent);
-    color: var(--color-on-accent);
+    background: var(--color-text);
+    border-color: var(--color-text);
+    color: var(--color-background);
   }
   input:focus-visible + .box {
     outline: 2px solid var(--color-accent);

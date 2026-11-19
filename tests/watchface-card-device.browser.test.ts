@@ -15,14 +15,14 @@ const face = (extra: Record<string, unknown>) =>
     ...extra,
   }) as unknown as RecordModel;
 
-test("a face that claims a device gets a badge", async () => {
+test("a face that claims a device says which", async () => {
   const screen = await render(WatchfaceCard, { wf: face({ device: "watch_3_pro" }) });
 
-  await expect.element(screen.getByText("Watch 3 Pro")).toBeInTheDocument();
+  await expect.element(screen.getByText("3 Pro")).toBeInTheDocument();
 });
 
 test("an untagged face gets none", async () => {
   const screen = await render(WatchfaceCard, { wf: face({}) });
 
-  expect(screen.container.querySelectorAll(".badge")).toHaveLength(0);
+  expect(screen.container.querySelectorAll(".device, .badge")).toHaveLength(0);
 });

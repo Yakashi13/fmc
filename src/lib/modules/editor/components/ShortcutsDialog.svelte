@@ -18,12 +18,12 @@
   <div class="groups">
     {#each groups as g (g.group)}
       <section>
-        <h3>{g.group}</h3>
+        <h3 class="type-label">{g.group}</h3>
         {#each g.items as s (s.keys)}
-          <div class="row">
+          <div class="row type-small">
             <span class="label">{s.label}</span>
             <span class="keys">
-              {#each formatKeys(s.keys, mac) as k (k)}<kbd>{k}</kbd>{/each}
+              {#each formatKeys(s.keys, mac) as k (k)}<kbd class="type-caption">{k}</kbd>{/each}
             </span>
           </div>
         {/each}
@@ -40,9 +40,6 @@
   }
   h3 {
     margin: 0 0 0.375rem;
-    font-size: 0.625rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .row {
@@ -51,7 +48,6 @@
     justify-content: space-between;
     gap: 1rem;
     padding: 0.25rem 0;
-    font-size: 0.75rem;
   }
   .label {
     color: oklch(from var(--color-text) l c h / 80%);
@@ -63,9 +59,6 @@
   }
   kbd {
     padding: 0.125rem 0.375rem;
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    line-height: 1.4;
     border: 1px solid oklch(from var(--color-text) l c h / 12%);
     border-radius: calc(var(--border-radius) / 2);
     background: oklch(from var(--color-text) l c h / 6%);

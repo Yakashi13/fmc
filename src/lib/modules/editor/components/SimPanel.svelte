@@ -65,7 +65,7 @@
   };
 </script>
 
-<div class="panel">
+<div class="panel type-small" data-dense>
   <PanelSection title="Clock">
     <div class="switch-row">
       <Switch checked={$sim.live} onChange={(v) => simPatched({ live: v })} />
@@ -102,7 +102,7 @@
       >
     </div>
     <div>
-      <span class="muted-label">Accent color</span>
+      <span class="type-label muted-label">Accent color</span>
       <!-- the watch offers a fixed set, so this mirrors it rather than opening a color wheel;
            recolors widgets flagged via meta[7]===4, see metaInfo in lib/sources.ts -->
       <div class="accent-row">
@@ -135,7 +135,7 @@
       <div class="fields-grid">
         {#each shown as [key, label, goalLabel]}
           <div>
-            <span class="muted-label">{label}</span>
+            <span class="type-label muted-label">{label}</span>
             <Input
               type="number"
               value={String($sim[key])}
@@ -145,8 +145,9 @@
           {#if goalLabel}
             {@const goal = METRIC_GOAL[key]!}
             <div>
-              <span class="muted-label" title="what a percentage ring on this metric divides by"
-                >{goalLabel}</span
+              <span
+                class="type-label muted-label"
+                title="what a percentage ring on this metric divides by">{goalLabel}</span
               >
               <Input
                 type="number"
@@ -162,7 +163,7 @@
       <div class="fields-grid">
         {#each shownTimes as [key, label]}
           <div>
-            <span class="muted-label">{label}</span>
+            <span class="type-label muted-label">{label}</span>
             <Input
               type="time"
               value={hhmm($sim[key])}
@@ -185,7 +186,7 @@
       <div class="ids-list">
         {#each $ids as { id, max }}
           <div class="id-row">
-            <span class="id-label">{pickerLabel(id)}</span>
+            <span class="id-label type-caption type-mono">{pickerLabel(id)}</span>
             <span class="id-input">
               <Input
                 type="number"
@@ -197,7 +198,7 @@
             <!-- meta.max: the widget's OWN declared maximum (a hand's 60 positions, a number's
                  digit cap), not the metric's range — it doesn't scale what you type here -->
             {#if max}<span
-                class="max-hint"
+                class="max-hint type-caption"
                 title="the widget's declared max, not this metric's range">max {max}</span
               >{/if}
           </div>
@@ -214,7 +215,6 @@
 
     display: flex;
     flex-direction: column;
-    font-size: 0.85rem;
   }
   .switch-row {
     display: flex;
@@ -234,10 +234,6 @@
   .muted-label {
     display: block;
     margin-bottom: 0.375rem;
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   /* one row, scrolled — wrapping left a lone swatch stranded on a second line */
@@ -286,11 +282,6 @@
 
     summary {
       cursor: pointer;
-      font-family: var(--font-mono);
-      font-size: 0.6875rem;
-      font-weight: 500;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
       color: oklch(from var(--color-text) l c h / 55%);
     }
     &[open] summary {
@@ -313,8 +304,6 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .id-input {
@@ -324,7 +313,6 @@
   }
   .max-hint {
     white-space: nowrap;
-    font-size: 0.625rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
 </style>

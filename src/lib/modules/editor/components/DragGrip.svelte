@@ -5,6 +5,7 @@
   // coming here wherever the finger goes, and only the finger that went down counts — a second
   // one lifting doesn't drop. The owner sees the row under the finger and a drop/cancel at the end.
   import { Icon } from "$lib/shared/components/icon";
+  import { holdCursor } from "$lib/shared/lib/hold-cursor";
 
   interface Props {
     /** selector of the rows the grip can be dropped on */
@@ -26,6 +27,7 @@
     e.preventDefault(); // no text selection or emulated mouse events from this touch
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     pointer = e.pointerId;
+    holdCursor("grabbing");
     onStart();
   }
 

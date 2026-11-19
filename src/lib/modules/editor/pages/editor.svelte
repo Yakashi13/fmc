@@ -5,6 +5,7 @@
   import { Dialog } from "$lib/shared/components/dialog";
   import { Loader } from "$lib/shared/components/loader";
   import { Icon } from "$lib/shared/components/icon";
+  import { holdCursor } from "$lib/shared/lib/hold-cursor";
   import { Menu, MenuItem } from "$lib/shared/components/menu";
   import { authModel } from "$lib/modules/auth/model";
   import { marketModel } from "$lib/modules/market/model";
@@ -37,7 +38,13 @@
     type Rot,
     type Rz,
   } from "../shared/drag";
-  import { inField, isRoving, matchShortcut, type ShortcutActions } from "../shared/shortcuts";
+  import {
+    capsFor,
+    inField,
+    isRoving,
+    matchShortcut,
+    type ShortcutActions,
+  } from "../shared/shortcuts";
   import { editorModel } from "../model";
   import TreePanel from "../components/TreePanel.svelte";
   import PropsPanel from "../components/PropsPanel.svelte";
@@ -144,6 +151,7 @@
   function gutterDown(side: "tree" | "right", e: PointerEvent) {
     e.preventDefault();
     gutter = { side, x: e.clientX, from: side === "tree" ? treeW : rightW };
+    holdCursor(gutterCursor(side));
   }
 
   function gutterMove(e: PointerEvent) {
@@ -151,6 +159,7 @@
     const dx = gutter.side === "tree" ? e.clientX - gutter.x : gutter.x - e.clientX;
 
     setSide(gutter.side, gutter.from + dx / rootRem());
+    holdCursor(gutterCursor(gutter.side));
   }
 
   function gutterKey(side: "tree" | "right", e: KeyboardEvent) {
@@ -507,139 +516,152 @@
 />
 
 <div class="page">
+  <!-- three zones: the document (file menu, name, history) · what the canvas shows · what leaves
+       the editor, ending in its one ink button — Flash with a watch connected, Export without -->
   <div class="toolbar">
-    <Menu align="start">
-      {#snippet trigger({ toggle })}
-        <Button kind="secondary" onClick={toggle}>
-          <Icon name="arrow_upload_ready" />
-          <span class="btn-label">Import</span>
-        </Button>
-      {/snippet}
-      <MenuItem onClick={() => fileInput?.click()}>
-        <Icon name="note_add" />
-        <span class="route">Watchface file <span>.bin, .aab</span></span>
-      </MenuItem>
-      <MenuItem onClick={() => dirInput?.click()}>
-        <Icon name="watch" />
-        <span class="route">Export folder <span>Facer, WatchMaker</span></span>
-      </MenuItem>
-      {#if $doc}
-        <MenuItem onClick={() => binsInput?.click()}>
-          <Icon name="library_add" />
-          <span class="route">Layers from watchfaces <span>.bin, into this one</span></span>
+    <div class="zone start">
+      <Menu align="start">
+        {#snippet trigger({ toggle })}
+          <span class="tool-slot" title="File">
+            <Button size="small" kind="ghost" onClick={toggle}>
+              <Icon name="menu" size={20} />
+            </Button>
+          </span>
+        {/snippet}
+        <MenuItem
+          onClick={() => {
+            faceDetached();
+            newFaceRequested();
+          }}
+        >
+          <Icon name="note_add" /> New
         </MenuItem>
-      {/if}
-    </Menu>
-    <input bind:this={fileInput} type="file" accept=".bin,.aab,.zip" hidden onchange={openFile} />
-    <input bind:this={dirInput} type="file" webkitdirectory hidden onchange={openFacer} />
-    <input
-      bind:this={binsInput}
-      type="file"
-      accept=".bin"
-      multiple
-      hidden
-      onchange={(e) => {
-        binsImported([...(e.currentTarget.files ?? [])]);
-        e.currentTarget.value = "";
-      }}
-    />
-    <span class="tool-slot" title="New">
-      <Button
-        kind="secondary"
-        onClick={() => {
-          faceDetached();
-          newFaceRequested();
-        }}
-      >
-        <Icon name="note_add" /> <span class="btn-label">New</span>
-      </Button>
-    </span>
-    {#if $doc}
-      <!-- commits on blur/Enter, not per keystroke: every rename is one undo step, and the
-           header field only holds 15 bytes anyway (see renameFace) -->
-      <input
-        class="wf-name"
-        value={$doc.name}
-        title="Watchface name — the watch's own list shows the first 15 characters"
-        maxlength="63"
-        onchange={(e) => renameFace(e.currentTarget.value.trim())}
-        onkeydown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-      />
-      <Tabs
-        items={screenItems}
-        value={$screen}
-        onChange={(v) =>
-          v === "aod" ? (hasAOD ? screenSet("aod") : aodAdded()) : screenSet("main")}
-      />
-      <span class="tool-slot history history-start" title="Undo (⌘Z)">
-        <Button kind="ghost" disabled={!$undoN} onClick={() => undo()}>
-          <Icon name="undo" size={22} />
-        </Button>
-      </span>
-      <span class="tool-slot history" title="Redo (⇧⌘Z)">
-        <Button kind="ghost" disabled={!$redoN} onClick={() => redo()}>
-          <Icon name="redo" size={22} />
-        </Button>
-      </span>
-      <span class="tool-slot export" title="Export .bin">
-        <Button kind="primary" onClick={() => exportBin()}>
-          <Icon name="download" size={22} />
-          <span class="btn-label">Export .bin</span>
-        </Button>
-      </span>
-      {#if $user}
-        <span
-          class="tool-slot"
-          title={$foreignWf
-            ? FOREIGN_HINT
-            : isPublishedMine
-              ? "Update the published watchface"
-              : $openedWf
-                ? "Save changes"
-                : "Save as draft"}
-        >
-          <Button
-            kind={isPublishedMine ? "secondary" : "ghost"}
-            onClick={saveDraft}
-            disabled={$saving || $foreignWf}
+        <MenuItem onClick={() => fileInput?.click()}>
+          <Icon name="file_open" />
+          <span class="route">Open watchface <span class="type-caption">.bin, .aab</span></span>
+        </MenuItem>
+        <MenuItem onClick={() => dirInput?.click()}>
+          <Icon name="watch" />
+          <span class="route"
+            >Import export folder <span class="type-caption">Facer, WatchMaker</span></span
           >
-            <Icon name="save" size={22} />
-            <span class="btn-label"
-              >{$saving ? "Saving…" : isPublishedMine ? "Update" : "Save"}</span
+        </MenuItem>
+        {#if $doc}
+          <MenuItem onClick={() => binsInput?.click()}>
+            <Icon name="library_add" />
+            <span class="route"
+              >Add layers from watchfaces <span class="type-caption">.bin</span></span
             >
+          </MenuItem>
+          <MenuItem keys={capsFor("mod+e")} onClick={() => exportBin()}>
+            <Icon name="download" /> Export .bin
+          </MenuItem>
+        {/if}
+      </Menu>
+      <input bind:this={fileInput} type="file" accept=".bin,.aab,.zip" hidden onchange={openFile} />
+      <input bind:this={dirInput} type="file" webkitdirectory hidden onchange={openFacer} />
+      <input
+        bind:this={binsInput}
+        type="file"
+        accept=".bin"
+        multiple
+        hidden
+        onchange={(e) => {
+          binsImported([...(e.currentTarget.files ?? [])]);
+          e.currentTarget.value = "";
+        }}
+      />
+      {#if $doc}
+        <!-- commits on blur/Enter, not per keystroke: every rename is one undo step, and the
+             header field only holds 15 bytes anyway (see renameFace) -->
+        <input
+          class="wf-name type-body"
+          value={$doc.name}
+          title="Watchface name — the watch's own list shows the first 15 characters"
+          maxlength="63"
+          onchange={(e) => renameFace(e.currentTarget.value.trim())}
+          onkeydown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+        />
+        <span class="tool-slot" title="Undo (⌘Z)">
+          <Button size="small" kind="ghost" disabled={!$undoN} onClick={() => undo()}>
+            <Icon name="undo" size={20} />
           </Button>
         </span>
-        <span
-          class="tool-slot"
-          title={$foreignWf
-            ? FOREIGN_HINT
-            : isPublishedMine
-              ? "Edit name and description"
-              : "Publish"}
-        >
-          <Button
-            kind={isPublishedMine ? "ghost" : "secondary"}
-            onClick={() => publishDialogOpened()}
-            disabled={$foreignWf}
-          >
-            <Icon name={isPublishedMine ? "edit_note" : "cloud_upload"} size={22} />
-            <span class="btn-label">{isPublishedMine ? "Details" : "Publish"}</span>
+        <span class="tool-slot" title="Redo (⇧⌘Z)">
+          <Button size="small" kind="ghost" disabled={!$redoN} onClick={() => redo()}>
+            <Icon name="redo" size={20} />
           </Button>
         </span>
       {/if}
-    {/if}
-    {#if $bleInfo && $doc}
-      <span class="tool-slot" title="Upload to the watch">
-        <Button kind="primary" onClick={flashWatch} disabled={$flashing}>
-          <Icon name="bolt" size={22} />
-          {$flashing ? "Flashing…" : "Flash"}
-        </Button>
-      </span>
+    </div>
+    {#if $doc}
+      <div class="zone center">
+        <Tabs
+          items={screenItems}
+          value={$screen}
+          onChange={(v) =>
+            v === "aod" ? (hasAOD ? screenSet("aod") : aodAdded()) : screenSet("main")}
+        />
+      </div>
+      <div class="zone end">
+        {#if $user}
+          <span
+            class="tool-slot"
+            title={$foreignWf
+              ? FOREIGN_HINT
+              : isPublishedMine
+                ? "Update the published watchface (⌘S)"
+                : $openedWf
+                  ? "Save changes (⌘S)"
+                  : "Save as draft (⌘S)"}
+          >
+            <Button size="small" kind="ghost" onClick={saveDraft} disabled={$saving || $foreignWf}>
+              <Icon name="save" size={20} />
+              <span class="btn-label"
+                >{$saving ? "Saving…" : isPublishedMine ? "Update" : "Save"}</span
+              >
+            </Button>
+          </span>
+          <span
+            class="tool-slot"
+            title={$foreignWf
+              ? FOREIGN_HINT
+              : isPublishedMine
+                ? "Edit name and description"
+                : "Publish"}
+          >
+            <Button
+              size="small"
+              kind="ghost"
+              onClick={() => publishDialogOpened()}
+              disabled={$foreignWf}
+            >
+              <Icon name={isPublishedMine ? "edit_note" : "cloud_upload"} size={20} />
+              <span class="btn-label">{isPublishedMine ? "Details" : "Publish"}</span>
+            </Button>
+          </span>
+        {/if}
+        {#if $bleInfo}
+          <span class="tool-slot" title="Upload to the watch">
+            <Button size="small" kind="primary" onClick={flashWatch} disabled={$flashing}>
+              <Icon name="bolt" size={20} />
+              <span class="btn-label">{$flashing ? "Flashing…" : "Flash"}</span>
+            </Button>
+          </span>
+        {:else}
+          <span class="tool-slot" title="Export .bin (⌘E)">
+            <Button size="small" kind="primary" onClick={() => exportBin()}>
+              <Icon name="download" size={20} />
+              <span class="btn-label">Export .bin</span>
+            </Button>
+          </span>
+        {/if}
+      </div>
     {/if}
   </div>
 
   {#if $err || ($flashing && $bleStatus) || $bleStatus?.startsWith("error:")}
-    <p class="statusbar" class:error={$err || $bleStatus?.startsWith("error:")}>
+    <p class="statusbar type-caption" class:error={$err || $bleStatus?.startsWith("error:")}>
       {$err || $bleStatus}
     </p>
   {/if}
@@ -672,7 +694,7 @@
                 <!-- nothing open yet: the dial itself says what to do, instead of leaving a black
                  disc and two unlabelled toolbar icons to be figured out -->
                 <div class="canvas-empty">
-                  <h2>Make a watchface</h2>
+                  <h2 class="type-title">Make a watchface</h2>
                   <div class="canvas-empty-actions">
                     <Button
                       onClick={() => {
@@ -686,7 +708,9 @@
                       <Icon name="folder_open" size={22} /> Open a file
                     </Button>
                   </div>
-                  <p>.bin or .aab. Facer and WatchMaker exports are under Import.</p>
+                  <p class="type-caption">
+                    .bin or .aab. Facer and WatchMaker exports are under Import.
+                  </p>
                 </div>
               {/if}
             </WatchCase>
@@ -694,15 +718,31 @@
         </div>
       </div>
       {#if perf && $doc}
-        <p class="fps" class:slow={fps > 0 && fps < 50}>
+        <p class="fps type-caption type-mono" class:slow={fps > 0 && fps < 50}>
           {fps} fps · {drawMs} ms draw
         </p>
       {/if}
-      <p class="hint">
-        click — select · drag / arrow keys (⇧ ×10) — move · ⌥ drag — no snap · corners — resize (⇧
-        inverts the aspect lock) · the dot above — rotate (⇧ snaps to 15°) ·
-        <button class="hint-key" onclick={() => (helpOpen = true)}>? — all shortcuts</button>
-      </p>
+      <!-- the canvas's gestures, folded into a round "?" in the corner: a native disclosure,
+           so it opens and closes with no state of its own -->
+      {#if $doc}
+        <details class="hint">
+          <summary class="hint-key" aria-label="Canvas controls" title="Canvas controls">
+            <Icon name="question_mark" size={20} />
+          </summary>
+          <div class="hint-card type-small">
+            <ul>
+              <li><span>Click</span> select</li>
+              <li><span>Drag, arrows</span> move (⇧ ×10)</li>
+              <li><span>⌥ drag</span> move without snapping</li>
+              <li><span>Corners</span> resize (⇧ flips the aspect lock)</li>
+              <li><span>Dot above</span> rotate (⇧ snaps to 15°)</li>
+            </ul>
+            <Button size="small" kind="secondary" onClick={() => (helpOpen = true)}>
+              All shortcuts
+            </Button>
+          </div>
+        </details>
+      {/if}
     </section>
 
     <aside class="side-panel right-panel" style="width: {rightW}rem">
@@ -725,16 +765,18 @@
     </aside>
 
     {#if $doc}
+      <!-- the three panels, as one floating pill over the canvas: each opens its sheet -->
       <div class="mobile-actions">
-        <Button kind="secondary" onClick={() => (mobilePanel = "tree")}>
-          <Icon name="account_tree" size={22} /> Tree
-        </Button>
-        <Button kind="secondary" onClick={() => (mobilePanel = "props")}>
-          <Icon name="tune" size={22} /> Props
-        </Button>
-        <Button kind="secondary" onClick={() => (mobilePanel = "sim")}>
-          <Icon name="play_arrow" size={22} /> Sim
-        </Button>
+        {#each [["tree", "account_tree", "Tree"], ["props", "tune", "Props"], ["sim", "play_arrow", "Sim"]] as [id, icon, label] (id)}
+          <button
+            type="button"
+            class="panel-btn type-label"
+            onclick={() => (mobilePanel = id as "tree" | "props" | "sim")}
+          >
+            <Icon name={icon} size={20} />
+            {label}
+          </button>
+        {/each}
       </div>
     {/if}
   </div>
@@ -762,14 +804,17 @@
   ></div>
 {/snippet}
 
-<Dialog side open={mobilePanel !== null} title={mobileTitle} onClose={() => (mobilePanel = null)}>
-  {#if mobilePanel === "tree"}
-    <TreePanel />
-  {:else if mobilePanel === "props"}
-    <PropsPanel />
-  {:else if mobilePanel === "sim"}
-    <SimPanel />
-  {/if}
+<!-- phone only, where Dialog is the same swipeable sheet as the watch panel -->
+<Dialog open={mobilePanel !== null} title={mobileTitle} onClose={() => (mobilePanel = null)}>
+  <div class="sheet-panel" class:bleed={mobilePanel === "tree"}>
+    {#if mobilePanel === "tree"}
+      <TreePanel />
+    {:else if mobilePanel === "props"}
+      <PropsPanel />
+    {:else if mobilePanel === "sim"}
+      <SimPanel />
+    {/if}
+  </div>
 </Dialog>
 
 <PublishDialog />
@@ -786,18 +831,33 @@
     background: var(--color-background);
     color: var(--color-text);
   }
+  /* 1fr auto 1fr keeps the screen switch centred however wide either side gets */
   .toolbar {
-    display: flex;
-    flex-wrap: wrap;
+    /* a dense row: the segmented control here comes out as tall as the small buttons */
+    --control-height: 2.25rem;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.375rem 0.5rem;
     border-bottom: 1px solid oklch(from var(--color-text) l c h / 12%);
+  }
+  .zone {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .end {
+    justify-content: flex-end;
   }
   /* the menu grows to its longest route rather than wrapping a label onto two lines */
   .route {
+    display: flex;
+    flex-direction: column;
     white-space: nowrap;
 
+    /* what it takes, under the name, as secondary text */
     & span {
       color: oklch(from var(--color-text) l c h / 55%);
     }
@@ -807,15 +867,15 @@
   }
   .wf-name {
     display: none;
-    width: 10rem;
+    min-width: 0;
+    width: 14rem;
+    max-width: 100%;
     overflow: hidden;
     border: 1px solid transparent;
     border-radius: var(--border-radius);
     background: transparent;
     padding-inline: 0.25rem;
     font: inherit;
-    font-size: 0.75rem;
-    font-weight: 500;
     color: var(--color-text);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -833,44 +893,41 @@
   .tool-slot {
     display: inline-flex;
   }
-  /* A phone can't fit the toolbar on one row, and left to wrap on its own it broke wherever
-     it ran out of room. So it gets two deliberate rows: files and output on top (import, new
-     … export, save, publish, flash), and what you reach for while drawing underneath (the
-     screen switch … undo, redo). The ::after is the row break; row-gap moves to a margin so
-     the break doesn't leave an empty band when nothing is open and there is no second row. */
+  /* a phone: document left, output right in the toolbar; the screen switch floats over the
+     top of the canvas instead of taking a row of its own */
   @media (max-width: 767px) {
     .toolbar {
-      row-gap: 0;
+      position: relative;
+      z-index: 3;
+      grid-template-columns: 1fr auto;
+    }
+    .center {
+      position: absolute;
+      top: calc(100% + 0.625rem);
+      left: 50%;
+      translate: -50% 0;
 
-      &::after {
-        content: "";
-        flex-basis: 100%;
-        order: 1;
-      }
-      :global(.btn) {
-        padding-inline: 0.75rem;
+      :global(.tabs) {
+        border: 1px solid oklch(from var(--color-text) l c h / 10%);
+        background: oklch(from var(--color-surface) l c h / 72%);
+        -webkit-backdrop-filter: blur(1rem);
+        backdrop-filter: blur(1rem);
       }
     }
-    .toolbar > :global(.tabs),
-    .history {
-      order: 2;
-      margin-top: 0.5rem;
-    }
-    .export,
-    .history-start {
-      margin-inline-start: auto;
+  }
+  @media (min-width: 768px) {
+    .wf-name {
+      display: inline-block;
     }
   }
   @media (min-width: 1024px) {
-    .btn-label,
-    .wf-name {
+    .btn-label {
       display: inline-block;
     }
   }
   .statusbar {
     margin: 0;
     padding: 0.375rem 0.75rem;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
     border-bottom: 1px solid oklch(from var(--color-text) l c h / 12%);
 
@@ -891,6 +948,18 @@
       grid-template-rows: 1fr;
     }
   }
+  /* a panel is laid out for a column of its own; in the sheet it gets one, at least as tall as
+     half the screen so the sheet doesn't jump between a short panel and a long one */
+  .sheet-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 50svh;
+    /* the tree is a list of rows: they run to the sheet's edges, past its body padding, like a
+       settings list — the rows carry their own inset */
+    &.bleed {
+      margin-inline: -1rem;
+    }
+  }
   .side-panel {
     display: none;
     position: relative; /* the resize gutter straddles the panel's inner edge */
@@ -909,6 +978,8 @@
     border-inline-start: 1px solid oklch(from var(--color-text) l c h / 12%);
   }
   /* invisible until hovered/dragged — the panel border already draws the seam */
+  /* The grab zone is wide and invisible; what shows is a thin line down the seam that fades out
+     toward both ends (Shepherd's divider): faint under the pointer, full while dragging. */
   .gutter {
     position: absolute;
     z-index: 1;
@@ -920,16 +991,34 @@
     background: transparent;
     /* cursor is set inline — it turns single-headed at a clamp, see gutterCursor */
     touch-action: none;
-    transition: background-color 0.15s ease;
 
-    &:focus-visible,
-    &.active {
-      background: oklch(from var(--color-accent) l c h / 35%);
+    &::before {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: calc(50% - 1px);
+      width: 2px;
+      background: linear-gradient(
+        to bottom,
+        transparent,
+        var(--color-accent) 30%,
+        var(--color-accent) 70%,
+        transparent
+      );
+      opacity: 0;
+      transition: opacity 0.2s ease;
     }
     @media (hover: hover) {
-      &:hover {
-        background: oklch(from var(--color-accent) l c h / 35%);
+      &:hover::before {
+        opacity: 0.5;
       }
+    }
+    &:focus-visible::before,
+    &.active::before {
+      opacity: 1;
+    }
+    &:focus-visible {
+      outline: none;
     }
   }
   .gutter-tree {
@@ -939,6 +1028,7 @@
     inset-inline-start: -0.25rem;
   }
   .tabs-row {
+    --control-height: 2.25rem;
     padding: 0.5rem;
   }
   .panel-body {
@@ -960,6 +1050,12 @@
     min-height: 0;
     overflow: hidden;
     background: oklch(from var(--color-text) l c h / 4%);
+
+    /* on a phone the canvas is the page's own black: a tint here would end in a hard edge
+       over the strip the layout keeps for the dock */
+    @media (max-width: 767px) {
+      background: none;
+    }
   }
   /* no align-items/justify-content centering here: flex centering clips whatever overflows past
      the start edge, so the dial is centred by its own auto margins, which don't */
@@ -1005,8 +1101,11 @@
   }
   /* drawn on the dial, which is black in both colour schemes — so the ink is fixed light, and
      the secondary button (which derives from --color-text) follows it */
+  /* the watch's screen is black in either scheme: both inks are pinned, so a button on it
+     (ink on background) reads the same in light mode */
   .canvas-empty {
     --color-text: oklch(0.95 0 0);
+    --color-background: oklch(0 0 0);
 
     position: absolute;
     inset: 0;
@@ -1022,13 +1121,9 @@
 
     h2 {
       margin: 0;
-      font-size: 1.5rem;
-      line-height: 1.15;
     }
     p {
       margin: 0;
-      font-size: 0.75rem;
-      line-height: 1.4;
       color: oklch(from var(--color-text) l c h / 55%);
     }
   }
@@ -1038,7 +1133,8 @@
     gap: 0.5rem;
     align-self: stretch;
   }
-  /* dev only — same overlay treatment as .hint, pinned to the opposite corner */
+  /* dev only — same overlay treatment as .hint, pinned to the opposite corner. A phone has no
+     room for it: the screen switch floats where it would sit */
   .fps {
     position: absolute;
     top: 0.5rem;
@@ -1048,8 +1144,6 @@
     padding: 0.125rem 0.375rem;
     border-radius: calc(var(--border-radius) - 0.25rem);
     background: oklch(from var(--color-background) l c h / 70%);
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
     color: oklch(from var(--color-text) l c h / 55%);
     pointer-events: none;
 
@@ -1057,46 +1151,117 @@
       color: var(--color-error);
     }
   }
-  /* floats over the scroller rather than taking a row of its own, so the scrollbar stays on the
-     section's bottom edge — one layer across the whole width, under the text */
+  @media (max-width: 767px) {
+    .fps {
+      display: none;
+    }
+  }
+
+  /* a round "?" floating in the canvas's corner; its card opens above it */
   .hint {
     display: none;
     position: absolute;
-    inset-inline: 0;
+    inset-inline-end: 0.75rem;
     bottom: 0.75rem;
-    margin: 0;
-    padding-inline: 0.5rem;
-    pointer-events: none;
-    text-align: center;
-    font-size: 0.625rem;
-    color: oklch(from var(--color-text) l c h / 55%);
+    z-index: 2;
   }
-  /* the hint itself ignores the pointer so it can't shadow the canvas — the one clickable word
-     in it has to opt back in */
   .hint-key {
-    padding: 0;
-    border: none;
-    background: none;
-    font: inherit;
-    color: inherit;
-    cursor: pointer;
-    pointer-events: auto;
-    text-decoration: underline dotted;
-    text-underline-offset: 0.125rem;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    color: oklch(from var(--color-text) l c h / 70%);
+    background: oklch(from var(--color-text) l c h / 8%);
+    transition: background-color 0.15s ease;
+
+    /* no disclosure chevron here: the round button is the whole control */
+    &::after {
+      content: none;
+    }
+    @media (hover: hover) {
+      &:hover {
+        background: oklch(from var(--color-text) l c h / 14%);
+      }
+    }
+  }
+  .hint[open] .hint-key {
+    color: var(--color-background);
+    background: var(--color-text);
+  }
+  .hint-card {
+    position: absolute;
+    inset-inline-end: 0;
+    bottom: calc(100% + 0.5rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 17rem;
+    padding: 0.875rem;
+    border: 1px solid oklch(from var(--color-text) l c h / 14%);
+    border-radius: var(--border-radius-tile);
+    background: var(--color-surface);
+    box-shadow: 0 16px 48px oklch(0 0 0 / 45%);
+
+    ul {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: oklch(from var(--color-text) l c h / 60%);
+    }
+    li span {
+      color: var(--color-text);
+    }
   }
   @media (min-width: 768px) {
     .hint {
       display: block;
     }
   }
-  .mobile-actions {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    border-top: 1px solid oklch(from var(--color-text) l c h / 12%);
+  .layout {
+    position: relative;
   }
-  .mobile-actions :global(.btn) {
-    flex: 1;
+  .mobile-actions {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 50%;
+    z-index: 3;
+    display: flex;
+    gap: 0.125rem;
+    padding: 0.25rem;
+    translate: -50% 0;
+    border: 1px solid oklch(from var(--color-text) l c h / 10%);
+    border-radius: 625rem;
+    background: oklch(from var(--color-surface) l c h / 72%);
+    -webkit-backdrop-filter: blur(1rem);
+    backdrop-filter: blur(1rem);
+  }
+  .panel-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.125rem;
+    width: 4.5rem;
+    height: 3.25rem;
+    padding: 0;
+    border: none;
+    border-radius: 625rem;
+    background: none;
+    color: oklch(from var(--color-text) l c h / 75%);
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      border-radius var(--spring-transition);
+
+    &:active {
+      border-radius: 1rem;
+      background: oklch(from var(--color-text) l c h / 10%);
+      transition-duration: 0.12s;
+    }
   }
   @media (min-width: 768px) {
     .mobile-actions {

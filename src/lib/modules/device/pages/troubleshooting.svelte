@@ -28,7 +28,7 @@
 </svelte:head>
 
 <div class="page">
-  <article>
+  <article class="type-doc">
     {@html html}
     <a class="back" href="/">
       <Icon name="storefront" size={18} />
@@ -58,19 +58,15 @@
   article :global {
     h1 {
       margin: 0 0 0.75rem;
-      font-family: var(--font-display);
-      font-size: 1.75rem;
     }
     h1 + p {
       color: oklch(from var(--color-text) l c h / 75%);
     }
     h2 {
       margin: 2rem 0 0.75rem;
-      font-size: 1.125rem;
     }
     p {
       margin: 0 0 0.75rem;
-      line-height: 1.6;
     }
     ul,
     ol {
@@ -79,17 +75,11 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      line-height: 1.6;
     }
     li::marker {
       color: oklch(from var(--color-text) l c h / 45%);
     }
-    code {
-      font-family: var(--font-mono);
-      font-size: 0.875em;
-    }
     .note {
-      font-size: 0.75rem;
       color: oklch(from var(--color-text) l c h / 55%);
     }
     a {

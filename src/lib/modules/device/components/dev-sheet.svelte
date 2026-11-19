@@ -43,27 +43,33 @@
 
 <AdaptivePopover open={$open} title="Developer" onClose={() => panelClosed()}>
   <div class="section">
-    <h2 class="title">On the watch</h2>
+    <h2 class="title type-heading">On the watch</h2>
     {#if !$watch}
-      <p class="desc">Connect the watch first.</p>
+      <p class="desc type-caption">Connect the watch first.</p>
     {:else if $wp2Reading}
-      <p class="desc">Checking the watch…</p>
+      <p class="desc type-caption">Checking the watch…</p>
     {:else if $wp2 === "stock"}
-      <p class="desc">Stock firmware — no App Loader stub, apps can't go on.</p>
+      <p class="desc type-caption">Stock firmware — no App Loader stub, apps can't go on.</p>
     {:else if $wp2}
       <dl class="info">
         <div>
-          <dt>Stub</dt>
-          <dd>{$wp2.stub.version} · ABI 1.{$wp2.stub.abiMinor ?? "?"}</dd>
+          <dt class="type-label">Stub</dt>
+          <dd class="type-small type-mono">
+            {$wp2.stub.version} · ABI 1.{$wp2.stub.abiMinor ?? "?"}
+          </dd>
         </div>
         <div>
-          <dt>Loader</dt>
-          <dd>{$wp2.loader ? `${$wp2.loader.name} v${$wp2.loader.version}` : "—"}</dd>
+          <dt class="type-label">Loader</dt>
+          <dd class="type-small type-mono">
+            {$wp2.loader ? `${$wp2.loader.name} v${$wp2.loader.version}` : "—"}
+          </dd>
         </div>
         {#each apps as [slot, app] (slot)}
           <div>
-            <dt>Slot {slot}</dt>
-            <dd>{app.name} v{app.version} · {app.crc.toString(16).padStart(8, "0")}</dd>
+            <dt class="type-label">Slot {slot}</dt>
+            <dd class="type-small type-mono">
+              {app.name} v{app.version} · {app.crc.toString(16).padStart(8, "0")}
+            </dd>
           </div>
         {/each}
       </dl>
@@ -71,8 +77,8 @@
   </div>
 
   <div class="section">
-    <h2 class="title">Local build</h2>
-    <p class="desc">
+    <h2 class="title type-heading">Local build</h2>
+    <p class="desc type-caption">
       An app or App Loader .wp2app, or a firmware image, from your disk — through the same checks as
       the store. After a rebuild, Install again sends the new file.
     </p>
@@ -95,7 +101,7 @@
     {#if $build}
       <p class="file">
         <strong>{$build.name}</strong> — {$build.what}
-        <span class="desc"
+        <span class="desc type-caption"
           >{($build.size / 1024).toFixed(1)} KB, modified {time($build.modified)}</span
         >
       </p>
@@ -116,9 +122,9 @@
 
     {#if $installing || $flashing}
       <div class="progress">
-        <div class="progress-row">
+        <div class="progress-row type-caption">
           <span>Installing on the watch</span>
-          <span class="pct">{pct}%</span>
+          <span class="pct type-mono">{pct}%</span>
         </div>
         <progress max="100" value={pct}></progress>
       </div>
@@ -147,14 +153,11 @@
   }
   .title {
     margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
   }
   p {
     margin: 0;
   }
   .desc {
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .row {
@@ -185,10 +188,6 @@
       }
     }
     dt {
-      font-family: var(--font-mono);
-      font-size: 0.6875rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
       color: oklch(from var(--color-text) l c h / 55%);
     }
     dd {
@@ -196,8 +195,6 @@
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-family: var(--font-mono);
-      font-size: 0.8125rem;
     }
   }
   .disclaimer {
@@ -206,7 +203,6 @@
     gap: 0.5rem;
     padding: 0.75rem 0.875rem;
     border-radius: var(--border-radius);
-    line-height: 1.4;
     color: var(--color-error);
     background: oklch(from var(--color-error) l c h / 12%);
 
@@ -219,7 +215,6 @@
     align-items: center;
     gap: 0.625rem;
     cursor: pointer;
-    font-weight: 500;
   }
   .progress {
     display: flex;
@@ -229,10 +224,8 @@
   .progress-row {
     display: flex;
     justify-content: space-between;
-    font-size: 0.75rem;
   }
   .pct {
-    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
   progress {

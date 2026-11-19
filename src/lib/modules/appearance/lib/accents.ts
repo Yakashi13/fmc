@@ -4,9 +4,8 @@
 // removes the override, so the colour comes from tokens.css exactly as before and a future
 // change to the token still reaches everyone who never picked anything.
 //
-// ponytail: every other entry sits at a similar lightness, because `--color-on-accent` is a dark
-// ink in both schemes (tokens.css) and has to stay readable on whatever is picked. A new entry
-// should keep to L ≈ 0.72–0.88, or text on the accent surfaces (active tab, badges) goes dim.
+// `--color-on-accent` picks white or black ink from the accent's own lightness (tokens.css), so
+// an entry can be as dark as the default red or as light as lime.
 
 export interface Accent {
   id: string;
@@ -17,14 +16,14 @@ export interface Accent {
   swatch: string;
 }
 
-export const DEFAULT_ACCENT = "yellow";
+export const DEFAULT_ACCENT = "red";
 
 export const ACCENTS: readonly Accent[] = [
-  // swatch mirrors `--color-accent` in tokens.css — the swatch must show yellow even while
+  // swatch mirrors `--color-accent` in tokens.css — the swatch must show red even while
   // another accent is active, so it can't read the live token
-  { id: DEFAULT_ACCENT, label: "Yellow", value: null, swatch: "#ffc700" },
+  { id: DEFAULT_ACCENT, label: "Red", value: null, swatch: "#d71921" },
+  { id: "yellow", label: "Yellow", value: "#ffc700", swatch: "#ffc700" },
   { id: "orange", label: "Orange", value: "oklch(0.78 0.17 55)", swatch: "oklch(0.78 0.17 55)" },
-  { id: "red", label: "Red", value: "oklch(0.72 0.19 25)", swatch: "oklch(0.72 0.19 25)" },
   { id: "pink", label: "Pink", value: "oklch(0.76 0.17 350)", swatch: "oklch(0.76 0.17 350)" },
   { id: "purple", label: "Purple", value: "oklch(0.72 0.16 300)", swatch: "oklch(0.72 0.16 300)" },
   { id: "blue", label: "Blue", value: "oklch(0.74 0.14 250)", swatch: "oklch(0.74 0.14 250)" },

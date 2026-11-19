@@ -12,7 +12,9 @@
       <span class="glyph"><Icon name="smartphone" size={22} /></span>
       <span class="text">
         <strong>FMC Companion mobile app</strong>
-        <span>Watch faces, watch apps and firmware from your phone. Android beta, iOS soon.</span>
+        <span class="type-caption"
+          >Watch faces, watch apps and firmware from your phone. Android beta, iOS soon.</span
+        >
       </span>
     </a>
     <button type="button" aria-label="Dismiss" onclick={() => promoDismissed()}>
@@ -29,9 +31,8 @@
     /* the shelf's own gutter: watchface-list pads by 1rem, 0.75rem on a phone */
     margin: 1rem 1rem 0;
     padding: 0.5rem 0.5rem 0.5rem 0.75rem;
-    border: 1px solid oklch(from var(--color-accent) l c h / 40%);
-    border-radius: var(--border-radius);
-    background: oklch(from var(--color-accent) l c h / 6%);
+    border-radius: var(--border-radius-tile);
+    background: oklch(from var(--color-text) l c h / 7%);
   }
   @media (max-width: 767px) {
     .promo {
@@ -64,7 +65,6 @@
     min-width: 0;
 
     span {
-      font-size: 0.75rem;
       color: oklch(from var(--color-text) l c h / 60%);
     }
   }

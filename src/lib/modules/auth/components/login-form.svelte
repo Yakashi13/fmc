@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Text } from "$lib/shared/components/text";
   import { Button } from "$lib/shared/components/button";
   import { Field } from "$lib/shared/components/field";
   import { Input } from "$lib/shared/components/input";
@@ -29,7 +30,7 @@
     </svg>
     Login with Google
   </Button>
-  <div class="divider"><span>Or continue with</span></div>
+  <div class="divider"><span class="type-label">Or continue with</span></div>
   <Field label="Email">
     <Input
       type="email"
@@ -51,10 +52,10 @@
     />
   </Field>
   {#if $err}
-    <p class="error">{$err}</p>
+    <Text as="p" variant="caption" tone="error">{$err}</Text>
   {/if}
   <Button type="submit" kind="primary" disabled={$busy}>Login</Button>
-  <p class="link">Don't have an account? <a href="/register">Sign up</a></p>
+  <p class="link type-caption">Don't have an account? <a href="/register">Sign up</a></p>
 </form>
 
 <style>
@@ -77,19 +78,12 @@
     }
 
     span {
-      font-size: 0.625rem;
       color: oklch(from var(--color-text) l c h / 55%);
     }
-  }
-  .error {
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--color-error);
   }
   .link {
     margin: 0;
     text-align: center;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
 
     a {

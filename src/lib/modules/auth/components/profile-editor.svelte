@@ -1,6 +1,7 @@
 <script lang="ts">
   // "Edit profile" on the user's own page: avatar, name, bio. Same shell as the Watch panel — a
   // drawer beside the rail on desktop, the swipeable sheet on the phone.
+  import { Text } from "$lib/shared/components/text";
   import { AdaptivePopover } from "$lib/shared/components/adaptive-popover";
   import { Avatar } from "$lib/shared/components/avatar";
   import { Button } from "$lib/shared/components/button";
@@ -34,7 +35,7 @@
     <div class="photo">
       <Avatar name={$form.name || "?"} src={$avatarSrc ?? undefined} />
       <div class="avatar-actions">
-        <label class="pick">
+        <label class="pick type-subtitle">
           <Icon name="photo_camera" size={18} />
           Change photo
           <input
@@ -49,9 +50,7 @@
           />
         </label>
         {#if $avatarSrc}
-          <Button kind="ghost" size="small" onClick={() => profileFormPatched({ avatar: null })}>
-            Remove
-          </Button>
+          <Button kind="ghost" onClick={() => profileFormPatched({ avatar: null })}>Remove</Button>
         {/if}
       </div>
     </div>
@@ -74,7 +73,7 @@
       />
     </Field>
 
-    {#if $err}<p class="error">{$err}</p>{/if}
+    {#if $err}<Text as="p" variant="caption" tone="error">{$err}</Text>{/if}
 
     <div class="actions">
       <Button kind="ghost" onClick={() => profileEditClosed()}>Cancel</Button>
@@ -115,8 +114,7 @@
     padding: 0.375rem 0.75rem;
     border-radius: 10em;
     background: oklch(from var(--color-text) l c h / 6%);
-    font-size: 1rem;
-    font-weight: 500;
+    border: 1px solid oklch(from var(--color-text) l c h / 12%);
     cursor: pointer;
 
     &:has(input:focus-visible) {
@@ -128,11 +126,6 @@
       height: 1px;
       opacity: 0;
     }
-  }
-  .error {
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--color-error);
   }
   .actions {
     display: flex;

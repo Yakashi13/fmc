@@ -22,7 +22,7 @@
 
 <div class="page">
   <article>
-    <h1>Rescue</h1>
+    <h1 class="type-title">Rescue</h1>
     <p>
       For a watch that shows the CMF logo, goes black and stays there, but still shows up in the
       Bluetooth picker. This sends the watch a <strong>factory reset</strong> and nothing else: no file,
@@ -46,11 +46,9 @@
       </p>
     {/if}
     {#if $log.length}
-      <p>
-        Whatever happened, send us this log:
-        <Button kind="secondary" size="small" onClick={copy}>Copy log</Button>
-      </p>
-      <pre>{$log.join("\n")}</pre>
+      <p>Whatever happened, send us this log:</p>
+      <Button kind="secondary" onClick={copy}>Copy log</Button>
+      <pre class="type-caption type-mono">{$log.join("\n")}</pre>
     {/if}
     <a class="back" href="/help">Back to "Before you connect"</a>
   </article>
@@ -72,11 +70,9 @@
   }
   h1 {
     margin: 0;
-    font-family: var(--font-display);
   }
   p {
     margin: 0;
-    line-height: 1.5;
   }
   .status {
     color: oklch(from var(--color-text) l c h / 55%);
@@ -91,9 +87,7 @@
     padding: 0.75rem;
     border-radius: var(--border-radius);
     background: oklch(from var(--color-text) l c h / 6%);
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    line-height: 1.4;
+    border: 1px solid oklch(from var(--color-text) l c h / 12%);
     white-space: pre-wrap;
     word-break: break-all;
   }

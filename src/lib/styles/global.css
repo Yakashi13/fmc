@@ -23,13 +23,16 @@
   box-sizing: border-box;
 }
 
-html {
-  overscroll-behavior-y: none;
-}
-
+/* The document itself never scrolls: every page brings its own scroller (page/, the shelves,
+   the editor's panels), so only content moves and the chrome stays put. 100vh, so content
+   still runs on under Safari's floating toolbar (100dvh stops at its edge and leaves a bare
+   strip behind it). What let the page slide was a document taller than the screen with
+   nothing holding it: overflow does. */
 html,
 body {
   height: 100vh;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
@@ -38,6 +41,9 @@ body {
   color: var(--color-text);
   font-family: var(--font-family);
   font-size: 1rem;
+  line-height: 1.5;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent; /* the gray tap flash on mobile */
 }
 
@@ -52,32 +58,231 @@ button {
   user-select: none;
 }
 
+/* Typography: the only text styles in the app. Markup takes them through <Text variant>
+   (shared/components/text); a control that renders its own text puts the class on its element.
+   Nothing else sets font-size/weight/family — tests/typography.test.ts holds the line. */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-display);
-  font-stretch: 62.5%;
-  font-weight: 382;
+  font: inherit;
 }
 
-h1 {
-  font-size: 2.5em;
+/* a long-form page rendered from markdown (`<article class="type-doc">`): its headings take
+   the steps by level */
+/* dot matrix: the big steps only — a page's name, a number. Doto is thin by design, so it
+   runs heavy; below ~1.5rem the dots stop reading and the step goes back to Geist */
+.type-display,
+.type-title,
+.type-doc h1 {
+  font-family: var(--font-display);
+  font-stretch: normal;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
-h2 {
-  font-size: 1.9em;
+.type-display {
+  font-size: 2.5rem;
+  line-height: 1.05;
 }
-h3 {
-  font-size: 2em;
+.type-title,
+.type-doc h1 {
+  font-size: 1.75rem;
+  line-height: 1.1;
 }
-h4 {
-  font-size: 1.25em;
+.type-heading,
+.type-doc h2 {
+  font-family: var(--font-family);
+  font-stretch: normal;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-size: 1.25rem;
+  line-height: 1.25;
 }
-h5 {
-  font-size: 1.05em;
+
+.type-body,
+.type-subtitle,
+.prose :is(h1, h2, h3, h4, h5, h6),
+.type-doc :is(h3, h4),
+.type-small,
+.type-caption {
+  font-family: var(--font-family);
+  font-stretch: normal;
+  font-weight: 400;
+  letter-spacing: normal;
 }
-h6 {
-  font-size: 0.85em;
+.type-body {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+/* markdown can't carry a class: a record's headings take the subtitle step here */
+.type-subtitle,
+.prose :is(h1, h2, h3, h4, h5, h6),
+.type-doc :is(h3, h4) {
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+/* a button's own step: body size, a notch heavier than a name in a row */
+.type-button {
+  font-family: var(--font-family);
+  font-stretch: normal;
+  letter-spacing: normal;
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+/* the same, a step down: a small button on a dense surface (the editor's toolbar and panels) */
+.type-button-small {
+  font-family: var(--font-family);
+  font-stretch: normal;
+  letter-spacing: normal;
+  font-size: 0.875rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+.type-small {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.type-caption {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.type-label {
+  font-family: var(--font-mono);
+  font-stretch: normal;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Under a cursor the scale runs a notch smaller, with the controls (tokens.css, button/): read at
+   a desk's distance, 16px body text and 44px buttons came out oversized. The phone keeps the
+   steps above — a field under 16px would make iOS zoom into it. */
+@media (min-width: 768px) {
+  body,
+  .type-body,
+  .type-subtitle,
+  .prose :is(h1, h2, h3, h4, h5, h6),
+  .type-doc :is(h3, h4),
+  .type-button {
+    font-size: 0.9375rem;
+  }
+  .type-button-small,
+  .type-small {
+    font-size: 0.8125rem;
+  }
+  .type-heading,
+  .type-doc h2 {
+    font-size: 1.125rem;
+  }
+  .type-title,
+  .type-doc h1 {
+    font-size: 1.625rem;
+  }
+  .type-display {
+    font-size: 2.25rem;
+  }
+}
+
+/* A dense surface (the editor's inspector and simulator) marks its container data-dense and
+   lowers --control-height there; the fields and menu rows inside take the small step with it.
+   Their popups inherit it too — a menu's list is still the field's descendant in the DOM. */
+[data-dense] :is(.select, .item, input.type-body, textarea.type-body) {
+  font-size: 0.875rem;
+}
+
+/* monospace is a face, not a step: `type-mono` next to a step (a version, a hash, a readout);
+   <code> and <kbd> sit inside running text at its own size */
+.type-mono {
+  font-family: var(--font-mono);
+}
+code,
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+/* a disclosure: the native triangle gives way to a chevron at the far end that turns over */
+summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+  cursor: pointer;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+  &::after {
+    content: "";
+    flex: none;
+    width: 0.4375rem;
+    height: 0.4375rem;
+    margin-inline-start: auto;
+    border: solid oklch(from var(--color-text) l c h / 55%);
+    border-width: 0 2px 2px 0;
+    rotate: 45deg;
+    translate: 0 -0.125rem;
+    transition:
+      rotate 0.2s ease,
+      translate 0.2s ease;
+  }
+}
+details[open] > summary::after {
+  rotate: -135deg;
+  translate: 0 0.125rem;
+}
+
+/* nothing in the chrome is a draggable link or image: a drag is the app's gesture (the dock's
+   thumb, a sheet), not the browser's ghost of an <a> */
+a,
+img {
+  -webkit-user-drag: none;
+}
+
+/* Page transitions (the root layout starts one per navigation): the old page sinks back and
+   fades while the new one rises into place. The app chrome — the dock, the rail — carries its
+   own name, so it holds still while the page under it changes. */
+::view-transition-old(root) {
+  animation: 0.18s ease-in both page-out;
+}
+::view-transition-new(root) {
+  animation: 0.32s cubic-bezier(0.16, 1, 0.3, 1) both page-in;
+}
+::view-transition-group(app-nav) {
+  animation: none;
+  z-index: 1;
+}
+@keyframes page-out {
+  to {
+    opacity: 0;
+    scale: 0.985;
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    translate: 0 0.75rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* a drag in progress owns the cursor everywhere, and doesn't select text on the way (hold-cursor.ts) */
+:root[data-held-cursor],
+:root[data-held-cursor] * {
+  cursor: var(--held-cursor) !important;
+  user-select: none;
 }

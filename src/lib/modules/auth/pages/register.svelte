@@ -15,7 +15,7 @@
 
 <div class="wrapper">
   <div class="panel">
-    <h1>Create your account</h1>
+    <h1 class="type-title">Create your account</h1>
     <Card>
       <SignupForm />
     </Card>
@@ -42,7 +42,5 @@
   h1 {
     margin: 0;
     text-align: center;
-    font-family: var(--font-display);
-    font-size: 1.3125rem;
   }
 </style>

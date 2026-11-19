@@ -1,4 +1,5 @@
 // Web Bluetooth: watch connection and flashing.
+import { noticeOf } from "../lib/notice";
 import { createEffect, createEvent, createStore, sample } from "effector";
 import { reset } from "patronum";
 import {
@@ -37,6 +38,8 @@ let watch: Watch | null = null; // live connection — not serialized, lives out
 
 // ---- stores ----
 export const $bleStatus = createStore("");
+// the status as the watch panel shows it (see lib/notice)
+export const $bleNotice = $bleStatus.map(noticeOf);
 export const $bleInfo = createStore<WatchInfo | null>(null);
 // installed watchfaces: what a055 reported, plus the ones this browser side-loaded onto this
 // watch — the firmware leaves those out of its own list

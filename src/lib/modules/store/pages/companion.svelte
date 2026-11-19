@@ -49,7 +49,7 @@
 
 <Page>
   <article>
-    <h1>FMC Companion</h1>
+    <h1 class="type-title">FMC Companion</h1>
     <p class="lead">
       The phone app for the CMF Watch Pro 2 and the FMC store. Open source under MIT, for Android
       and iOS.
@@ -66,7 +66,7 @@
       </Button>
     </div>
 
-    <p class="beta">
+    <p class="beta type-small">
       <strong>Android is a beta.</strong> Needs Android 12 or newer. The Bluetooth link on Android
       hasn't been tested on a real watch yet, so expect rough edges and
       <a href="{REPO}/issues" target="_blank" rel="noopener noreferrer">tell us</a> what breaks.
@@ -84,7 +84,7 @@
       {/each}
     </ul>
 
-    <h2>Before you start</h2>
+    <h2 class="type-heading">Before you start</h2>
     <ul class="notes">
       <li>Made for the CMF Watch Pro 2.</li>
       <li>Installing a watch face needs Nothing X closed first.</li>
@@ -116,16 +116,12 @@
   }
   h1 {
     margin: 0 0 0.5rem;
-    font-family: var(--font-display);
-    font-size: 1.75rem;
   }
   h2 {
     margin: 2rem 0 0.75rem;
-    font-size: 1.125rem;
   }
   .lead {
     margin: 0 0 1.5rem;
-    line-height: 1.6;
     color: oklch(from var(--color-text) l c h / 75%);
   }
   .actions {
@@ -133,18 +129,17 @@
     flex-wrap: wrap;
     gap: 0.75rem;
 
+    /* grow to share the row, never shrink under the label: two that don't fit side by side
+       wrap onto rows of their own instead of cutting a label into the button's padding */
     & :global(.btn) {
-      flex: 1 1 14rem;
+      flex: 1 0 auto;
     }
   }
   .beta {
     margin: 1rem 0 0;
     padding: 0.75rem 1rem;
-    border: 1px solid oklch(from var(--color-accent) l c h / 40%);
-    border-radius: var(--border-radius);
-    background: oklch(from var(--color-accent) l c h / 6%);
-    font-size: 0.875rem;
-    line-height: 1.5;
+    border-radius: var(--border-radius-tile);
+    background: oklch(from var(--color-text) l c h / 7%);
   }
   a {
     color: var(--color-accent);
@@ -163,7 +158,6 @@
     li {
       display: flex;
       gap: 0.75rem;
-      line-height: 1.5;
     }
     strong {
       display: block;
@@ -189,7 +183,6 @@
     gap: 0.5rem;
     padding-left: 1.25rem;
     list-style: disc;
-    line-height: 1.6;
 
     li::marker {
       color: oklch(from var(--color-text) l c h / 45%);

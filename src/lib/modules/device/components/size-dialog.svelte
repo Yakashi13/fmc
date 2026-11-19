@@ -14,21 +14,14 @@
   onClose={() => sizeWarningClosed()}
 >
   <p class="desc">{$warning}</p>
-  <div class="actions">
-    <Button kind="ghost" onClick={() => sizeWarningClosed()}>Cancel</Button>
+  {#snippet actions()}
+    <Button kind="secondary" onClick={() => sizeWarningClosed()}>Cancel</Button>
     <Button kind="danger" onClick={() => sizeConfirmed()}>Install anyway</Button>
-  </div>
+  {/snippet}
 </Dialog>
 
 <style>
   .desc {
-    margin: 0 0 1.25rem;
-    line-height: 1.5;
-  }
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 0.75rem;
+    margin: 0;
   }
 </style>

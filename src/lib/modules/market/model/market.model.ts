@@ -123,6 +123,8 @@ export const $marketView = createStore<MarketView>({
 
 export const $myItems = createStore<RecordModel[]>([]);
 export const $marketErr = createStore("");
+// the snackbar's × / swipe / timeout
+export const marketErrDismissed = createEvent();
 // creator profile (/user/[id]) — the viewed user and their published faces
 export const $profile = createStore<RecordModel | null>(null);
 export const $profileItems = createStore<RecordModel[]>([]);
@@ -227,16 +229,25 @@ const saveFx = attach({
 });
 export const $savePending = saveFx.pending;
 const navigateToMarketFx = createEffect(() => goto("/"));
-// resolves the caller's existing like id from $likes so the api layer doesn't need to know about model state
+// `mine` is the caller's existing like, resolved from $likes when the click lands (see the
+// likeToggleRequested sample) — before the optimistic update rewrites $likes. It rides along
+// in the params so a failed request can put that very record back.
+type LikeToggle = { wf: RecordModel; userId: string; mine?: RecordModel };
 const toggleLikeFx = attach({
-  source: $likes,
   effect: marketApi.toggleLikeFx,
-  mapParams: ({ wf, userId }: { wf: RecordModel; userId: string }, likes) => ({
-    wf,
-    userId,
-    mineId: likes.find((l) => l.watchface === wf.id && l.user === userId)?.id,
-  }),
+  mapParams: ({ wf, userId, mine }: LikeToggle) => ({ wf, userId, mineId: mine?.id }),
 });
+// one toggle at a time: the heart is disabled while it is in flight
+export const $likePending = toggleLikeFx.pending;
+// the placeholder a like shows as until the server's list replaces it
+const optimisticLike = (wf: RecordModel, userId: string) =>
+  ({
+    id: `optimistic-${wf.id}`,
+    collectionId: "",
+    collectionName: "likes",
+    watchface: wf.id,
+    user: userId,
+  }) as RecordModel;
 
 // bumpDownloadsFx.done only carries back {} — patch the count locally on every successful
 // flash instead of waiting for a refetch (market list loads once per session, see above)
@@ -558,14 +569,37 @@ sample({
   target: $likes,
 });
 
+// Optimistic: the heart flips the moment it's pressed, the server's list replaces the guess
+// when it answers, and a failed request takes the guess back (the error itself goes to
+// marketErr with the rest).
+sample({
+  clock: likeToggleRequested,
+  source: { likes: $likes, pending: $likePending },
+  filter: ({ pending }) => !pending,
+  fn: ({ likes }, { wf, userId }): LikeToggle => ({
+    wf,
+    userId,
+    mine: likes.find((l) => l.watchface === wf.id && l.user === userId),
+  }),
+  target: toggleLikeFx,
+});
+sample({
+  clock: toggleLikeFx,
+  source: $likes,
+  fn: (likes, { wf, userId, mine }) =>
+    mine ? likes.filter((l) => l.id !== mine.id) : [...likes, optimisticLike(wf, userId)],
+  target: $likes,
+});
 sample({
   clock: toggleLikeFx.doneData,
   target: $likes,
 });
-
 sample({
-  clock: likeToggleRequested,
-  target: toggleLikeFx,
+  clock: toggleLikeFx.fail,
+  source: $likes,
+  fn: (likes, { params: { wf, userId, mine } }) =>
+    mine ? [...likes, mine] : likes.filter((l) => l.id !== optimisticLike(wf, userId).id),
+  target: $likes,
 });
 
 sample({
@@ -648,6 +682,7 @@ reset({
     marketApi.loadMyFx.done,
     marketApi.loadProfileFx.done,
     marketApi.loadWatchfaceFx.done,
+    marketErrDismissed,
   ],
   target: $marketErr,
 });

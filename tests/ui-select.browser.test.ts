@@ -12,7 +12,7 @@ test("picking a row updates the bound value and reports it", async () => {
   await expect.element(screen.getByRole("button", { name: "Newest" })).toBeInTheDocument();
 
   await screen.getByRole("button", { name: "Newest" }).click();
-  await screen.getByRole("menuitem", { name: "Popular" }).click();
+  await screen.getByRole("menuitemradio", { name: "Popular" }).click();
 
   expect(onChange).toHaveBeenCalledWith("popular");
   await expect.element(screen.getByTestId("bound")).toHaveTextContent("popular");

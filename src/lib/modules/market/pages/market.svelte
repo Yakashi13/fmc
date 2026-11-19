@@ -2,15 +2,15 @@
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { tick, untrack } from "svelte";
+  import { fade } from "svelte/transition";
   import type { RecordModel } from "pocketbase";
   import { SearchInput } from "$lib/shared/components/search-input";
-  import { Select } from "$lib/shared/components/select";
+  import { Icon } from "$lib/shared/components/icon";
+  import { Menu, MenuItem } from "$lib/shared/components/menu";
   import { StoreTabs } from "$lib/shared/components/store-tabs";
-  import { Tabs } from "$lib/shared/components/tabs";
   import { authModel } from "$lib/modules/auth/model";
   import { marketModel } from "../model";
   import { WatchfaceList } from "../components/watchface-list";
-  import { CommunityPanel } from "../components/community-panel";
   import { CreatorShelf } from "../components/creator-shelf";
   import { DEVICES, matchesDevice } from "../lib/devices";
   import CompanionPromo from "$lib/modules/store/components/companion-promo.svelte";
@@ -20,7 +20,6 @@
     $items: items,
     $myItems: myItems,
     $likes: likes,
-    $marketErr: marketErr,
     $marketLoading: marketLoading,
     $myLoading: myLoading,
     $marketView: marketView,
@@ -40,9 +39,7 @@
   const liked = $derived(Boolean($user) && !mine && page.url.searchParams.has("liked"));
   const uid = $derived($user?.id);
 
-  // a third page on the same route: not a shelf of faces but a panel of links (?community)
-  const community = $derived(page.url.searchParams.has("community"));
-  const tab = $derived(community ? "community" : mine ? "mine" : liked ? "liked" : "all");
+  const tab = $derived(mine ? "mine" : liked ? "liked" : "all");
 
   $effect(() => {
     if (mine && uid) myLoadRequested(uid);
@@ -66,6 +63,46 @@
 
   const likeCount = (id: string) => $likes.filter((l) => l.watchface === id).length;
   const likedIds = $derived(new Set($likes.filter((l) => l.user === uid).map((l) => l.watchface)));
+
+  // Everything that narrows or orders the shelf, as the rows of one menu; each row opens its
+  // own list in place. The shelf itself (whose faces) is the first of them for a signed-in
+  // user — it used to be a row of tabs of its own in the header.
+  const filters = $derived([
+    ...($user
+      ? [
+          {
+            name: "Show",
+            value: tab,
+            options: [
+              { value: "all", label: "Everyone's" },
+              { value: "mine", label: "Mine" },
+              { value: "liked", label: "Liked" },
+            ],
+            pick: (v: string) => void goto(v === "all" ? "/" : `/?${v}`, { replaceState: true }),
+          },
+        ]
+      : []),
+    {
+      name: "Device",
+      value: $marketView.device,
+      options: DEVICE_OPTIONS,
+      pick: (device: string) => marketViewPatched({ device }),
+    },
+    {
+      name: "Sort",
+      value: $marketView.sort,
+      options: SORT_OPTIONS,
+      pick: (sort: string) => marketViewPatched({ sort }),
+    },
+  ]);
+  // which of them is open in the menu; null — the list of filters itself
+  let pane = $state<string | null>(null);
+  const current = $derived(filters.find((f) => f.name === pane));
+
+  // the filter button carries a dot while the shelf isn't the default one
+  const filtered = $derived(
+    tab !== "all" || $marketView.device !== "" || $marketView.sort !== "new",
+  );
 
   const viewQuery = $derived($marketView.query.trim().toLowerCase());
   const inView = (wf: RecordModel) =>
@@ -134,43 +171,58 @@
 </script>
 
 <div class="page">
-  {#if $marketErr}<p class="error">{$marketErr}</p>{/if}
-
   <div class="toolbar">
-    <!-- the store's sections double as the page title; Community is one of them, so the
-         shelf's own switch is down to All / Mine / Liked and only exists for a signed-in user -->
+    <!-- the store's sections double as the page title -->
     <StoreTabs />
-    <!-- search, device and sort filter faces — the links panel has none to filter -->
-    {#if !community}
+    <!-- the search and, beside it, one button for everything that narrows or orders the
+           shelf: which watch, which order -->
+    <div class="find">
       <SearchInput bind:value={() => $marketView.query, (query) => marketViewPatched({ query })} />
-      {#if $user}
-        <Tabs
-          items={[
-            { value: "all", label: "All", icon: "public" },
-            { value: "mine", label: "Mine", icon: "person" },
-            { value: "liked", label: "Liked", icon: "favorite" },
-          ]}
-          value={tab}
-          onChange={(v) => goto(v === "all" ? "/" : `/?${v}`, { replaceState: true })}
-        />
-      {/if}
-      <div class="filters">
-        <div class="device">
-          <Select
-            value={$marketView.device}
-            onChange={(device) => marketViewPatched({ device })}
-            options={DEVICE_OPTIONS}
-          />
-        </div>
-        <div class="sort">
-          <Select
-            value={$marketView.sort}
-            onChange={(sort) => marketViewPatched({ sort })}
-            options={SORT_OPTIONS}
-          />
-        </div>
-      </div>
-    {/if}
+      <Menu align="end">
+        {#snippet trigger({ open, toggle })}
+          <button
+            type="button"
+            class="filter"
+            class:open
+            title="Filters"
+            aria-label="Filters"
+            onclick={() => {
+              pane = null;
+              toggle();
+            }}
+          >
+            <Icon name="tune" size={22} />
+            {#if filtered}<span class="dot"></span>{/if}
+          </button>
+        {/snippet}
+        {#key pane}
+          <div class="pane" in:fade={{ duration: 180 }}>
+            {#if current}
+              <MenuItem stay onClick={() => (pane = null)}>
+                <Icon name="arrow_back" size={20} />
+                <span class="type-label">{current.name}</span>
+              </MenuItem>
+              {#each current.options as opt (opt.value)}
+                <MenuItem
+                  checked={opt.value === current.value}
+                  onClick={() => current.pick(opt.value)}>{opt.label}</MenuItem
+                >
+              {/each}
+            {:else}
+              {#each filters as f (f.name)}
+                <MenuItem stay onClick={() => (pane = f.name)}>
+                  <span class="filter-name">{f.name}</span>
+                  <span class="filter-value"
+                    >{f.options.find((o) => o.value === f.value)?.label}</span
+                  >
+                  <Icon name="chevron_right" size={20} />
+                </MenuItem>
+              {/each}
+            {/if}
+          </div>
+        {/key}
+      </Menu>
+    </div>
   </div>
 
   <main
@@ -180,9 +232,7 @@
     }}
   >
     {#if tab === "all"}<CompanionPromo />{/if}
-    {#if community}
-      <CommunityPanel />
-    {:else if $marketView.sort === "creators"}
+    {#if $marketView.sort === "creators"}
       <CreatorShelf creators={creatorsShown} loading={mine ? $myLoading : $marketLoading} />
     {:else}
       <WatchfaceList
@@ -212,61 +262,93 @@
     flex-direction: column;
     height: 100%;
   }
-  .error {
-    margin: 0;
-    padding: 0.75rem 1rem 0;
-    font-size: 0.75rem;
-    color: var(--color-error);
-  }
   .toolbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid oklch(from var(--color-text) l c h / 10%);
+    padding: 0.75rem 1rem;
   }
-  .toolbar > :global(.store-tabs) {
+  .toolbar > :global(.tabs) {
     margin-inline-end: auto;
   }
-  .toolbar > :global(.search) {
-    width: 13.75rem;
-  }
-  .filters {
+  .find {
     display: flex;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    width: 17rem;
+
+    > :global(.search) {
+      flex: 1;
+      min-width: 0;
+    }
   }
-  .sort {
-    width: 8.125rem;
+  /* a square control the height of the field beside it */
+  .filter {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--control-height);
+    height: var(--control-height);
+    padding: 0;
+    border: none;
+    border-radius: var(--border-radius);
+    color: var(--color-text);
+    background: oklch(from var(--color-text) l c h / 7%);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    @media (hover: hover) {
+      &:hover {
+        background: oklch(from var(--color-text) l c h / 10%);
+      }
+    }
+    &.open {
+      background: oklch(from var(--color-text) l c h / 14%);
+    }
+    &:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
   }
-  .device {
-    width: 9.5rem;
+  .dot {
+    position: absolute;
+    top: 0.5rem;
+    inset-inline-end: 0.5rem;
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    background: var(--color-accent);
+  }
+  /* the filter menu: two rows, each opening its own list in place */
+  .pane {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 15rem;
+  }
+  .filter-name {
+    flex: 1;
+  }
+  .filter-value {
+    color: oklch(from var(--color-text) l c h / 55%);
+    white-space: nowrap;
   }
 
-  /* A phone gets three short rows: the section titles, the search (with All / Mine / Liked beside it
-     when signed in), then the two filters side by side. */
+  /* A phone gets two short rows: the sections, then the search with the filter button beside
+     it (and All / Mine / Liked under them when signed in). */
   @media (max-width: 767px) {
     .toolbar {
+      --control-height: 2.75rem;
       gap: 0.5rem;
-      padding: 0.25rem 0.75rem 0.625rem;
+      padding: 0.5rem 0.75rem;
     }
-    .toolbar > :global(.store-tabs) {
+    .toolbar > :global(.tabs) {
       flex: 1 1 100%;
     }
-    .toolbar > :global(.search) {
-      flex: 1;
-      width: auto;
-      min-width: 0;
-    }
-    .filters {
+    .find {
       flex: 1 1 100%;
-      gap: 0.5rem;
-    }
-    .device,
-    .sort {
-      flex: 1;
       width: auto;
-      min-width: 0;
     }
   }
   main {
@@ -279,11 +361,11 @@
      and pad the scroller by the same amount, so the last card still clears the bar. */
   @media (max-width: 767px) {
     .page {
-      height: calc(100% + var(--nav-bar-height) + var(--safe-area-bottom));
-      margin-block-end: calc(-1 * (var(--nav-bar-height) + var(--safe-area-bottom)));
+      height: calc(100% + var(--dock-space));
+      margin-block-end: calc(-1 * var(--dock-space));
     }
     main {
-      padding-block-end: calc(var(--nav-bar-height) + var(--safe-area-bottom));
+      padding-block-end: var(--dock-space);
     }
   }
 </style>

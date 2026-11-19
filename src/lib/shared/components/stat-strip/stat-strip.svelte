@@ -5,47 +5,42 @@
     items: { label: string; value: string | number }[];
   }
   const { items }: Props = $props();
+
+  // a count goes in dot matrix; a word or a version ("1.0.0.73") doesn't read in it
+  const isCount = (v: string | number) => /^\d+([.,]\d+)?[kKM]?$/.test(String(v));
 </script>
 
 <dl class="stats">
   {#each items as item (item.label)}
     <div>
-      <dt>{item.label}</dt>
-      <dd>{item.value}</dd>
+      <dt class="type-label">{item.label}</dt>
+      <dd class={isCount(item.value) ? "type-title" : "type-subtitle type-mono"}>{item.value}</dd>
     </div>
   {/each}
 </dl>
 
 <style>
+  /* one tile, the facts split by dotted rules: a dot-matrix number over its mono label */
   .stats {
     display: flex;
-    gap: 0.25rem;
     margin: 0;
+    border-radius: var(--border-radius-tile);
+    background: oklch(from var(--color-text) l c h / 7%);
 
     div {
       display: flex;
       flex: 1;
       min-width: 0;
       flex-direction: column-reverse;
-      gap: 0.125rem;
-      padding: 0.625rem 0.75rem;
-      background: oklch(from var(--color-text) l c h / 6%);
-      border-radius: calc(var(--border-radius) / 2);
+      justify-content: space-between;
+      gap: 0.25rem;
+      padding: 0.875rem 1rem;
 
-      &:first-child {
-        border-start-start-radius: var(--border-radius);
-        border-end-start-radius: var(--border-radius);
-      }
-      &:last-child {
-        border-start-end-radius: var(--border-radius);
-        border-end-end-radius: var(--border-radius);
+      & + div {
+        border-inline-start: 2px dotted oklch(from var(--color-text) l c h / 18%);
       }
     }
     dt {
-      font-family: var(--font-mono);
-      font-size: 0.6875rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
       color: oklch(from var(--color-text) l c h / 55%);
       overflow: hidden;
       white-space: nowrap;
@@ -53,11 +48,13 @@
     }
     dd {
       margin: 0;
-      font-size: 1.125rem;
-      font-weight: 500;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
+    }
+    /* a count and a word share one row height, so the strip doesn't change size with them */
+    div {
+      min-height: 4.5rem;
     }
   }
 </style>

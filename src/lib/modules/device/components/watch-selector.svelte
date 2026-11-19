@@ -34,10 +34,10 @@
     {:else}
       <!-- ponytail: no thumbnail for anything installed by the official app — the watch reports
            ids only, so an initial is the most we can honestly show -->
-      <span class="initial">{name.slice(0, 1)}</span>
+      <span class="initial type-heading">{name.slice(0, 1).toUpperCase()}</span>
     {/if}
   </span>
-  <span class="label">{name}</span>
+  <span class="label type-caption">{name}</span>
   {#if onRemove}
     <button
       type="button"
@@ -87,14 +87,10 @@
     }
   }
   .initial {
-    font-size: 1.125rem;
-    font-weight: 600;
     color: oklch(from var(--color-text) l c h / 45%);
   }
   .label {
     width: 100%;
-    font-size: 0.625rem;
-    line-height: 1.3;
     color: oklch(from var(--color-text) l c h / 55%);
     /* names run long ("Activity Mood"); keep every dial the same width and clip instead */
     overflow: hidden;

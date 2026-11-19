@@ -15,7 +15,7 @@
 </script>
 
 <section class="panel-section">
-  <h3>{title}</h3>
+  <h3 class="type-label">{title}</h3>
   <div class="body">{@render children?.()}</div>
 </section>
 
@@ -38,12 +38,6 @@
   }
   h3 {
     margin: 0;
-    font-family: var(--font-mono);
-    font-stretch: normal;
-    font-size: 0.6875rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .body {

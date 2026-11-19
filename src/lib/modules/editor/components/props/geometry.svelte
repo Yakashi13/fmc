@@ -2,6 +2,7 @@
   import { Input } from "$lib/shared/components/input";
   import { Slider } from "$lib/shared/components/slider";
   import { Icon, type IconName } from "$lib/shared/components/icon";
+  import { Tabs } from "$lib/shared/components/tabs";
   import { framesOf, isPlaced, type Frame, type Layer } from "../../core/document/doc";
   import { FULL_BLEED_R, type ArcSpec } from "../../core/render/arc";
   import { ringRadius } from "../../core/document/edits";
@@ -151,9 +152,9 @@
       <Icon name={$lockAspect ? "link" : "link_off"} size={16} />
     </button>
   </div>
-  <p class="hint-xs">rescaled from the original — re-encoded only on save/flash</p>
+  <p class="type-caption hint-xs">rescaled from the original — re-encoded only on save/flash</p>
   <div class="row">
-    <span class="field-label w-md">angle</span>
+    <span class="type-caption field-label w-md">angle</span>
     <Input
       type="number"
       step={15}
@@ -161,10 +162,10 @@
       onChange={(v) => rotateImageRequested({ layer: layer.id, deg: num(v) - angle })}
     />
   </div>
-  <p class="hint-xs">baked into the pixels — the format itself has no angle</p>
+  <p class="type-caption hint-xs">baked into the pixels — the format itself has no angle</p>
   {#each ADJUST as a (a.key)}
     <div class="row">
-      <span class="field-label w-md">{a.label}</span>
+      <span class="type-caption field-label w-md">{a.label}</span>
       <Slider
         max={a.max}
         step={5}
@@ -210,7 +211,9 @@
       onInput={(v) => setSpec({ end: num(v) })}
     />
   </div>
-  <p class="hint-xs">degrees clockwise from 12 o'clock — 20 → 340 leaves a 40° gap at the top</p>
+  <p class="type-caption hint-xs">
+    degrees clockwise from 12 o'clock — 20 → 340 leaves a 40° gap at the top
+  </p>
 {/if}
 {#if frame}
   <div class="row">
@@ -242,22 +245,16 @@
     />
   </div>
   <div class="row">
-    <span class="field-label w-md">align</span>
-    <div class="btn-group">
-      {#each FLEX_ALIGN as [main, iconName, title] (main)}
-        <button
-          type="button"
-          {title}
-          class="icon-btn"
-          class:on={frame.main === main}
-          onclick={() => setFrame({ main })}
-        >
-          <Icon name={iconName} size={16} />
-        </button>
-      {/each}
-    </div>
+    <span class="type-caption field-label w-md">align</span>
+    <!-- one choice of two, so the app's segmented control, chosen in ink like everywhere else -->
+    <Tabs
+      full
+      items={FLEX_ALIGN.map(([main, icon, label]) => ({ value: String(main), icon, label }))}
+      value={String(frame.main)}
+      onChange={(v) => setFrame({ main: Number(v) })}
+    />
   </div>
-  <p class="hint-xs">where the group's auto-laid-out children sit along the row</p>
+  <p class="type-caption hint-xs">where the group's auto-laid-out children sit along the row</p>
 {/if}
 {#if hand}
   <div class="row">
@@ -274,5 +271,5 @@
       onInput={(v) => set(layer.id, { pivotY: num(v) } as Partial<Layer>)}
     />
   </div>
-  <p class="hint-xs">screen center = {CENTER},{CENTER} (x+pivotX, y+pivotY)</p>
+  <p class="type-caption hint-xs">screen center = {CENTER},{CENTER} (x+pivotX, y+pivotY)</p>
 {/if}

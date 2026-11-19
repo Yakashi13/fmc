@@ -10,7 +10,7 @@
 </script>
 
 <Dialog open={$open} title="The watch is full" onClose={() => slotDialogClosed()}>
-  <p class="desc">
+  <p class="desc type-caption">
     Pick the watchface to replace — its slot number matches the order the watch shows them in.
   </p>
   <div class="dials">
@@ -28,7 +28,6 @@
 <style>
   .desc {
     margin: 0 0 1rem;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .dials {

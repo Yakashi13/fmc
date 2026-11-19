@@ -110,7 +110,7 @@
       </div>
 
       <header class="identity">
-        <h1>{fw.name}</h1>
+        <h1 class="type-display">{fw.name}</h1>
         {#if fw.summary}<p class="summary">{fw.summary}</p>{/if}
         <div class="badges">
           {#if !fw.published}<Badge warn>Draft</Badge>{/if}
@@ -131,7 +131,7 @@
            Everything else — preconditions, the description, links — waits in "Details". -->
       <section class="act">
         {#if !ota}
-          <div class="disclaimer device" role="note">
+          <div class="disclaimer device type-subtitle" role="note">
             <Icon name="block" size={20} />
             <span>
               Only for the {deviceName}. FMC installs firmware on a Watch Pro 2 only, so this one is
@@ -190,12 +190,14 @@
 
         {#if $imageProgress !== null || $flashing || $installing}
           <div class="progress">
-            <div class="progress-row">
+            <div class="progress-row type-caption">
               <span>{$imageProgress !== null ? "Downloading" : "Installing on the watch"}</span>
-              <span class="pct">{pct}%</span>
+              <span class="pct type-mono">{pct}%</span>
             </div>
             <progress max="100" value={pct}></progress>
-            {#if $flashing}<p class="muted">Keep this tab open and the watch close.</p>{/if}
+            {#if $flashing}<p class="muted type-caption">
+                Keep this tab open and the watch close.
+              </p>{/if}
           </div>
         {/if}
 
@@ -211,7 +213,7 @@
         {#if error}<p class="err">{error}</p>{/if}
 
         <!-- one quiet line: who may, what the watch runs, how it compares -->
-        <p class="muted state">
+        <p class="muted state type-caption">
           {#if $watch}
             {#if $wp2Reading}
               Checking the watch…
@@ -228,16 +230,18 @@
       </section>
 
       <details class="more">
-        <summary>Details</summary>
+        <summary class="type-subtitle">Details</summary>
         <div class="more-body">
           {#if loader}
             <p>
               It goes into its own slot over Bluetooth — no flashing, the firmware stays as it is.
               Needs the patched firmware on the watch. The CLI way:
             </p>
-            <pre><code>wp2apps install loader.wp2app --address &lt;address&gt;</code></pre>
+            <pre class="type-caption type-mono"><code
+                >wp2apps install loader.wp2app --address &lt;address&gt;</code
+              ></pre>
           {:else if ota}
-            <h3>Before you install</h3>
+            <h3 class="type-heading">Before you install</h3>
             <ul class="checklist">
               <li>Watch on its charger, at {OTA_MIN_BATTERY}% or more</li>
               <li>
@@ -278,8 +282,9 @@
         </div>
       </details>
 
-      <p class="dates">
+      <p class="dates type-caption">
         {#if fw.author}By {fw.author} ·{/if}
+        <Icon name="calendar_today" size={14} />
         Updated {day(fw.updated)}
       </p>
     {:else if $loading}
@@ -309,15 +314,12 @@
     justify-content: center;
     aspect-ratio: 16 / 9;
     overflow: hidden;
-    border-radius: var(--border-radius);
-    color: oklch(from var(--color-text) l c h / 70%);
+    border-radius: var(--border-radius-tile);
+    color: var(--color-text);
     background:
-      radial-gradient(
-        circle at 25% 15%,
-        oklch(from var(--color-accent) l c h / 30%),
-        transparent 65%
-      ),
-      oklch(from var(--color-text) l c h / 6%);
+      radial-gradient(circle, oklch(from var(--color-text) l c h / 22%) 1px, transparent 1.5px) 0
+        0 / 0.625rem 0.625rem,
+      oklch(from var(--color-text) l c h / 4%);
 
     img {
       width: 100%;
@@ -337,13 +339,10 @@
   }
   h1 {
     margin: 0;
-    font-size: 2rem;
-    line-height: 1.15;
     overflow-wrap: anywhere;
   }
   .summary {
     margin: 0;
-    line-height: 1.35;
   }
   .badges {
     display: flex;
@@ -351,9 +350,13 @@
     gap: 0.25rem;
   }
   .hint,
+  /* a small calendar glyph leads the date */
   .dates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.375rem;
     margin: 0;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   p {
@@ -371,24 +374,20 @@
     gap: 0.5rem;
     padding: 0.75rem 0.875rem;
     border-radius: var(--border-radius);
-    line-height: 1.4;
     color: var(--color-error);
     background: oklch(from var(--color-error) l c h / 12%);
+    border: 1px solid oklch(from var(--color-error) l c h / 30%);
 
     :global(.icon) {
       flex: none;
     }
     /* which watch is the one thing on this plate to read first */
-    &.device {
-      font-weight: 600;
-    }
   }
   .accept {
     display: flex;
     align-items: center;
     gap: 0.625rem;
     cursor: pointer;
-    font-weight: 500;
   }
   /* two buttons side by side, or Download alone across the row */
   .buttons {
@@ -405,10 +404,8 @@
   .progress-row {
     display: flex;
     justify-content: space-between;
-    font-size: 0.75rem;
   }
   .pct {
-    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
   .state {
@@ -424,18 +421,15 @@
     summary {
       padding: 0.875rem 0;
       cursor: pointer;
-      font-weight: 500;
     }
   }
   .more-body {
     display: flex;
     flex-direction: column;
     gap: 0.875rem;
-    line-height: 1.5;
 
     h3 {
       margin: 0;
-      font-size: 1.125rem;
     }
   }
   pre {
@@ -443,11 +437,10 @@
     padding: 0.625rem 0.75rem;
     overflow-x: auto;
     border-radius: calc(var(--border-radius) / 2);
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     background: oklch(from var(--color-text) l c h / 6%);
+    border: 1px solid oklch(from var(--color-text) l c h / 12%);
 
     code {
       font: inherit;
@@ -456,10 +449,8 @@
   .checklist {
     margin: 0;
     padding-inline-start: 1.25rem;
-    line-height: 1.6;
   }
   .muted {
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .ok {

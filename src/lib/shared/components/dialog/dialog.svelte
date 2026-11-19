@@ -1,17 +1,31 @@
 <script lang="ts">
+  // One overlay in two shells, like adaptive-popover/: a centred modal where there is room for
+  // one, the swipeable sheet on a phone — so everything that opens over a phone screen opens
+  // the same way, from the bottom, under the thumb.
   import type { Snippet } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
   import { Icon } from "$lib/shared/components/icon";
+  import { Sheet } from "$lib/shared/components/sheet";
 
   interface Props {
     open?: boolean;
     title?: string;
-    side?: boolean;
     onClose?: () => void;
+    /** the dialog's answers: one row of equal-width buttons at the bottom, Cancel first and the
+     *  main action last (under the thumb on a phone, at the right on a desktop) */
+    actions?: Snippet;
     children?: Snippet;
   }
-  const { open = false, title, side = false, onClose, children }: Props = $props();
+  const { open = false, title, onClose, actions, children }: Props = $props();
+
+  // the app-nav breakpoint: below it the app is phone-shaped
+  const desktop = new MediaQuery("(min-width: 768px)");
 
   let el = $state<HTMLDialogElement>();
+  const uid = $props.id();
+  // a backdrop click closes, a drag that only ends on the backdrop (selecting text in a field,
+  // say) doesn't — the press has to start there too, as UI SDK's dismissable layers do
+  let pressedBackdrop = false;
 
   $effect(() => {
     if (!el) return;
@@ -20,35 +34,53 @@
   });
 </script>
 
-<!-- autofocus on the dialog itself, like sheet/: otherwise showModal() focuses the first
-     focusable child, which is the close button -->
-<!-- svelte-ignore a11y_autofocus -->
-<dialog
-  bind:this={el}
-  autofocus
-  class:side
-  onclose={() => onClose?.()}
-  onclick={(e) => {
-    if (e.target === el) el.close();
-  }}
->
+{#snippet head(close: () => void)}
   <header>
-    {#if title}<h2>{title}</h2>{/if}
-    <button class="close" aria-label="Close" onclick={() => el?.close()}>
+    {#if title}<h2 class="type-heading" id="dialog-{uid}">{title}</h2>{/if}
+    <button class="close" aria-label="Close" onclick={close}>
       <Icon name="close" />
     </button>
   </header>
-  <div class="body">{@render children?.()}</div>
-</dialog>
+{/snippet}
+
+{#if desktop.current}
+  <!-- autofocus on the dialog itself, like sheet/: otherwise showModal() focuses the first
+       focusable child, which is the close button -->
+  <!-- svelte-ignore a11y_autofocus -->
+  <dialog
+    bind:this={el}
+    autofocus
+    aria-labelledby={title ? `dialog-${uid}` : undefined}
+    onclose={() => onClose?.()}
+    onpointerdown={(e) => (pressedBackdrop = e.target === el)}
+    onclick={(e) => {
+      if (e.target === el && pressedBackdrop) el.close();
+    }}
+  >
+    {@render head(() => el?.close())}
+    <div class="body">
+      {@render children?.()}
+      {#if actions}<div class="actions">{@render actions()}</div>{/if}
+    </div>
+  </dialog>
+{:else}
+  <Sheet {open} {onClose}>
+    {#snippet header()}
+      <div class="in-sheet">{@render head(() => onClose?.())}</div>
+    {/snippet}
+    {@render children?.()}
+    {#if actions}<div class="actions">{@render actions()}</div>{/if}
+  </Sheet>
+{/if}
 
 <style>
   dialog {
-    border: none;
+    border: 1px solid oklch(from var(--color-text) l c h / 12%);
     outline: none;
     padding: 0;
     color: var(--color-text);
-    background: var(--color-background);
-    border-radius: var(--border-radius);
+    background: var(--color-surface);
+    border-radius: var(--border-radius-tile);
     width: min(30rem, calc(100vw - 2rem));
     opacity: 0;
     transform: translateY(0.75rem) scale(0.98);
@@ -71,33 +103,6 @@
       background: oklch(0 0 0 / 40%);
     }
   }
-  dialog.side {
-    margin: 0 0 0 auto;
-    height: 100vh;
-    max-height: 100vh;
-    padding-block: var(--safe-area-top) var(--safe-area-bottom);
-    width: min(26.25rem, 90vw);
-    border-radius: 0;
-    display: flex;
-    flex-direction: column;
-    transform: translateX(1.5rem);
-    &:not([open]) {
-      display: none;
-    }
-    &[open] {
-      transform: none;
-      @starting-style {
-        opacity: 0;
-        transform: translateX(1.5rem);
-      }
-    }
-    /* header stays put, body scrolls independently — needed once content can exceed the viewport */
-    .body {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-    }
-  }
   header {
     display: flex;
     align-items: center;
@@ -105,12 +110,24 @@
     padding: 1rem 1rem 0;
     h2 {
       margin: 0;
-      font-size: 1.75rem;
     }
   }
   .close {
-    height: 2.5rem;
-    width: 2.5rem;
+    /* a small round × on a desktop; the phone's sheet keeps a thumb-sized one */
+    height: 2rem;
+    width: 2rem;
+
+    & :global(.icon) {
+      --icon-size: 1.25rem;
+    }
+    @media (max-width: 767px) {
+      height: 2.75rem;
+      width: 2.75rem;
+
+      & :global(.icon) {
+        --icon-size: 1.5rem;
+      }
+    }
     display: flex;
     justify-content: center;
     align-items: center;
@@ -122,10 +139,25 @@
     background: oklch(from var(--color-text) l c h / 8%);
 
     &:hover {
-      background: oklch(from var(--color-text) calc(l+0.1) c h / 8%);
+      background: oklch(from var(--color-text) l c h / 14%);
     }
   }
   .body {
     padding: 1rem;
+  }
+  .actions {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+
+    > :global(*) {
+      width: 100%;
+    }
+  }
+  /* the sheet pads its own head */
+  .in-sheet header {
+    padding: 0;
   }
 </style>

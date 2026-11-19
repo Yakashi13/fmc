@@ -55,8 +55,9 @@
     {#each Array(8) as _, i (i)}
       <div class="skeleton-card">
         <div class="skeleton-dial"><Skeleton height="100%" /></div>
-        <Skeleton height="1rem" width="70%" />
-        <Skeleton height="0.75rem" width="40%" />
+        <Skeleton height="1.35rem" width="70%" />
+        <Skeleton height="1.25rem" width="45%" />
+        <Skeleton height="2.25rem" width="55%" />
       </div>
     {/each}
   {:else}
@@ -75,7 +76,7 @@
         onPublishToggle={() => publishToggleRequested(wf)}
       />
     {:else}
-      <p class="empty">{empty}</p>
+      <p class="empty type-caption">{empty}</p>
     {/each}
     {#if onMore}<div class="sentinel" use:sentinel></div>{/if}
   {/if}
@@ -95,13 +96,21 @@
       padding: 0.75rem;
     }
   }
+  /* the shape of a card: same tile, same rows, so nothing moves when the faces arrive */
   .skeleton-card {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.25rem;
     padding: 0.75rem;
+    border-radius: var(--border-radius-tile);
+    background: oklch(from var(--color-text) l c h / 7%);
+
+    @media (max-width: 767px) {
+      padding: 0.625rem;
+    }
   }
   .skeleton-dial {
+    margin-bottom: 0.375rem;
     aspect-ratio: 1;
     overflow: hidden;
     border-radius: 50%;
@@ -110,7 +119,6 @@
     grid-column: 1 / -1;
     padding: 4rem 0;
     text-align: center;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .sentinel {

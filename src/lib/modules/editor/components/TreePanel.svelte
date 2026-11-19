@@ -1,5 +1,7 @@
 <script lang="ts">
   import { SvelteSet } from "svelte/reactivity";
+  import { slide } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
   import { Button } from "$lib/shared/components/button";
   import { Icon, type IconName } from "$lib/shared/components/icon";
   import { Menu, MenuItem } from "$lib/shared/components/menu";
@@ -10,6 +12,12 @@
   import { capsFor } from "../shared/shortcuts";
   import { editorModel } from "../model";
   import DragGrip from "./DragGrip.svelte";
+
+  // a group folding open or shut; local (Svelte 5's default), so opening a parent doesn't also
+  // play every nested group that was already open, and nothing plays on the first render
+  const reduced =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fold = { duration: reduced ? 0 : 140, easing: quintOut };
   const {
     $doc: doc,
     $screen: screen,
@@ -280,7 +288,7 @@
     <Menu align="start">
       {#snippet trigger({ toggle })}
         <span class="tool-slot" title="Add a layer">
-          <Button kind="secondary" disabled={!$doc} onClick={toggle}>
+          <Button size="small" kind="secondary" disabled={!$doc} onClick={toggle}>
             <Icon name="add" size={22} />
           </Button>
         </span>
@@ -329,7 +337,7 @@
     <Menu>
       {#snippet trigger({ toggle })}
         <span class="tool-slot" title="Selected layer">
-          <Button kind="ghost" disabled={!$sel} onClick={toggle}>
+          <Button size="small" kind="ghost" disabled={!$sel} onClick={toggle}>
             <Icon name="more_horiz" size={22} />
           </Button>
         </span>
@@ -337,7 +345,7 @@
       {@render layerActions()}
     </Menu>
   </div>
-  <div class="list">
+  <div class="list type-small">
     {#if currentScreen}
       {@render screenRow(currentScreen)}
     {:else}
@@ -440,9 +448,11 @@
     <span class="label">{s.kind === "aod" ? "AOD" : "Screen"}</span>
   </button>
   {#if kids.length && openNodes.has(s.id)}
-    {#each kids as l (l.id)}
-      {@render treeNode(l, 1)}
-    {/each}
+    <div transition:slide={fold}>
+      {#each kids as l (l.id)}
+        {@render treeNode(l, 1)}
+      {/each}
+    </div>
   {/if}
 {/snippet}
 
@@ -518,6 +528,7 @@
         />
         <DragGrip
           rows=".node-row[data-id]"
+          always
           onStart={() => {
             drag = l.id;
             gripping = true;
@@ -529,9 +540,11 @@
     </button>
   {/if}
   {#if kids.length && openNodes.has(l.id)}
-    {#each kids as c (c.id)}
-      {@render treeNode(c, depth + 1)}
-    {/each}
+    <div transition:slide={fold}>
+      {#each kids as c (c.id)}
+        {@render treeNode(c, depth + 1)}
+      {/each}
+    </div>
   {/if}
 {/snippet}
 
@@ -573,7 +586,6 @@
     flex: 1;
     overflow-y: auto;
     padding-block: 0.25rem;
-    font-size: 0.9rem;
   }
   .empty {
     margin: 0;
@@ -648,8 +660,14 @@
   :global(.flag.on) {
     opacity: 0.75;
   }
+  /* the grip is the mouse's handle too (the row itself is a native drag, but that one can't
+     show a grabbing hand) — revealed with the flags */
   @media (hover: hover) {
-    .node-row:hover :global(.flag) {
+    .flags :global(.grip) {
+      opacity: 0;
+    }
+    .node-row:hover :global(.flag),
+    .node-row:hover :global(.grip) {
       opacity: 0.75;
     }
   }
@@ -674,10 +692,12 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+  /* the chevron's own width (a 20px icon), so a leaf row and a row being renamed keep their
+     icon and name where a group's sit */
   .chevron-spacer {
     flex-shrink: 0;
-    width: 0.75rem;
-    height: 0.75rem;
+    width: 1.25rem;
+    height: 1.25rem;
   }
   :global(.chevron) {
     flex-shrink: 0;

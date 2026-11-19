@@ -1,11 +1,11 @@
 <script lang="ts">
-  // The "Join Community" tab: one panel of links. What is listed is data — see lib/community.ts.
+  // The Community page's body: one panel of links. What is listed is data — see lib/community.ts.
   import { Icon } from "$lib/shared/components/icon";
   import { AUTHOR_LINKS, COMMUNITY_LINKS } from "../../lib/community";
 </script>
 
 <section class="panel">
-  <h2>Join the community</h2>
+  <h2 class="type-heading">Join the community</h2>
   <p class="lead">Meet other CMF Watch creators, share your work and get help.</p>
 
   <ul>
@@ -19,10 +19,22 @@
             target={external ? "_blank" : undefined}
             rel={external ? "noopener noreferrer" : undefined}
           >
-            <span class="glyph"><Icon name={link.icon} size={24} /></span>
+            {#if link.brand}
+              <span
+                class="glyph logo"
+                class:tinted={link.brand.color}
+                style:--brand={link.brand.color}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
+                  ><path d={link.brand.path} /></svg
+                >
+              </span>
+            {:else}
+              <span class="glyph"><Icon name={link.icon} size={24} /></span>
+            {/if}
             <span class="text">
-              <span class="title">{link.title}</span>
-              {#if link.description}<span class="desc">{link.description}</span>{/if}
+              <span class="title type-subtitle">{link.title}</span>
+              {#if link.description}<span class="desc type-caption">{link.description}</span>{/if}
             </span>
             <Icon name={external ? "open_in_new" : "chevron_right"} size={20} class="out" />
           </a>
@@ -30,8 +42,8 @@
           <div class="tile soon" aria-disabled="true">
             <span class="glyph"><Icon name={link.icon} size={24} /></span>
             <span class="text">
-              <span class="title">{link.title}</span>
-              <span class="desc">Coming soon</span>
+              <span class="title type-subtitle">{link.title}</span>
+              <span class="desc type-caption">Coming soon</span>
             </span>
           </div>
         {/if}
@@ -39,7 +51,7 @@
     {/each}
   </ul>
 
-  <h2 class="author">Made by freethinkel</h2>
+  <h2 class="author type-heading">Made by freethinkel</h2>
   <p class="lead">Follow along for new features, previews and the occasional watchface.</p>
 
   <ul>
@@ -53,8 +65,8 @@
             >
           </span>
           <span class="text">
-            <span class="title">{link.title}</span>
-            <span class="desc">{link.handle}</span>
+            <span class="title type-subtitle">{link.title}</span>
+            <span class="desc type-caption">{link.handle}</span>
           </span>
           <Icon name="open_in_new" size={20} class="out" />
         </a>
@@ -71,7 +83,6 @@
   }
   h2 {
     margin: 0;
-    font-size: 1.25rem;
 
     &.author {
       margin-top: 2rem;
@@ -94,8 +105,8 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.8rem;
-    border-radius: var(--border-radius);
-    background: oklch(from var(--color-text) l c h / 5%);
+    border-radius: var(--border-radius-tile);
+    background: oklch(from var(--color-text) l c h / 7%);
     color: inherit;
     text-decoration: none;
 
@@ -123,8 +134,8 @@
     width: 2.75rem;
     height: 2.75rem;
     border-radius: 50%;
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+    background: var(--color-text);
+    color: var(--color-background);
 
     &.brand {
       background: oklch(from var(--color-text) l c h / 10%);
@@ -135,6 +146,16 @@
         height: 1.375rem;
       }
     }
+    /* a network's own logo on the network's colour; the logo is white or black by that
+       colour's lightness, the same rule as --color-on-accent (tokens.css) */
+    &.logo svg {
+      width: 1.375rem;
+      height: 1.375rem;
+    }
+    &.tinted {
+      background: var(--brand);
+      color: oklch(from var(--brand) clamp(0, (0.68 - l) * 1000, 1) 0 0);
+    }
   }
   .text {
     display: flex;
@@ -142,11 +163,7 @@
     flex-direction: column;
     min-width: 0;
   }
-  .title {
-    font-weight: 600;
-  }
   .desc {
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 60%);
   }
   .tile :global(.out) {

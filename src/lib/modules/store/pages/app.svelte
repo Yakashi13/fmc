@@ -71,10 +71,10 @@
         {#if $app.icon}
           <img class="app-icon" src={fileUrl($app, "icon")} alt="" />
         {:else}
-          <span class="app-icon letter">{$app.name.slice(0, 1)}</span>
+          <span class="app-icon letter type-display">{$app.name.slice(0, 1).toUpperCase()}</span>
         {/if}
         <div class="identity">
-          <h1>{$app.name}</h1>
+          <h1 class="type-display">{$app.name}</h1>
           {#if $app.summary}<p class="summary">{$app.summary}</p>{/if}
           {#if state}
             <!-- read from the watch: the build there against this package (store.model) -->
@@ -86,7 +86,7 @@
               {/if}
             </div>
           {/if}
-          <p class="by">
+          <p class="by type-small">
             {#if $app.author}{$app.author}{/if}
             {#if $app.author && deviceLabel($app.device)}·{/if}
             {deviceLabel($app.device)}
@@ -124,9 +124,9 @@
         </div>
         {#if $installing}
           <div class="progress">
-            <div class="progress-row">
+            <div class="progress-row type-caption">
               <span>Installing on the watch</span>
-              <span class="pct">{$installProgress ?? 0}%</span>
+              <span class="pct type-mono">{$installProgress ?? 0}%</span>
             </div>
             <progress max="100" value={$installProgress ?? 0}></progress>
           </div>
@@ -136,7 +136,7 @@
         {/if}
         {#if error}<p class="err">{error}</p>{/if}
         {#if $wp2 === "stock"}
-          <p class="muted">
+          <p class="muted type-caption">
             The watch runs stock firmware — <a href="/firmware">flash the patched firmware</a> first.
           </p>
         {/if}
@@ -159,11 +159,11 @@
       {/if}
 
       <details class="more">
-        <summary>Details</summary>
+        <summary class="type-subtitle">Details</summary>
         <div class="more-body">
           <ol>
             <li>
-              <span class="n">1</span>
+              <span class="n type-label">1</span>
               <span>
                 The watch needs the <a href="/firmware">patched firmware</a> and the App Loader
                 once: they add an
@@ -171,14 +171,14 @@
               </span>
             </li>
             <li>
-              <span class="n">2</span>
+              <span class="n type-label">2</span>
               <span>
                 Without FMC, send the package with the <code>wp2apps</code> tool:
                 <code class="cmd">wp2apps install app.wp2app --address …</code>
               </span>
             </li>
             <li>
-              <span class="n">3</span>
+              <span class="n type-label">3</span>
               <span>
                 Open <b>Apps</b> at the end of the watch's app list (list style, not the waterfall).
               </span>
@@ -197,10 +197,13 @@
         </div>
       </details>
 
-      <p class="dates">Updated {day($app.updated)}</p>
+      <p class="dates type-caption">
+        <Icon name="calendar_today" size={14} />
+        Updated {day($app.updated)}
+      </p>
     {:else if $loading}
       <div class="head">
-        <Skeleton width="5rem" height="5rem" />
+        <Skeleton width="5rem" height="5rem" round />
         <div class="identity">
           <Skeleton width="60%" height="1.75rem" />
           <Skeleton width="85%" height="1rem" />
@@ -241,15 +244,8 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 2.25rem;
-      font-weight: 600;
-      text-transform: uppercase;
       color: oklch(from var(--color-text) l c h / 60%);
     }
-  }
-  .head :global(.skeleton:first-child) {
-    flex: none;
-    border-radius: 50%;
   }
   .identity {
     display: flex;
@@ -260,17 +256,13 @@
   }
   h1 {
     margin: 0;
-    font-size: 2rem;
-    line-height: 1.15;
     overflow-wrap: anywhere;
   }
   .summary {
     margin: 0;
-    line-height: 1.35;
   }
   .by {
     margin: 0;
-    font-size: 0.875rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .act {
@@ -299,10 +291,8 @@
   .progress-row {
     display: flex;
     justify-content: space-between;
-    font-size: 0.75rem;
   }
   .pct {
-    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
   progress {
@@ -319,7 +309,6 @@
     color: var(--color-error);
   }
   .muted {
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   /* watch screens, so round ones — a row that scrolls sideways, edge to edge on a phone */
@@ -354,7 +343,6 @@
     summary {
       padding: 0.875rem 0;
       cursor: pointer;
-      font-weight: 500;
     }
     ol {
       display: flex;
@@ -367,7 +355,6 @@
     li {
       display: flex;
       gap: 0.75rem;
-      line-height: 1.5;
 
       /* the command line scrolls inside its own box instead of widening the step */
       > span:last-child {
@@ -399,14 +386,8 @@
     width: 1.5rem;
     height: 1.5rem;
     border-radius: 50%;
-    font-size: 0.75rem;
-    font-weight: 600;
     background: var(--color-accent);
     color: var(--color-on-accent);
-  }
-  code {
-    font-family: var(--font-mono);
-    font-size: 0.875em;
   }
   .cmd {
     display: block;
@@ -416,10 +397,15 @@
     white-space: nowrap;
     border-radius: calc(var(--border-radius) / 2);
     background: oklch(from var(--color-text) l c h / 8%);
+    border: 1px solid oklch(from var(--color-text) l c h / 12%);
   }
+  /* a small calendar glyph leads the date */
   .dates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.375rem;
     margin: 0;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .empty {

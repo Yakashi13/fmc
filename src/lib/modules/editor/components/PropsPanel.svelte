@@ -15,11 +15,11 @@
   const layer = $derived($selected[0] ?? null);
 </script>
 
-<div class="panel">
+<div class="panel type-small" data-dense>
   {#if layer}
     <fieldset class="fields" disabled={Boolean(layer.locked)}>
       {#if layer.locked}
-        <p class="hint-xs">locked — unlock it in the layer tree to edit</p>
+        <p class="type-caption hint-xs">locked — unlock it in the layer tree to edit</p>
       {/if}
       <!-- a section with nothing to show for this kind of layer hides itself, title and all -->
       <PanelSection title="Layout"><Geometry {layer} /></PanelSection>
@@ -27,11 +27,11 @@
       <PanelSection title="Art"><Frames {layer} /></PanelSection>
     </fieldset>
   {:else}
-    <p class="hint">Nothing selected.</p>
+    <p class="hint type-small">Nothing selected.</p>
   {/if}
   {#if $doc}
     <div class="row">
-      <Button kind="secondary" onClick={() => invertColorsRequested()}>
+      <Button size="small" kind="secondary" onClick={() => invertColorsRequested()}>
         <Icon name="contrast" size={22} />
         invert {layer ? "layer" : "screen"}
       </Button>
@@ -52,7 +52,6 @@
 
     display: flex;
     flex-direction: column;
-    font-size: 0.85rem;
   }
   .panel > .row {
     padding-top: 0.875rem;
@@ -60,7 +59,6 @@
   }
   .hint {
     margin: 0;
-    font-size: 0.9rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .panel :global {
@@ -69,7 +67,6 @@
       height: var(--control-height);
       padding-inline: 0.625rem;
       border-radius: var(--border-radius);
-      font-size: 0.85rem;
     }
     .row {
       display: flex;
@@ -78,7 +75,6 @@
     }
     .field-label {
       flex-shrink: 0;
-      font-weight: 500;
 
       &.w-sm {
         width: 2rem;
@@ -90,16 +86,10 @@
     .muted-label {
       display: block;
       margin-bottom: 0.375rem;
-      font-family: var(--font-mono);
-      font-size: 0.6875rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
       color: oklch(from var(--color-text) l c h / 55%);
     }
     .hint-xs {
       margin: 0;
-      font-size: 0.75rem;
-      line-height: 1.4;
       color: oklch(from var(--color-text) l c h / 55%);
     }
     .w-num {
@@ -121,12 +111,7 @@
         width: auto;
         height: 1.625rem;
         border: none;
-        border-radius: calc(var(--border-radius) - 0.125rem);
-
-        &.on {
-          background: oklch(from var(--color-text) l c h / 10%);
-          color: var(--color-accent);
-        }
+        border-radius: 0.8125rem;
       }
     }
     .grow {
@@ -140,11 +125,21 @@
       min-width: 2rem;
       height: 2rem;
       border: none;
-      border-radius: var(--border-radius);
+      /* round at rest; squares off while pressed and while on — the shape says the state */
+      border-radius: 1rem;
       background: oklch(from var(--color-text) l c h / 10%);
       color: var(--color-text);
       cursor: pointer;
-      transition: var(--spring-transition);
+      transition:
+        border-radius var(--spring-transition),
+        background-color 0.15s ease,
+        color 0.15s ease;
+
+      /* a press squares it only a little; switching on squares it all the way, on the spring,
+         so the morph is the change of state you see, not something over by the release */
+      &:active:not(.on) {
+        border-radius: 0.75rem;
+      }
 
       @media (hover: hover) {
         &:hover {
@@ -153,8 +148,9 @@
         }
       }
       &.on {
-        color: var(--color-text);
-        background-color: var(--color-accent);
+        color: var(--color-background);
+        background-color: var(--color-text);
+        border-radius: 0.375rem;
       }
     }
     .check-row {

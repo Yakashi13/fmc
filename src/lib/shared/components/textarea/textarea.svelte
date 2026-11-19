@@ -17,18 +17,22 @@
   }: Props = $props();
 </script>
 
-<textarea {placeholder} {rows} {disabled} {maxlength} bind:value oninput={() => onInput?.(value)}
-></textarea>
+<textarea
+  class="type-body"
+  {placeholder}
+  {rows}
+  {disabled}
+  {maxlength}
+  bind:value
+  oninput={() => onInput?.(value)}></textarea>
 
 <style>
   textarea {
     width: 100%;
     padding: 0.5rem 0.75rem;
-    font: inherit;
-    font-size: 1rem;
     color: var(--color-text);
-    background: oklch(from var(--color-text) l c h / 5%);
-    border: 1px solid transparent;
+    background: oklch(from var(--color-text) l c h / 7%);
+    border: none;
     border-radius: var(--border-radius);
     resize: vertical;
 
@@ -37,7 +41,9 @@
     }
     &:focus {
       outline: none;
-      border-color: var(--color-accent);
+      /* one quiet line on the box's own edge and a step lighter fill — no halo around it */
+      background: oklch(from var(--color-text) l c h / 12%);
+      box-shadow: inset 0 0 0 1px oklch(from var(--color-text) l c h / 35%);
     }
   }
 </style>

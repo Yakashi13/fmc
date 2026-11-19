@@ -8,7 +8,13 @@
 </script>
 
 <label class="root">
-  <input type="checkbox" bind:checked {disabled} onchange={() => onChange?.(checked)} />
+  <input
+    type="checkbox"
+    role="switch"
+    bind:checked
+    {disabled}
+    onchange={() => onChange?.(checked)}
+  />
   <span class="switch"><span class="thumb"></span></span>
 </label>
 

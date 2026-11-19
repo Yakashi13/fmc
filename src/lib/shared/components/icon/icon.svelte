@@ -22,7 +22,7 @@
 <span
   class="icon {cls ?? ''}"
   style:--size="{size / 16}rem"
-  style:font-variation-settings="'FILL' {fill ? 1 : 0}, 'opsz' {size}, 'wght' 300"
+  style:font-variation-settings="'FILL' {fill ? 1 : 0}, 'opsz' {size}, 'wght' 400"
   style:color
   aria-hidden="true"
   translate="no"

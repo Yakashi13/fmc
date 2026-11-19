@@ -46,7 +46,7 @@
   onClose={() => publishDialogClosed()}
 >
   {#if !$editing}
-    <p class="desc">The watchface will be visible to everyone.</p>
+    <p class="desc type-caption">The watchface will be visible to everyone.</p>
   {/if}
   <div class="fields">
     <Field label="Name">
@@ -68,29 +68,22 @@
       />
     </Field>
   </div>
-  <div class="footer">
-    <Button kind="ghost" onClick={() => publishDialogClosed()}>Cancel</Button>
+  {#snippet actions()}
+    <Button kind="secondary" onClick={() => publishDialogClosed()}>Cancel</Button>
     <Button kind="primary" disabled={$busy || !$ready} onClick={publish}>
       {$busy ? "Uploading…" : $editing ? "Save" : "Publish"}
     </Button>
-  </div>
+  {/snippet}
 </Dialog>
 
 <style>
   .desc {
     margin: 0 0 0.75rem;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .fields {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-  }
-  .footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    margin-top: 1rem;
   }
 </style>

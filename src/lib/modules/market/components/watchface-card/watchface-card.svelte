@@ -59,21 +59,21 @@
   <div class="preview">
     <img src={fileUrl(wf, "preview")} alt={wf.name} loading="lazy" />
   </div>
-  <h3 title={wf.name} class="name">{wf.name}</h3>
+  <h3 title={wf.name} class="name type-subtitle">{wf.name}</h3>
   {#if wf.owner && showAuthor}
-    <a class="author" href="/user/{wf.owner}" onclick={(e) => e.stopPropagation()}>
+    <a class="author type-small" href="/user/{wf.owner}" onclick={(e) => e.stopPropagation()}>
       <Avatar name={authorName} src={avatar} />
       <span>{authorName}</span>
     </a>
   {/if}
   <div class="footer">
     <div class="stats">
-      <span class="stat" title="Downloads">
+      <span class="stat type-caption" title="Downloads">
         <Icon name="download" size={18} />
         {compact(wf.downloads)}
       </span>
       <button
-        class="stat like"
+        class="stat like type-caption"
         title="Like"
         aria-label="Like"
         aria-pressed={liked}
@@ -95,7 +95,7 @@
       <Badge>{wf.type}</Badge>
     {/if}
     {#if device}
-      <Badge quiet>{device}</Badge>
+      <span class="device type-label">{device.replace(/^Watch /, "")}</span>
     {/if}
 
     {#if manage || canRemove}
@@ -145,13 +145,13 @@
     min-width: 0;
     height: 100%;
     padding: var(--pad);
-    border-radius: var(--border-radius);
-    background: oklch(from var(--color-text) l c h / 5%);
+    border-radius: var(--border-radius-tile);
+    background: oklch(from var(--color-text) l c h / 7%);
     transition: background-color 0.15s ease;
 
     @media (hover: hover) {
       &:hover {
-        background: oklch(from var(--color-text) l c h / 8%);
+        background: oklch(from var(--color-text) l c h / 10%);
       }
     }
   }
@@ -159,7 +159,7 @@
     position: absolute;
     inset: 0;
     z-index: 1;
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-tile);
     touch-action: manipulation;
 
     &:focus-visible {
@@ -199,9 +199,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 1.2rem;
-    line-height: 1.4;
-    font-weight: 600;
   }
   .author {
     --avatar-size: 1.375rem;
@@ -211,7 +208,6 @@
     align-self: flex-start;
     gap: 0.375rem;
     max-width: 100%;
-    font-size: 0.875rem;
     text-decoration: none;
     color: oklch(from var(--color-text) l c h / 55%);
 
@@ -227,8 +223,8 @@
       }
     }
   }
-  /* stats, then the badges, then the menu at the far end; on a narrow card the badges drop
-     to a line of their own rather than squeezing the numbers */
+  /* one line: the numbers, then which watch (a mono word, not a badge — it is on every card),
+     then the menu; only a Draft/Published badge can push it to a second line */
   .footer {
     display: flex;
     flex-wrap: wrap;
@@ -243,7 +239,7 @@
   .stats {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     margin-inline-end: auto;
   }
   .stat {
@@ -254,7 +250,6 @@
     border: none;
     background: none;
     font: inherit;
-    font-size: 0.8125rem;
     font-variant-numeric: tabular-nums;
     color: oklch(from var(--color-text) l c h / 55%);
   }
@@ -266,6 +261,10 @@
     &:disabled {
       cursor: default;
     }
+  }
+  .device {
+    color: oklch(from var(--color-text) l c h / 45%);
+    white-space: nowrap;
   }
   .menu-slot {
     display: inline-flex;
@@ -298,13 +297,8 @@
     .card {
       --pad: 0.625rem;
     }
-    .name {
-      font-size: 1.0625rem;
-    }
     .author {
       --avatar-size: 1.125rem;
-
-      font-size: 0.8125rem;
     }
   }
 </style>

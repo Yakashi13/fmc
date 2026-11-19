@@ -221,6 +221,7 @@ const urls = [
   { loc: `${SITE}/`, lastmod: newest && day(newest) },
   { loc: `${SITE}/apps` },
   { loc: `${SITE}/firmware` },
+  { loc: `${SITE}/community` },
   { loc: `${SITE}/editor` },
   { loc: `${SITE}/help` },
   ...faces.map((f) => ({ loc: `${SITE}/market/${f.id}`, lastmod: day(f.updated) })),

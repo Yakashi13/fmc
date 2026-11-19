@@ -4,9 +4,12 @@
   interface Props {
     open?: boolean;
     onClose?: () => void;
+    /** what stays put over the body: a title and the close button. It sits outside the body's
+     *  scroller, so a long list scrolls under it instead of taking it along */
+    header?: Snippet;
     children?: Snippet<[{ travel: number }]>;
   }
-  const { open = false, onClose, children }: Props = $props();
+  const { open = false, onClose, header, children }: Props = $props();
 
   let el = $state<HTMLDialogElement>();
   let scroller = $state<HTMLDivElement>();
@@ -197,7 +200,8 @@
       <div class="sheet" tabindex="-1" bind:this={panel} onclick={(e) => e.stopPropagation()}>
         <div class="bleed"></div>
         <div class="grabber"></div>
-        <div class="body">{@render children?.({ travel })}</div>
+        {#if header}<div class="head">{@render header()}</div>{/if}
+        <div class="body" class:headed={header}>{@render children?.({ travel })}</div>
       </div>
     </div>
     <div class="tail"></div>
@@ -288,12 +292,12 @@
     position: absolute;
     inset: 0 0 -50svh;
     z-index: -1;
-    border-radius: calc(3 * var(--border-radius, 0.5rem)) calc(3 * var(--border-radius, 0.5rem)) 0 0;
-    background: var(--color-background, Canvas);
+    border-radius: 2rem 2rem 0 0;
+    background: var(--color-surface, Canvas);
     /* its own copy another half screen down: the sheet keeps its rubber-band (it's what makes the
        swipe feel right), and a long pull up outran the bleed and showed its edge. A shadow, since
        a longer box would add to the scroll range and let the sheet scroll past open. */
-    box-shadow: 0 50svh 0 var(--color-background, Canvas);
+    box-shadow: 0 50svh 0 var(--color-surface, Canvas);
   }
   .grabber {
     width: 2.25rem;
@@ -302,10 +306,18 @@
     border-radius: 625rem;
     background: oklch(from var(--color-text, CanvasText) l c h / 20%);
   }
+  .head {
+    flex: none;
+    padding: 0.5rem 1rem 0.75rem;
+  }
   .body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     padding: 1rem 1rem calc(1rem + var(--safe-area-bottom));
+
+    &.headed {
+      padding-top: 0;
+    }
   }
 </style>

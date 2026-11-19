@@ -161,10 +161,10 @@
 
 {#if meta}
   <div>
-    <span class="muted-label">source</span>
+    <span class="type-label muted-label">source</span>
     <Select value={String(meta.source)} options={sourceOptions} onChange={(v) => setSourceId(+v)} />
     {#if sourceAlias != null}
-      <p class="hint-xs">
+      <p class="type-caption hint-xs">
         {#if aliasIsGuess(meta.source)}
           probably reads the same value as 0x{sourceAlias.toString(16)} — what this id reads is unconfirmed,
           so check it on the watch before relying on it.
@@ -176,7 +176,7 @@
       </p>
     {/if}
     {#if frameLabels && images.length && images.length !== frameLabels.length}
-      <p class="hint-xs">
+      <p class="type-caption hint-xs">
         {ID_LABELS[meta.source]} needs {frameLabels.length} frames, this widget has
         {images.length}
       </p>
@@ -188,9 +188,9 @@
        geometry and live in that section. Its own panel child, so it keeps the panel's row gap
        instead of sitting flush against the source select. -->
   <div class="row">
-    <span class="field-label w-md">gauge</span>
+    <span class="type-caption field-label w-md">gauge</span>
     <Input type="number" value={String(ring.spec.min)} onInput={(v) => setSpec({ min: num(v) })} />
-    <span class="field-label w-md">to</span>
+    <span class="type-caption field-label w-md">to</span>
     <Input type="number" value={String(ring.spec.max)} onInput={(v) => setSpec({ max: num(v) })} />
   </div>
 {/if}
@@ -212,9 +212,11 @@
 {/if}
 {#if isBrokenRing}
   <div>
-    <p class="hint-xs">this source freezes a ring on the watch — it only animates a hand</p>
+    <p class="type-caption hint-xs">
+      this source freezes a ring on the watch — it only animates a hand
+    </p>
     <div class="row">
-      <Button kind="secondary" onClick={() => setSourceId(0x0f)}>
+      <Button size="small" kind="secondary" onClick={() => setSourceId(0x0f)}>
         <Icon name="undo" size={22} /> switch to second (0x0f)
       </Button>
     </div>
@@ -240,7 +242,7 @@
 {/if}
 {#if slot}
   <div>
-    <span class="muted-label">slot metrics</span>
+    <span class="type-label muted-label">slot metrics</span>
     <!-- the menu the companion app shows for this slot; the wearer picks one of these on the
          watch, and a sibling layer bound to it (see "widget slot binding") is what draws -->
     {#each slot.metrics as m, i (m)}
@@ -248,7 +250,7 @@
         <!-- frames[0] is the on-watch placeholder, so metric i wears frames[i + 1]. Same
              component as the frame list: click to replace the art, hover to download it. -->
         <FrameThumb id={slot.frames[i + 1]} size={2} />
-        <span class="field-label grow">{pickerLabel(m)}</span>
+        <span class="type-caption field-label grow">{pickerLabel(m)}</span>
         <button
           type="button"
           class="icon-btn"
@@ -270,12 +272,14 @@
         onChange={(v) => v && slotMetricAdded({ id: layer.id, metric: Number(v) })}
       />
     {/if}
-    <p class="hint-xs">each metric gets a blank icon for the app's picker — drop art on it below</p>
+    <p class="type-caption hint-xs">
+      each metric gets a blank icon for the app's picker — drop art on it below
+    </p>
   </div>
 {/if}
 {#if showSlotBind}
   <div>
-    <span class="muted-label">widget slot binding</span>
+    <span class="type-label muted-label">widget slot binding</span>
     <Select
       value={slotBindValue}
       options={slotBindOptions}
@@ -285,12 +289,12 @@
         slotBindSet({ id: layer.id, slot, metric });
       }}
     />
-    <p class="hint-xs">shows this layer only while that slot is set to that metric</p>
+    <p class="type-caption hint-xs">shows this layer only while that slot is set to that metric</p>
   </div>
 {/if}
 {#if conditions.length}
   <div>
-    <span class="muted-label">conditions</span>
+    <span class="type-label muted-label">conditions</span>
     {#each conditions as c, i (i)}
       <div class="row">
         <Select
@@ -315,16 +319,18 @@
           <Icon name="delete" size={14} />
         </button>
       </div>
-      <p class="hint-xs">{bindLines[i]}</p>
+      <p class="type-caption hint-xs">{bindLines[i]}</p>
     {/each}
     {#if conditions.length > 1}
-      <p class="hint-xs">"show if" lines are OR-ed, "only if"/"hide if" must all hold</p>
+      <p class="type-caption hint-xs">
+        "show if" lines are OR-ed, "only if"/"hide if" must all hold
+      </p>
     {/if}
   </div>
 {/if}
 {#if conditions.length || layer.kind !== "raw"}
   <div class="row">
-    <Button kind="secondary" onClick={() => conditionAdded(layer.id)}>
+    <Button size="small" kind="secondary" onClick={() => conditionAdded(layer.id)}>
       <Icon name="call_split" size={22} /> add condition
     </Button>
   </div>

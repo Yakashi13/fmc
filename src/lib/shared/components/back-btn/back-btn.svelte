@@ -13,20 +13,20 @@
 
 <style>
   a {
-    height: 2rem;
+    height: var(--control-height);
     display: flex;
+    flex: none;
     align-items: center;
     justify-content: center;
-    border-radius: 10em;
-    border: 1px solid oklch(from var(--color-text) l c h / 10%);
-    width: 3rem;
+    border-radius: 50%;
+    background: oklch(from var(--color-text) l c h / 8%);
+    width: var(--control-height);
     text-decoration: none;
     color: var(--color-text);
     transition: transform var(--spring-transition);
 
     &:hover {
-      background-color: oklch(from var(--color-text) l c h / 10%);
-      border-color: transparent;
+      background-color: oklch(from var(--color-text) l c h / 14%);
     }
 
     &:active {

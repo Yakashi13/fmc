@@ -21,9 +21,9 @@
     font: inherit;
     color: inherit;
     border: none;
-    padding: 0.8rem;
-    border-radius: var(--border-radius);
-    background: oklch(from var(--color-text) l c h / 5%);
+    padding: 1rem;
+    border-radius: var(--border-radius-tile);
+    background: oklch(from var(--color-text) l c h / 7%);
   }
   .clickable {
     cursor: pointer;

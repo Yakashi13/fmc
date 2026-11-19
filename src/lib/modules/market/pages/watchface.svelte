@@ -17,7 +17,6 @@
   import { StatStrip } from "$lib/shared/components/stat-strip";
   import { compact, day } from "$lib/shared/lib/format";
   import { deviceLabel } from "../lib/devices";
-  import { blur } from "svelte/transition";
 
   interface Props {
     id: string;
@@ -34,10 +33,10 @@
     $installing: installing,
     $installed: installed,
     $likes: likes,
-    $marketErr: marketErr,
     watchfaceRequested,
     installRequested,
     likeToggleRequested,
+    $likePending: likePending,
     editRequested,
     dialScreenSet,
   } = marketModel;
@@ -80,22 +79,20 @@
 
 <Page>
   <div class="detail">
-    {#if $marketErr}<p class="error">{$marketErr}</p>{/if}
-
     <!-- back on one side, the two things you do to a face you like on the other -->
     <div class="topbar">
       <BackBtn href="/" />
       {#if wf}
         <div class="quick">
-          <button class="round" title="Share" aria-label="Share" onclick={share}>
+          <button class="round type-small" title="Share" aria-label="Share" onclick={share}>
             <Icon name={copied ? "check" : "ios_share"} size={22} />
           </button>
           <button
-            class="round like"
+            class="round like type-small"
             title={$user ? "Like" : "Sign in to like"}
             aria-label="Like"
             aria-pressed={liked}
-            disabled={!$user}
+            disabled={!$user || $likePending}
             onclick={() => $user && likeToggleRequested({ wf, userId: $user.id })}
           >
             <Icon
@@ -122,27 +119,32 @@
           </WatchCase>
           {#if $hasAod}
             <button
-              class="round toggle-aod"
+              class="round toggle-aod type-small"
               class:on={$dialScreen === "aod"}
               title={$dialScreen === "aod" ? "Show the main screen" : "Show the always-on screen"}
               aria-label="Toggle the always-on screen"
               onclick={() => dialScreenSet($dialScreen === "aod" ? "main" : "aod")}
             >
-              {#key $dialScreen}
-                <div transition:blur={{ duration: 200 }}>
-                  <Icon name={$dialScreen === "aod" ? "monitor" : "dark_mode"} size={22} />
-                </div>
-              {/key}
+              <!-- both glyphs stay in one cell and trade places, so nothing is added to the
+                   flow mid-animation -->
+              <span class="swap" class:aod={$dialScreen === "aod"}>
+                <Icon name="dark_mode" size={22} />
+                <Icon name="monitor" size={22} />
+              </span>
             </button>
           {/if}
         </div>
 
         <div class="info">
           <header class="identity">
-            <h1 class="name">{wf.name}</h1>
+            <h1 class="name type-display">{wf.name}</h1>
             <div class="byline">
               {#if owner}
-                <a class="author" href="/user/{wf.owner}" title="Watchfaces by this creator">
+                <a
+                  class="author type-subtitle"
+                  href="/user/{wf.owner}"
+                  title="Watchfaces by this creator"
+                >
                   <Avatar name={owner.name || "?"} />
                   <span>{owner.name || "Unknown"}</span>
                 </a>
@@ -182,11 +184,11 @@
             <div class="secondary">
               <Button kind="secondary" onClick={() => editRequested(wf)}>
                 <Icon name="edit" size={22} />
-                <span>Open in editor</span>
+                <span>Edit</span>
               </Button>
               <Button kind="secondary" href={downloadUrl(wf)}>
                 <Icon name="download" size={22} />
-                <span>Download .bin</span>
+                <span>Download</span>
               </Button>
             </div>
           </div>
@@ -203,7 +205,8 @@
             <Prose source={wf.description} ugc />
           {/if}
 
-          <p class="dates">
+          <p class="dates type-caption">
+            <Icon name="calendar_today" size={14} />
             Published {day(wf.created)}
             {#if day(wf.updated) !== day(wf.created)}· updated {day(wf.updated)}{/if}
           </p>
@@ -235,11 +238,6 @@
     margin: 0 auto;
     padding: 1rem 1rem 2rem;
   }
-  .error {
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--color-error);
-  }
   .topbar {
     display: flex;
     align-items: center;
@@ -257,13 +255,12 @@
     align-items: center;
     justify-content: center;
     gap: 0.375rem;
-    min-width: 2.5rem;
-    height: 2.5rem;
-    padding: 0 0.625rem;
+    min-width: var(--control-height);
+    height: var(--control-height);
+    padding: 0 0.75rem;
     border: none;
     border-radius: 10em;
     font: inherit;
-    font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
     color: var(--color-text);
     background: oklch(from var(--color-text) l c h / 8%);
@@ -295,7 +292,8 @@
   .dial {
     position: relative;
     align-self: center;
-    width: min(78%, 19rem);
+    /* small enough on a phone that the name and Install stay above the fold */
+    width: min(62%, 19rem);
 
     /* a percentage margin measures the containing block's width — here, the dial's own */
     > :global(.case) {
@@ -323,13 +321,6 @@
     background-color: var(--color-text);
     color: var(--color-background);
 
-    & :global(.icon) {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
     &.on {
       background-color: oklch(from var(--color-text) l c h / 8%);
       color: var(--color-text);
@@ -341,6 +332,28 @@
       &.on:hover:not(:disabled) {
         background-color: oklch(from var(--color-text) l c h / 14%);
       }
+    }
+  }
+  .swap {
+    display: grid;
+
+    > :global(.icon) {
+      grid-area: 1 / 1;
+      transition:
+        opacity 0.2s ease,
+        rotate 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+        scale 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    > :global(.icon:last-child),
+    &.aod > :global(.icon:first-child) {
+      opacity: 0;
+      rotate: -90deg;
+      scale: 0.6;
+    }
+    &.aod > :global(.icon:last-child) {
+      opacity: 1;
+      rotate: 0deg;
+      scale: 1;
     }
   }
   .info {
@@ -356,8 +369,6 @@
   }
   .name {
     margin: 0;
-    font-size: 2.25rem;
-    line-height: 1.1;
     overflow-wrap: anywhere;
   }
   .byline {
@@ -374,7 +385,6 @@
     gap: 0.5rem;
     min-width: 0;
     margin-inline-end: 0.25rem;
-    font-weight: 500;
     color: var(--color-text);
     text-decoration: none;
 
@@ -419,9 +429,13 @@
       flex: 1 1 10rem;
     }
   }
+  /* a small calendar glyph leads the date */
   .dates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.375rem;
     margin: 0;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .empty {

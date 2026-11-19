@@ -27,7 +27,6 @@
   }
   header {
     flex: none;
-    border-bottom: 1px solid oklch(from var(--color-text) l c h / 10%);
   }
   main {
     flex: 1;
@@ -36,11 +35,11 @@
   }
   @media (max-width: 767px) {
     .page {
-      height: calc(100% + var(--nav-bar-height) + var(--safe-area-bottom));
-      margin-block-end: calc(-1 * (var(--nav-bar-height) + var(--safe-area-bottom)));
+      height: calc(100% + var(--dock-space));
+      margin-block-end: calc(-1 * var(--dock-space));
     }
     main {
-      padding-block-end: calc(var(--nav-bar-height) + var(--safe-area-bottom));
+      padding-block-end: var(--dock-space);
     }
   }
 </style>

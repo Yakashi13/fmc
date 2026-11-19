@@ -22,21 +22,114 @@
       icon: "storefront",
       active:
         path === "/" ||
-        ["/market", "/my", "/apps", "/firmware", "/user", "/companion"].some((p) =>
+        ["/market", "/my", "/apps", "/firmware", "/community", "/user", "/companion"].some((p) =>
           path.startsWith(p),
         ),
     },
     { title: "Editor", url: "/editor", icon: "edit", active: path.startsWith("/editor") },
   ]);
+  const signingIn = $derived(path.startsWith("/login") || path.startsWith("/register"));
+
+  // The phone's dock has a thumb: a lighter patch of glass under the tab you are on. Its
+  // glyphs are a second, lit copy of the row (`tabs`, drawn in .lit) clipped to the thumb, so
+  // switching reads as a mask sliding along the dock — and the thumb can be dragged by finger.
+  const tabs = $derived<{ title: string; icon: IconName }[]>([
+    ...nav,
+    { title: "Watch", icon: "watch" },
+    $user ? { title: "Account", icon: "person" } : { title: "Sign in", icon: "login" },
+  ]);
+  // only pages hold the thumb: the watch panel and the account menu are overlays
+  const activeAt = $derived(
+    signingIn && !$user ? tabs.length - 1 : nav.findIndex((item) => item.active),
+  );
+
+  let bar = $state<HTMLElement>();
+  // a drag in progress: the thumb's position as a fractional tab index
+  let dragAt = $state<number | null>(null);
+  // the tab a drag was dropped on, held until the navigation it started lands
+  let droppedAt = $state<number | null>(null);
+  const thumbAt = $derived(dragAt ?? droppedAt ?? activeAt);
+
+  $effect(() => {
+    void path;
+    droppedAt = null;
+  });
+
+  let start: { x: number; id: number } | null = null;
+  let dragged = false;
+  const tabEls = () => [...(bar?.querySelectorAll<HTMLElement>("[data-tab]") ?? [])];
+
+  function at(x: number) {
+    const r = bar!.getBoundingClientRect();
+    const pad = parseFloat(getComputedStyle(bar!).paddingLeft);
+    const cell = (r.width - 2 * pad) / tabs.length;
+
+    return Math.min(tabs.length - 1, Math.max(0, (x - r.left - pad) / cell - 0.5));
+  }
+
+  function onPointerDown(e: PointerEvent) {
+    // the dock only: the rail on md+ has no thumb, and the watch panel lives inside <nav> too
+    if (!matchMedia("(max-width: 767px)").matches) return;
+    if (!(e.target as Element).closest("[data-tab]")) return;
+    start = { x: e.clientX, id: e.pointerId };
+  }
+
+  function onPointerMove(e: PointerEvent) {
+    if (!start || e.pointerId !== start.id) return;
+    if (dragAt === null) {
+      if (Math.abs(e.clientX - start.x) < 8) return;
+      bar?.setPointerCapture(start.id);
+    }
+    dragAt = at(e.clientX);
+  }
+
+  function onPointerUp() {
+    const to = dragAt === null ? null : Math.round(dragAt);
+
+    start = null;
+    dragAt = null;
+    if (to === null) return;
+    if (to !== activeAt) {
+      const el = tabEls()[to];
+
+      // a page keeps the thumb while it loads; an overlay lets it spring back
+      if (el instanceof HTMLAnchorElement) droppedAt = to;
+      el?.click();
+    }
+    // the click the browser makes of the drag itself must not land on a tab
+    dragged = true;
+    setTimeout(() => (dragged = false));
+  }
+
+  function onPointerCancel() {
+    start = null;
+    dragAt = null;
+  }
 </script>
 
 <!-- the app's navigation: a bottom tab bar on a phone, a rail down the left side on md+ -->
-<nav>
-  <a class="logo" href="/">fmc</a>
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<nav
+  bind:this={bar}
+  class:dragging={dragAt !== null}
+  style:--n={tabs.length}
+  style:--i={Math.max(thumbAt, 0)}
+  onpointerdown={onPointerDown}
+  onpointermove={onPointerMove}
+  onpointerup={onPointerUp}
+  onpointercancel={onPointerCancel}
+  ondragstart={(e) => e.preventDefault()}
+  onclickcapture={(e) => {
+    if (!dragged) return;
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+>
+  <a class="logo type-title" href="/">fmc</a>
   {#each nav as item (item.url)}
-    <a href={item.url} class:active={item.active}>
+    <a class="type-label" data-tab draggable="false" href={item.url} class:active={item.active}>
       <span class="icon">
-        <Icon name={item.icon} size={24} />
+        <Icon name={item.icon} size={24} fill={item.active} />
       </span>
       {item.title}
     </a>
@@ -44,7 +137,7 @@
   <WatchSheet>
     {#snippet trigger({ toggle, connected })}
       <!-- no .active while open: the watch panel is an overlay, not a page -->
-      <button onclick={toggle}>
+      <button class="type-label" data-tab onclick={toggle}>
         <span class="icon">
           <Icon name="watch" size={24} />
           {#if connected}<span class="dot"></span>{/if}
@@ -58,7 +151,7 @@
     <span class="account">
       <Menu align="start">
         {#snippet trigger({ toggle })}
-          <button onclick={toggle}>
+          <button class="type-label" data-tab onclick={toggle}>
             <span class="icon">
               <Avatar
                 name={$user.name || $user.email}
@@ -87,18 +180,41 @@
       </Menu>
     </span>
   {:else}
-    <a href="/login" class:active={path.startsWith("/login") || path.startsWith("/register")}>
-      <span class="icon">
-        <Icon name="login" size={24} />
-      </span>
-      Sign in
-    </a>
+    <!-- the same slot as the account it turns into: the far end of the rail -->
+    <span class="account">
+      <a class="type-label" data-tab draggable="false" href="/login" class:active={signingIn}>
+        <span class="icon">
+          <Icon name="login" size={24} />
+        </span>
+        Sign in
+      </a>
+    </span>
   {/if}
+  <!-- the lit copy of the row, visible only inside the thumb (see .lit) -->
+  <div class="lit" class:off={thumbAt < 0} aria-hidden="true">
+    {#each tabs as tab, i (tab.title)}
+      <span class="type-label">
+        <span class="icon">
+          {#if i === tabs.length - 1 && $user}
+            <Avatar
+              name={$user.name || $user.email}
+              src={$user.avatar ? fileUrl($user, "avatar") : undefined}
+            />
+          {:else}
+            <Icon name={tab.icon} size={24} fill />
+          {/if}
+        </span>
+        {tab.title}
+      </span>
+    {/each}
+  </div>
 </nav>
 <AccentDialog />
 
 <style>
   nav {
+    /* it sits out page transitions (global.css) */
+    view-transition-name: app-nav;
     position: fixed;
     inset-inline: 0;
     bottom: 0;
@@ -116,39 +232,14 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 3.5rem;
-    height: 2rem;
-    border-radius: 625rem;
-
-    /* the pill grows out of the centre of the tab that just became active. Leaving, it fades
-       first and only then collapses — the 0s delays hide the geometry snapping back
-       (borrowed from m3-svelte's nav item) */
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0 50%;
-      width: 0;
-      border-radius: inherit;
-      background: oklch(from var(--color-text) l c h / 8%);
-      opacity: 0;
-      transition:
-        opacity 0.15s ease,
-        inset 0s 0.2s,
-        width 0s 0.2s;
-    }
-    /* the glyph rides above the pill */
-    :global(.icon) {
-      position: relative;
-      z-index: 1;
-    }
+    height: 1.5rem;
   }
   .dot {
     position: absolute;
     z-index: 1;
-    /* the glyph's top-right corner, measured from the middle of the pill: half the 24px
-       glyph plus half the dot */
-    top: calc(50% - 0.9375rem);
-    inset-inline-end: calc(50% - 0.9375rem);
+    /* the glyph's top-right corner */
+    top: -0.125rem;
+    inset-inline-end: -0.25rem;
     width: 0.375rem;
     height: 0.375rem;
     border-radius: 50%;
@@ -159,47 +250,35 @@
     border: none;
     background: transparent;
     cursor: pointer;
-    font: inherit;
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
-    font-weight: 500;
+    gap: 0.375rem;
+    position: relative;
     text-decoration: none;
-    color: oklch(from var(--color-text) l c h / 50%);
+    color: oklch(from var(--color-text) l c h / 45%);
+    transition: color 0.15s ease;
 
     @media (hover: hover) {
-      &:hover .icon::before {
-        opacity: 1;
-        inset: 0;
-        width: 100%;
-        transition:
-          opacity 0.15s ease,
-          inset var(--spring-transition),
-          width var(--spring-transition);
+      &:hover {
+        color: var(--color-text);
       }
     }
-
+    /* where you are: full ink, a filled glyph, and one accent dot — no pill behind the icon */
     &.active {
       color: var(--color-text);
-      font-weight: 600;
 
-      .icon {
-        color: var(--color-on-accent);
-      }
-      .icon::before {
+      &::after {
+        content: "";
+        position: absolute;
+        bottom: 0.3125rem;
+        left: calc(50% - 0.125rem);
+        width: 0.25rem;
+        height: 0.25rem;
+        border-radius: 50%;
         background: var(--color-accent);
-        opacity: 1;
-        inset: 0;
-        width: 100%;
-        transition:
-          opacity 0.15s ease,
-          inset var(--spring-transition),
-          width var(--spring-transition);
       }
     }
   }
@@ -215,13 +294,15 @@
     flex: 1;
     min-width: 0;
   }
+  /* phone only — see the dock below */
+  .lit {
+    display: none;
+  }
   .logo {
     display: none;
     flex: none;
-    font-family: var(--font-display);
-    color: var(--color-accent);
+    color: var(--color-text);
     text-decoration: none;
-    font-size: 0.8125rem;
   }
   @media (min-width: 768px) {
     nav {
@@ -238,7 +319,11 @@
     a,
     button {
       flex: none;
-      padding-block: 0.25rem 0;
+      padding-block: 0.625rem;
+    }
+    a.active::after {
+      bottom: calc(50% - 0.125rem);
+      left: 0.5rem;
     }
     .logo {
       display: flex;
@@ -257,29 +342,99 @@
     }
   }
 
-  /* The phone's tab bar as glass. Kept apart from the rules above, and phone-only: the md+
-     rail sits beside the page, with nothing scrolling under it to blur.
-
-     Cost, since the bar is on screen all the time: one small blur (a big radius is what makes
-     backdrop-filter expensive on a weak GPU), no saturate/brightness passes, nothing animated
-     on the filter, and an opaque fallback wherever it isn't supported or the user asked for
-     less transparency. The tint is --color-background itself, at partial alpha, so the glass
-     follows the colour scheme; the ink, the border and the pills already derive from
-     --color-text in the rules above and read correctly over it. */
+  /* The phone's bar is a floating dock of frosted glass: a pill lifted off the bottom edge,
+     the page scrolling under and around it, blurred. --nav-bar-height (tokens.css) is the strip
+     pages reserve for it — the dock plus its margins. Phone-only: the md+ rail sits beside the
+     page, with nothing under it to blur. Nothing is animated on the filter, and there is an
+     opaque fallback where blur isn't supported or less transparency is asked. */
   @media (max-width: 767px) {
     nav {
-      background: oklch(from var(--color-background) l c h / 94%);
+      --pad: 0.375rem;
+
+      inset-inline: 0.75rem;
+      /* a dock, not a toolbar: on a wide phone or a narrow window it stops growing and sits
+         centred, so four tabs don't spread into a strip */
+      max-width: 26rem;
+      margin-inline: auto;
+      bottom: var(--dock-inset);
+      height: 4rem;
+      padding: 0 var(--pad);
+      border: 1px solid oklch(from var(--color-text) l c h / 10%);
+      border-radius: 625rem;
+      background: var(--color-surface);
+    }
+    /* a sideways drag on a tab moves the thumb, not the page; and every tab is the same
+       width whatever its label, so the lit copy lands exactly on the row beneath it */
+    a,
+    button {
+      touch-action: pan-y;
+      min-width: 0;
+      padding: 0;
+      /* and nothing of the browser's own: no link ghost, no long-press preview, no selection */
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    /* the thumb says where you are: no dot under the label here */
+    a.active {
+      color: oklch(from var(--color-text) l c h / 45%);
+
+      &::after {
+        content: none;
+      }
+    }
+    /* The thumb. This layer repeats the row in full ink with filled glyphs, on a lighter
+       patch of glass, and is clipped to one tab's cell: --i is which (fractional while a
+       finger drags it), --n how many. Moving the clip is the whole animation — the lit
+       glyphs stay put and the mask slides over them. A stadium, not a circle: the cell is
+       wider than it is tall. */
+    .lit {
+      --cell: calc((100% - 2 * var(--pad)) / var(--n));
+
+      position: absolute;
+      inset: 0;
+      display: flex;
+      padding: 0 var(--pad);
+      border-radius: inherit;
+      pointer-events: none;
+      color: var(--color-text);
+      background: oklch(from var(--color-text) l c h / 16%);
+      clip-path: inset(
+        var(--pad) calc(var(--pad) + (var(--n) - 1 - var(--i)) * var(--cell)) var(--pad)
+          calc(var(--pad) + var(--i) * var(--cell)) round 625rem
+      );
+      transition:
+        clip-path var(--spring-transition),
+        opacity 0.2s ease;
+
+      &.off {
+        opacity: 0;
+      }
+      span:not(.icon) {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+      }
+    }
+    /* under the finger the thumb follows at once, and swells a little */
+    .dragging .lit {
+      transition: none;
+      background: oklch(from var(--color-text) l c h / 22%);
     }
     @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
       nav {
-        background: oklch(from var(--color-background) l c h / 60%);
-        -webkit-backdrop-filter: blur(0.75rem);
-        backdrop-filter: blur(0.75rem);
+        background: oklch(from var(--color-surface) l c h / 72%);
+        -webkit-backdrop-filter: blur(1.5rem) saturate(1.6);
+        backdrop-filter: blur(1.5rem) saturate(1.6);
       }
     }
     @media (prefers-reduced-transparency: reduce) {
       nav {
-        background: var(--color-background);
+        background: var(--color-surface);
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
       }

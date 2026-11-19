@@ -11,31 +11,43 @@
   const { quiet = false, warn = false, children }: Props = $props();
 </script>
 
-<span class="badge" class:quiet class:warn>{@render children?.()}</span>
+<span class="badge type-label" class:quiet class:warn>{@render children?.()}</span>
 
 <style>
+  /* a mono label in a hairline pill; the default one is led by an accent dot */
   .badge {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0 0.625rem;
-    height: 1.3rem;
-    /* its own face even inside a heading, which would otherwise hand it the display serif */
-    font-family: var(--font-family);
-    font-stretch: normal;
-    font-size: 0.7rem;
-    font-weight: 500;
-    border-radius: calc(var(--border-radius) / 2);
+    gap: 0.375rem;
+    padding: 0 0.5rem;
+    height: 1.375rem;
+    white-space: nowrap;
+    border-radius: 625rem;
     color: var(--color-text);
-    background: var(--color-accent);
+    border: 1px solid oklch(from var(--color-text) l c h / 20%);
 
+    &::before {
+      content: "";
+      width: 0.375rem;
+      height: 0.375rem;
+      border-radius: 50%;
+      background: var(--color-accent);
+    }
     &.quiet {
       color: oklch(from var(--color-text) l c h / 55%);
-      background: oklch(from var(--color-text) l c h / 6%);
+      border-color: oklch(from var(--color-text) l c h / 12%);
+
+      &::before {
+        content: none;
+      }
     }
     &.warn {
       color: var(--color-error);
-      background: oklch(from var(--color-error) l c h / 12%);
+      border-color: oklch(from var(--color-error) l c h / 40%);
+
+      &::before {
+        background: var(--color-error);
+      }
     }
   }
 </style>

@@ -1,5 +1,6 @@
 <script lang="ts">
   // The Apps shelf: installable .wp2app packages for the Watch Pro 2.
+  import { Text } from "$lib/shared/components/text";
   import { Badge } from "$lib/shared/components/badge";
   import { Icon } from "$lib/shared/components/icon";
   import { Page } from "$lib/shared/components/page";
@@ -31,24 +32,21 @@
   <div class="shelf">
     <!-- an app does nothing on a watch without the loader, so that comes before the list -->
     <a class="loader-note" href="/firmware">
-      <span class="glyph"><Icon name="memory" size={24} /></span>
+      <Icon name="memory" size={20} class="glyph" />
       <span class="text">
-        <span class="title">Apps need the patched firmware</span>
-        <span class="desc">
-          A small patch for the stock firmware and the App Loader on top. Set up once, then add and
-          remove apps over Bluetooth.
-        </span>
+        <span class="title type-button-small">Apps need the patched firmware</span>
+        <span class="desc type-small">Set up once, then add and remove apps over Bluetooth</span>
       </span>
-      <Icon name="chevron_right" size={24} class="go" />
+      <Icon name="chevron_right" size={20} class="go" />
     </a>
 
-    {#if $storeErr}<p class="error">{$storeErr}</p>{/if}
+    {#if $storeErr}<Text as="p" variant="caption" tone="error">{$storeErr}</Text>{/if}
 
     <ul class="list">
       {#if $loading && !$apps.length}
         {#each Array(6) as _, i (i)}
           <li class="row skeleton">
-            <Skeleton width="3.5rem" height="3.5rem" />
+            <Skeleton width="3.5rem" height="3.5rem" round />
             <div class="text">
               <Skeleton width="45%" height="1rem" />
               <Skeleton width="80%" height="0.75rem" />
@@ -62,12 +60,12 @@
               {#if app.icon}
                 <img class="app-icon" src={fileUrl(app, "icon")} alt="" loading="lazy" />
               {:else}
-                <span class="app-icon letter">{app.name.slice(0, 1)}</span>
+                <span class="app-icon letter type-title">{app.name.slice(0, 1).toUpperCase()}</span>
               {/if}
               <span class="text">
-                <span class="title">{app.name}</span>
-                {#if app.summary}<span class="desc">{app.summary}</span>{/if}
-                <span class="meta">
+                <span class="title type-subtitle">{app.name}</span>
+                {#if app.summary}<span class="desc type-small">{app.summary}</span>{/if}
+                <span class="meta type-caption">
                   {#if app.version}<span>v{app.version}</span>{/if}
                   {#if $onWatch[app.id] === "update"}
                     <Badge>Update</Badge>
@@ -86,38 +84,35 @@
         {:else}
           <li class="empty">No apps yet. The first ones are on their way.</li>
         {/each}
+        <!-- the shelf is the cmf-tech-community/apps repository: a merged PR there is an app
+             here — so the way in is the shelf's own last card, an empty slot to fill -->
+        <li>
+          <a class="row make" href={MAKE_AN_APP} target="_blank" rel="noopener noreferrer">
+            <span class="app-icon slot"><Icon name="add" size={28} /></span>
+            <span class="text">
+              <span class="title type-subtitle">Make your own app</span>
+              <span class="desc type-small">
+                Write it in Rust and open a pull request. Once it’s merged, it shows up here.
+              </span>
+            </span>
+            <Icon name="open_in_new" size={22} class="go" />
+          </a>
+        </li>
       {/if}
     </ul>
-
-    <!-- the shelf is the cmf-tech-community/apps repository: a merged PR there is an app here -->
-    <a class="loader-note make" href={MAKE_AN_APP} target="_blank" rel="noopener noreferrer">
-      <span class="glyph"><Icon name="code" size={24} /></span>
-      <span class="text">
-        <span class="title">Make your own app</span>
-        <span class="desc">
-          Apps are Rust, in the open community apps repository. Open a pull request — once it's
-          merged, your app shows up here.
-        </span>
-      </span>
-      <Icon name="open_in_new" size={22} class="go" />
-    </a>
   </div>
 </Page>
 
 <style>
+  /* the same box the faces page gives its tabs, so switching sections doesn't move them */
   .bar {
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
   }
   .shelf {
     display: flex;
     flex-direction: column;
     gap: 1rem;
     padding: 1rem;
-  }
-  .error {
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--color-error);
   }
   .list {
     display: grid;
@@ -127,16 +122,38 @@
     padding: 0;
     list-style: none;
   }
-  .row,
-  .loader-note {
+  .row {
     display: flex;
     align-items: center;
     gap: 0.875rem;
     padding: 0.875rem;
-    border-radius: var(--border-radius);
-    background: oklch(from var(--color-text) l c h / 5%);
+    border-radius: var(--border-radius-tile);
+    background: oklch(from var(--color-text) l c h / 7%);
     color: inherit;
     text-decoration: none;
+  }
+  /* a note about the shelf, not an item on it: no tile fill like the apps', a dotted outline
+     and a bare red glyph, two short lines */
+  .loader-note {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem 0.625rem 1rem;
+    border-radius: var(--border-radius-tile);
+    border: 2px dotted oklch(from var(--color-text) l c h / 18%);
+    background: transparent;
+    color: inherit;
+    text-decoration: none;
+
+    :global(.glyph) {
+      flex: none;
+      color: var(--color-accent);
+    }
+    .desc {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
   }
   a.row,
   .loader-note {
@@ -159,28 +176,6 @@
   }
   .loader-note {
     height: auto;
-
-    .title {
-      white-space: normal;
-    }
-    background: oklch(from var(--color-accent) l c h / 12%);
-
-    @media (hover: hover) {
-      &:hover {
-        background: oklch(from var(--color-accent) l c h / 18%);
-      }
-    }
-  }
-  .glyph {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 50%;
-    background: var(--color-accent);
-    color: var(--color-on-accent);
   }
   /* the watch draws app icons as discs (see docs/app-icons.md in cmf-watch-sdk) — so do we */
   .app-icon {
@@ -195,9 +190,6 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
-      font-weight: 600;
-      text-transform: uppercase;
       color: oklch(from var(--color-text) l c h / 60%);
     }
   }
@@ -209,14 +201,11 @@
     min-width: 0;
   }
   .title {
-    font-weight: 600;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
   .desc {
-    font-size: 0.875rem;
-    line-height: 1.35;
     color: oklch(from var(--color-text) l c h / 60%);
   }
   .row .desc {
@@ -231,7 +220,6 @@
     align-items: center;
     gap: 0.625rem;
     margin-top: 0.25rem;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 50%);
   }
   .count {
@@ -247,9 +235,6 @@
   .skeleton .text {
     gap: 0.5rem;
   }
-  .skeleton :global(.skeleton:first-child) {
-    border-radius: 50%;
-  }
   .empty {
     grid-column: 1 / -1;
     padding: 4rem 0;
@@ -258,7 +243,7 @@
   }
   @media (max-width: 767px) {
     .bar {
-      padding: 0.25rem 0.75rem;
+      padding: 0.5rem 0.75rem;
     }
     .shelf {
       gap: 0.75rem;
@@ -268,18 +253,22 @@
       grid-template-columns: minmax(0, 1fr);
     }
   }
-  /* the way in for authors, after the shelf: neutral, so it doesn't compete with the setup note */
-  .loader-note.make {
-    background: oklch(from var(--color-text) l c h / 5%);
+  /* the way in for authors: an empty slot at the end of the shelf, outlined instead of
+     filled so it doesn't read as one more app */
+  a.row.make {
+    background: none;
+    border: 2px dashed oklch(from var(--color-text) l c h / 16%);
 
     @media (hover: hover) {
       &:hover {
-        background: oklch(from var(--color-text) l c h / 9%);
+        background: oklch(from var(--color-text) l c h / 4%);
       }
     }
-    .glyph {
-      color: var(--color-text);
-      background: oklch(from var(--color-text) l c h / 10%);
-    }
+  }
+  .app-icon.slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: oklch(from var(--color-text) l c h / 60%);
   }
 </style>

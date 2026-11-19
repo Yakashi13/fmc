@@ -56,8 +56,8 @@
           <a class="head" href="/user/{c.id}">
             <Avatar name={name(c)} src={avatar(c)} />
             <span class="who">
-              <span class="creator-name" title={name(c)}>{name(c)}</span>
-              <span class="totals">
+              <span class="creator-name type-subtitle" title={name(c)}>{name(c)}</span>
+              <span class="totals type-caption">
                 {c.faces.length}
                 {c.faces.length === 1 ? "face" : "faces"} · {c.downloads}
                 downloads · {c.likes} likes
@@ -69,8 +69,8 @@
             {#each c.faces as wf (wf.id)}
               <a class="dial" href="/market/{wf.id}">
                 <img src={fileUrl(wf, "preview")} alt={wf.name} loading="lazy" title={wf.name} />
-                <span class="dial-name">{wf.name}</span>
-                <span class="dial-dl" title="Downloads">
+                <span class="dial-name type-caption">{wf.name}</span>
+                <span class="dial-dl type-caption" title="Downloads">
                   <Icon name="download" size={16} />
                   {wf.downloads || 0}
                 </span>
@@ -130,11 +130,8 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-size: 1.125rem;
-    font-weight: 600;
   }
   .totals {
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
 
@@ -178,13 +175,11 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-size: 0.75rem;
   }
   .dial-dl {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
 </style>

@@ -4,6 +4,8 @@
   // phone — since it is the same panel either way.
   import type { Snippet } from "svelte";
   import { AdaptivePopover } from "$lib/shared/components/adaptive-popover";
+  import { Notice } from "$lib/shared/components/notice";
+  import { BLUEFY } from "../lib/notice";
   import { Button } from "$lib/shared/components/button";
   import { Icon } from "$lib/shared/components/icon";
   import { bleModel, devModel } from "../model";
@@ -32,7 +34,7 @@
   }
 
   const {
-    $bleStatus: bleStatus,
+    $bleNotice: notice,
     $bleInfo: bleInfo,
     $dials: dials,
     $slots: slots,
@@ -58,6 +60,19 @@
   const muted = "oklch(from var(--color-text) l c h / 55%)";
 </script>
 
+<!-- a status that names Bluefy links it to the App Store: it's the fix the message suggests -->
+{#snippet linked(text: string)}
+  {@const at = text.indexOf("Bluefy")}
+  {#if at < 0}{text}{:else}{text.slice(0, at)}<a
+      class="bluefy"
+      href={BLUEFY}
+      target="_blank"
+      rel="noopener noreferrer">Bluefy</a
+    >{text.slice(at + 6)}{/if}
+{/snippet}
+
+{#snippet noticeDetail()}{@render linked($notice?.detail ?? "")}{/snippet}
+
 {@render trigger({ open, toggle, connected: !!$bleInfo })}
 
 <AdaptivePopover
@@ -67,8 +82,9 @@
 >
   {#if !$bleInfo}
     <div class="section">
-      <p class="desc">CMF Watch Pro 2 / Pro 3 over Web Bluetooth.</p>
-      <div class="row">
+      <p class="desc type-small">CMF Watch Pro 2 / Pro 3 over Web Bluetooth.</p>
+      <!-- the two things to do here, half the width each -->
+      <div class="cta">
         <Button onClick={() => connectRequested()} disabled={$connecting}>
           <Icon name="bluetooth" size={22} />
           {$connecting ? "Connecting…" : "Connect"}
@@ -76,60 +92,82 @@
         <span
           title="Clear Chrome's device permission and the saved auth key — does not affect pairing state on the watch itself"
         >
-          <Button kind="ghost" onClick={() => forgetRequested()} disabled={$forgetting}>
-            <Icon name="ink_eraser" size={22} />
+          <Button kind="secondary" onClick={() => forgetRequested()} disabled={$forgetting}>
+            <Icon name="ink_eraser" size={20} />
             {$forgetting ? "Forgetting…" : "Forget device"}
           </Button>
         </span>
-        {#if $bleStatus}<span class="status">{$bleStatus}</span>{/if}
+      </div>
+      {#if $notice}
+        <Notice tone={$notice.tone} detail={$notice.detail ? noticeDetail : undefined}>
+          {@render linked($notice.text)}
+        </Notice>
+      {/if}
+      <!-- everything else about connecting, as one list: read first, start over, get the log -->
+      <div class="list">
+        <!-- the honest version of "is this safe?", said here rather than left to a launch thread -->
+        <details class="before">
+          <summary class="item type-body">
+            <Icon name="info" size={20} />
+            Before you connect
+          </summary>
+          <div class="notes type-small">
+            <ul>
+              <li>
+                The watch talks to one app at a time. Close Nothing X before you connect, and close
+                this tab when you're done.
+              </li>
+              <li>
+                Watchfaces go through the watch's own installer, and the watch can refuse them.
+              </li>
+              <li>
+                On an iPhone, use <a href={BLUEFY} target="_blank" rel="noopener noreferrer"
+                  >Bluefy</a
+                >, and first swipe away every app that holds the watch, like Nothing X or a fitness
+                app. In Settings → Bluetooth the watch should read Not Connected.
+              </li>
+              <li>
+                If Nothing X loses the watch afterwards, pair it again. Turn Bluetooth off and on,
+                forget the watch, add it back.
+              </li>
+            </ul>
+            <a href="/help" onclick={onClose}>Read the full notes</a>
+          </div>
+        </details>
         {#if $log.length}
-          <Button kind="ghost" size="small" onClick={copyLog}>
+          <button type="button" class="item type-body" onclick={copyLog}>
             <Icon name="content_copy" size={20} />
             Copy log
-          </Button>
+          </button>
         {/if}
       </div>
-      <!-- the honest version of "is this safe?", said here rather than left to a launch thread -->
-      <details class="before">
-        <summary>Before you connect</summary>
-        <ul>
-          <li>
-            The watch talks to one app at a time. Close Nothing X before you connect, and close this
-            tab when you're done.
-          </li>
-          <li>Watchfaces go through the watch's own installer, and the watch can refuse them.</li>
-          <li>
-            On an iPhone, use Bluefy, and first swipe away every app that holds the watch, like
-            Nothing X or a fitness app. In Settings → Bluetooth the watch should read Not Connected.
-          </li>
-          <li>
-            If Nothing X loses the watch afterwards, pair it again. Turn Bluetooth off and on,
-            forget the watch, add it back.
-          </li>
-        </ul>
-        <a href="/help" onclick={onClose}>Read the full notes</a>
-      </details>
     </div>
   {:else}
     <div class="section">
-      <p class="desc">{$bleStatus}</p>
+      {#if $notice}
+        <Notice tone={$notice.tone} detail={$notice.detail ? noticeDetail : undefined}>
+          {$notice.text}
+        </Notice>
+      {/if}
       <!-- what the watch says about itself, as a small spec sheet: label left, value right -->
       <dl class="info">
         <div>
-          <dt><Icon name="battery_full" size={16} color="var(--color-accent)" /> Battery</dt>
-          <dd>{$bleInfo.battery ?? "?"}%</dd>
+          <dt class="type-label">
+            <Icon name="battery_full" size={16} color="var(--color-accent)" /> Battery
+          </dt>
+          <dd class="type-small type-mono">{$bleInfo.battery ?? "?"}%</dd>
         </div>
         <div>
-          <dt><Icon name="memory" size={16} color={muted} /> Firmware</dt>
-          <dd>{$bleInfo.firmware ?? "?"}</dd>
+          <dt class="type-label"><Icon name="memory" size={16} color={muted} /> Firmware</dt>
+          <dd class="type-small type-mono">{$bleInfo.firmware ?? "?"}</dd>
         </div>
         <div>
-          <dt><Icon name="tag" size={16} color={muted} /> Serial</dt>
-          <dd>{$bleInfo.serial ?? "?"}</dd>
+          <dt class="type-label"><Icon name="tag" size={16} color={muted} /> Serial</dt>
+          <dd class="type-small type-mono">{$bleInfo.serial ?? "?"}</dd>
         </div>
       </dl>
       <div class="row">
-        <Button kind="ghost" size="small" onClick={openDev}>
+        <Button kind="ghost" onClick={openDev}>
           <Icon name="code" size={20} />
           Developer
         </Button>
@@ -138,7 +176,7 @@
 
     {#if $dials}
       <div class="section">
-        <h2 class="title">
+        <h2 class="title type-heading">
           Watchfaces on the watch ({$slots?.used ?? $dials.length} of {$slots?.capacity ??
             capacityOf($bleInfo.name)})
         </h2>
@@ -153,17 +191,19 @@
                 : undefined}
             />
           {:else}
-            <span class="none">the watch reported none</span>
+            <span class="none type-caption">the watch reported none</span>
           {/each}
         </div>
       </div>
     {/if}
   {/if}
-  <a class="companion" href="/companion" onclick={onClose}>
-    <Icon name="smartphone" size={18} />
-    FMC Companion mobile app
-    <Icon name="chevron_right" size={18} />
-  </a>
+  <div class="list companion">
+    <a class="item type-body" href="/companion" onclick={onClose}>
+      <Icon name="smartphone" size={20} />
+      FMC Companion mobile app
+      <Icon name="chevron_right" size={20} class="go" />
+    </a>
+  </div>
 </AdaptivePopover>
 
 <DevSheet />
@@ -180,12 +220,9 @@
   }
   .title {
     margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
   }
   .desc {
     margin: 0;
-    font-size: 0.75rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
   .row {
@@ -194,25 +231,85 @@
     align-items: center;
     gap: 0.75rem;
   }
-  .status {
-    font-size: 0.625rem;
-    color: oklch(from var(--color-text) l c h / 55%);
-  }
-  .before {
-    font-size: 0.75rem;
-    color: oklch(from var(--color-text) l c h / 55%);
+  .cta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
 
-    summary {
-      cursor: pointer;
-      color: var(--color-text);
+    > :global(*),
+    > span > :global(*) {
+      width: 100%;
+      min-width: 0;
     }
+  }
+  /* a tile of rows split by dotted rules, like a settings list */
+  .list {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--border-radius-tile);
+    background: oklch(from var(--color-text) l c h / 7%);
+
+    > * + * {
+      border-top: 2px dotted oklch(from var(--color-text) l c h / 14%);
+    }
+    &.companion {
+      margin-top: 0.75rem;
+    }
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    /* a row as tall as a button beside it: a cursor's size from md up, a thumb's on the phone */
+    min-height: 2.5rem;
+    padding: 0 0.875rem;
+
+    @media (max-width: 767px) {
+      gap: 0.75rem;
+      min-height: 3.25rem;
+      padding: 0 1rem;
+    }
+    border: none;
+    background: none;
+    color: var(--color-text);
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+
+    :global(.icon) {
+      flex: none;
+      color: oklch(from var(--color-text) l c h / 55%);
+    }
+    :global(.go) {
+      margin-inline-start: auto;
+    }
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: oklch(from var(--color-text) l c h / 5%);
+      }
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+  .bluefy {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+  .notes {
+    padding: 0 1rem 1rem;
+    color: oklch(from var(--color-text) l c h / 65%);
+
     ul {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      margin: 0.625rem 0;
+      margin: 0 0 0.75rem;
       padding-left: 1.125rem;
-      line-height: 1.5;
     }
     a {
       color: var(--color-accent);
@@ -238,10 +335,6 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-family: var(--font-mono);
-      font-size: 0.6875rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
       color: oklch(from var(--color-text) l c h / 55%);
     }
     dd {
@@ -249,8 +342,6 @@
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-family: var(--font-mono);
-      font-size: 0.8125rem;
     }
   }
   .badges {
@@ -260,24 +351,7 @@
     overflow-x: auto;
     padding-bottom: 0.25rem;
   }
-  .companion {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 1.25rem;
-    padding-top: 1rem;
-    border-top: 1px solid oklch(from var(--color-text) l c h / 10%);
-    font-size: 0.875rem;
-    color: var(--color-text);
-    text-decoration: none;
-
-    & :global(.icon:last-child) {
-      margin-inline-start: auto;
-      color: oklch(from var(--color-text) l c h / 50%);
-    }
-  }
   .none {
-    font-size: 0.625rem;
     color: oklch(from var(--color-text) l c h / 55%);
   }
 </style>

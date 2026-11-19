@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { holdCursor } from "$lib/shared/lib/hold-cursor";
   interface Props {
     value?: number;
     min?: number;
@@ -27,7 +28,7 @@
   const pct = $derived(((value - min) / (max - min || 1)) * 100);
   const rail = $derived(
     track ??
-      `linear-gradient(var(--color-accent), var(--color-accent)) 0 / ${pct}% 100% no-repeat,
+      `linear-gradient(var(--color-text), var(--color-text)) 0 / ${pct}% 100% no-repeat,
        oklch(from var(--color-text) l c h / 14%)`,
   );
 </script>
@@ -40,10 +41,12 @@
     {max}
     {step}
     {disabled}
+    aria-valuetext={unit != null ? `${value}${unit}` : undefined}
     oninput={() => onInput?.(value)}
     onchange={() => onChange?.(value)}
+    onpointerdown={() => !disabled && holdCursor("grabbing")}
   />
-  {#if unit != null}<span class="readout">{value}{unit}</span>{/if}
+  {#if unit != null}<span class="readout type-caption type-mono">{value}{unit}</span>{/if}
 </span>
 
 <style>
@@ -61,11 +64,9 @@
     margin: 0;
     background: transparent;
     appearance: none;
-    cursor: grab;
+    /* the hand only while the knob is held (holdCursor), not on hover */
+    cursor: pointer;
 
-    &:active {
-      cursor: grabbing;
-    }
     &:disabled {
       opacity: 0.45;
       cursor: default;
@@ -73,30 +74,30 @@
   }
   input::-webkit-slider-runnable-track,
   input::-moz-range-track {
-    height: 0.1875rem;
+    height: 0.25rem;
     border-radius: 999px;
     background: var(--rail);
   }
-  /* a fine instrument slider: a thin rail and a small knob in the page's ink, ringed in the
-     page's background so it reads against the filled part of the rail as well as the empty */
+  /* a thin rail filled in ink, and a plain disc for the knob: one shape, no ring — a soft
+     shadow is what lifts it off the filled part of the rail */
   input::-webkit-slider-thumb {
     appearance: none;
-    width: 0.875rem;
-    height: 0.875rem;
-    margin-top: calc((0.1875rem - 0.875rem) / 2); /* centres the thumb on the track */
-    border: 2px solid var(--color-background);
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: calc((0.25rem - 1.125rem) / 2); /* centres the thumb on the track */
+    border: none;
     border-radius: 50%;
     background: var(--color-text);
-    box-shadow: 0 0 0 1px var(--color-text);
+    box-shadow: 0 1px 4px oklch(0 0 0 / 35%);
     transition: transform var(--spring-transition, 0.15s ease);
   }
   input::-moz-range-thumb {
-    width: 0.625rem;
-    height: 0.625rem;
-    border: 2px solid var(--color-background);
+    width: 1.125rem;
+    height: 1.125rem;
+    border: none;
     border-radius: 50%;
     background: var(--color-text);
-    box-shadow: 0 0 0 1px var(--color-text);
+    box-shadow: 0 1px 4px oklch(0 0 0 / 35%);
     transition: transform var(--spring-transition, 0.15s ease);
   }
   input:active::-webkit-slider-thumb {
@@ -127,8 +128,6 @@
   .readout {
     flex-shrink: 0;
     width: 4.5ch;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
     text-align: end;
     color: oklch(from var(--color-text) l c h / 55%);
     font-variant-numeric: tabular-nums;

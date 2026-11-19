@@ -6,8 +6,9 @@ import type { RecordModel } from "pocketbase";
 import { fileUrl, pb } from "$lib/shared/api";
 import { parsePackageHeader, type Wp2Package } from "$lib/modules/device/lib/wp2";
 
+// newest first: the shelf is short and curated, so what just landed is what people come to see
 export const loadAppsFx = createEffect(() =>
-  pb.collection("apps").getFullList({ sort: "-downloads,name" }),
+  pb.collection("apps").getFullList({ sort: "-created,name" }),
 );
 export const loadAppFx = createEffect((id: string) => pb.collection("apps").getOne(id));
 
