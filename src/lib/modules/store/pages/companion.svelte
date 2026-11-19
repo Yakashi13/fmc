@@ -9,6 +9,7 @@
   // ponytail: GitHub's "latest release" page, not the .apk itself — the asset's name carries the
   // versionCode, so a direct link needs an API call; resolve it from api.github.com if one tap matters
   const APK = `${REPO}/releases/latest`;
+  const TESTFLIGHT = "https://testflight.apple.com/join/ByWsMnfD";
 
   const features = [
     {
@@ -60,9 +61,9 @@
         <Icon name="android" />
         Download APK
       </Button>
-      <Button kind="secondary" size="large" disabled>
+      <Button href={TESTFLIGHT} external kind="secondary" size="large">
         <Icon name="phone_iphone" />
-        iOS TestFlight · Coming soon
+        iOS TestFlight
       </Button>
     </div>
 

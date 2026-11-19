@@ -25,7 +25,7 @@ export const COMMUNITY_LINKS: readonly CommunityLink[] = [
   {
     id: "companion",
     title: "FMC Companion phone app",
-    description: "Watch faces, watch apps and firmware from your phone. Android beta, iOS soon.",
+    description: "Watch faces, watch apps and firmware from your phone. Android and iOS beta.",
     icon: "smartphone",
     url: "/companion",
   },

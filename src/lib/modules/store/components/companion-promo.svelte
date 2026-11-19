@@ -13,7 +13,7 @@
       <span class="text">
         <strong>FMC Companion mobile app</strong>
         <span class="type-caption"
-          >Watch faces, watch apps and firmware from your phone. Android beta, iOS soon.</span
+          >Watch faces, watch apps and firmware from your phone. Android and iOS beta.</span
         >
       </span>
     </a>
