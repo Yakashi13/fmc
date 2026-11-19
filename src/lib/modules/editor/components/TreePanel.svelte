@@ -528,7 +528,6 @@
         />
         <DragGrip
           rows=".node-row[data-id]"
-          always
           onStart={() => {
             drag = l.id;
             gripping = true;
@@ -660,14 +659,8 @@
   :global(.flag.on) {
     opacity: 0.75;
   }
-  /* the grip is the mouse's handle too (the row itself is a native drag, but that one can't
-     show a grabbing hand) — revealed with the flags */
   @media (hover: hover) {
-    .flags :global(.grip) {
-      opacity: 0;
-    }
-    .node-row:hover :global(.flag),
-    .node-row:hover :global(.grip) {
+    .node-row:hover :global(.flag) {
       opacity: 0.75;
     }
   }
