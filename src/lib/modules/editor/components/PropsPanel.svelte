@@ -69,7 +69,6 @@
       height: var(--control-height);
       padding-inline: 0.75rem;
       border-radius: var(--border-radius);
-      font-weight: 500;
     }
     /* a label, its field(s) and their note, closer to each other than to the next field */
     .group {
