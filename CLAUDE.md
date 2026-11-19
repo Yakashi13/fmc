@@ -103,7 +103,7 @@ device/lib/
 because that is the cheapest target to convert into. Nothing else should touch them — the editor
 edits a `Doc`.
 
-The editor inspector is split the same way: `components/props/` holds `geometry`, `source`
+The editor inspector is split the same way: `components/props/` holds `geometry`, `adjust`, `source`
 and `frames` sections; `PropsPanel.svelte` is the container and owns the shared field CSS
 (via a `:global` block, so the sections only carry styles that are theirs).
 

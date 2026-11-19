@@ -38,7 +38,8 @@
   }
   h3 {
     margin: 0;
-    color: oklch(from var(--color-text) l c h / 55%);
+    /* ink, a step above the muted labels inside the section — or the two read as one level */
+    color: var(--color-text);
   }
   .body {
     display: flex;

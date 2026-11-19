@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Input } from "$lib/shared/components/input";
-  import { Slider } from "$lib/shared/components/slider";
   import { Icon, type IconName } from "$lib/shared/components/icon";
   import { Tabs } from "$lib/shared/components/tabs";
   import { framesOf, isPlaced, type Frame, type Layer } from "../../core/document/doc";
@@ -19,7 +18,6 @@
     resizeImageRequested,
     rotateImageRequested,
     ringResized,
-    adjustImageRequested,
     alignRequested,
   } = editorModel;
 
@@ -71,24 +69,6 @@
     if (resSize) resizeImageRequested({ layer: layer.id, w, h });
   }
 
-  // non-destructive canvas filters on the widget's frames — see adjustImageFx
-  const HUE_TRACK = "linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)"; // the hue wheel
-  const ADJUST = [
-    { key: "brightness", label: "bright", max: 200, unit: "%" },
-    { key: "contrast", label: "contrast", max: 200, unit: "%" },
-    { key: "saturate", label: "saturate", max: 300, unit: "%" },
-    { key: "hue", label: "hue", max: 360, unit: "°", track: HUE_TRACK },
-  ] as const;
-  const NEUTRAL = { brightness: 100, contrast: 100, saturate: 100, hue: 0 };
-  const adjust = $derived(first?.adjust ?? NEUTRAL);
-
-  function setAdjust(key: keyof typeof NEUTRAL, value: number) {
-    adjustImageRequested({
-      layer: layer.id,
-      adjust: { ...adjust, [key]: value },
-    });
-  }
-
   const setFrame = (patch: Partial<Frame>) =>
     frame && set(layer.id, { frame: { ...frame, ...patch } } as Partial<Layer>);
 </script>
@@ -120,6 +100,8 @@
       value={String(placed.y)}
       onInput={(v) => set(layer.id, { y: num(v) } as Partial<Layer>)}
     />
+    <!-- keeps x/y in the columns of w/h below, which end in the aspect lock -->
+    {#if resSize}<span class="icon-pad"></span>{/if}
   </div>
 {/if}
 {#if resSize}
@@ -152,30 +134,24 @@
       <Icon name={$lockAspect ? "link" : "link_off"} size={16} />
     </button>
   </div>
-  <p class="type-caption hint-xs">rescaled from the original — re-encoded only on save/flash</p>
   <div class="row">
-    <span class="type-caption field-label w-md">angle</span>
-    <Input
-      type="number"
-      step={15}
-      value={String(angle)}
-      onChange={(v) => rotateImageRequested({ layer: layer.id, deg: num(v) - angle })}
-    />
-  </div>
-  <p class="type-caption hint-xs">baked into the pixels — the format itself has no angle</p>
-  {#each ADJUST as a (a.key)}
-    <div class="row">
-      <span class="type-caption field-label w-md">{a.label}</span>
-      <Slider
-        max={a.max}
-        step={5}
-        unit={a.unit}
-        track={"track" in a ? a.track : undefined}
-        value={adjust[a.key]}
-        onInput={(v) => setAdjust(a.key, v)}
+    <!-- half a row: the field keeps the width of the x and w above it -->
+    <span class="half">
+      <Input
+        label="angle"
+        unit="°"
+        type="number"
+        step={15}
+        value={String(angle)}
+        onChange={(v) => rotateImageRequested({ layer: layer.id, deg: num(v) - angle })}
       />
-    </div>
-  {/each}
+    </span>
+    <span class="half"></span>
+    <span class="icon-pad"></span>
+  </div>
+  <p class="type-caption hint-xs">
+    size and angle are baked into the pixels — re-encoded only on save or flash
+  </p>
 {/if}
 {#if ring}
   <div class="row">

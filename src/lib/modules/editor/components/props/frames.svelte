@@ -53,8 +53,8 @@
 </script>
 
 {#if slotInfo}
-  <div>
-    <span class="type-label muted-label">widget slot — active metric</span>
+  <div class="group">
+    <span class="type-label muted-label">shown metric</span>
     <Select
       value={String(slotInfo.activeIdx)}
       options={slotOptions}
@@ -66,17 +66,18 @@
   <!-- 0x85 images aren't a value-indexed set: [0] is the on-watch "tap to configure"
        placeholder, [1..count] are the companion-app picker icons, one per metric of
        the 0x5f list — see drawSlotPlaceholder in lib/render.ts -->
-  <div>
-    <span class="type-label muted-label">placeholder (widget-edit screen only)</span>
+  <div class="group">
+    <span class="type-label muted-label">placeholder</span>
     <div class="images">{@render thumb(images[0])}</div>
+    <p class="type-caption hint-xs">drawn only on the watch's widget-edit screen</p>
   </div>
 {:else if images && images.length > 1}
   <!-- A multi-frame widget is indexed BY VALUE (images[value % count]), so the order is
        data, not decoration — a set imported in the wrong order shows the wrong day/month
        on the watch. Listed with its index (and, where the format fixes them, the value
        each slot must hold) and reorderable by drag. -->
-  <div>
-    <span class="type-label muted-label">frames — index = value</span>
+  <div class="group">
+    <span class="type-label muted-label">frames · index = value</span>
     <div class="frames">
       {#each images as ri, i}
         <div
@@ -119,7 +120,8 @@
             onEnd={onGripEnd}
           />
           <span class="frame-idx type-caption type-mono">{i}</span>
-          {@render thumb(ri)}
+          <!-- small: a set runs to dozens of frames, and the list is read for its order -->
+          <FrameThumb id={ri} size={2.25} />
           {#if frameLabels}<span class="thumb-cap type-caption">{frameLabels[i] ?? ""}</span>{/if}
           {#if dropIdx === i}
             <!-- own element, not a row border: the line marks the gap the frame lands in -->
@@ -129,7 +131,7 @@
       {/each}
     </div>
   </div>
-{:else if images}
+{:else if images.length}
   <div class="images">
     {#each images as ri}{@render thumb(ri)}{/each}
   </div>
@@ -139,7 +141,7 @@
      also the one that has nothing to click to give it some. Once it has a bitmap it clips to the
      filled sector like any 0x5b ring, and the thumbnail above takes over. -->
 {#if layer.kind === "ring" && !images.length}
-  <div>
+  <div class="group">
     <span class="type-label muted-label">ring art</span>
     <!-- hidden input + a real Button, same as the tree panel's own add-image control -->
     <input
@@ -154,7 +156,7 @@
       }}
     />
     <Button size="small" kind="secondary" onClick={() => ringFile?.click()}>
-      <Icon name="add_photo_alternate" size={22} />
+      <Icon name="add_photo_alternate" size={18} />
       use a ring bitmap
     </Button>
     <p class="type-caption hint-xs">
@@ -164,7 +166,7 @@
 {/if}
 
 {#if $progressLine?.id === layer.id}
-  <div>
+  <div class="group">
     <span class="type-label muted-label">progress line color</span>
     <!-- onchange, not oninput: every pick redraws all 101 frames and is one undo step -->
     <input
@@ -180,7 +182,7 @@
 {#if layer.kind === "number" || layer.kind === "image" || frameLabels}
   <div class="row">
     <Button size="small" kind="secondary" onClick={() => glyphDialogOpened(layer.id)}>
-      <Icon name="text_fields" />
+      <Icon name="text_fields" size={18} />
       regenerate from a font
     </Button>
   </div>

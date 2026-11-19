@@ -1,11 +1,12 @@
 <script lang="ts">
-  // Inspector for the selected node, in three sections: where it sits, what data it shows,
-  // and the bitmaps it draws. The shared field chrome lives here so the sections carry only
+  // Inspector for the selected node, in four sections: where it sits, how its pixels are
+  // toned, what data it shows, and the bitmaps it draws. The shared field chrome lives here so the sections carry only
   // what is theirs.
   import { Button } from "$lib/shared/components/button";
   import { Icon } from "$lib/shared/components/icon";
   import { PanelSection } from "$lib/shared/components/panel-section";
   import Geometry from "./props/geometry.svelte";
+  import Adjust from "./props/adjust.svelte";
   import Source from "./props/source.svelte";
   import Frames from "./props/frames.svelte";
   import { editorModel } from "../model";
@@ -23,6 +24,7 @@
       {/if}
       <!-- a section with nothing to show for this kind of layer hides itself, title and all -->
       <PanelSection title="Layout"><Geometry {layer} /></PanelSection>
+      <PanelSection title="Color"><Adjust {layer} /></PanelSection>
       <PanelSection title="Data"><Source {layer} /></PanelSection>
       <PanelSection title="Art"><Frames {layer} /></PanelSection>
     </fieldset>
@@ -32,7 +34,7 @@
   {#if $doc}
     <div class="row">
       <Button size="small" kind="secondary" onClick={() => invertColorsRequested()}>
-        <Icon name="contrast" size={22} />
+        <Icon name="contrast" size={18} />
         invert {layer ? "layer" : "screen"}
       </Button>
     </div>
@@ -65,8 +67,15 @@
     /* actions inside a dense panel are the size of its fields, not of a page's buttons */
     .btn {
       height: var(--control-height);
-      padding-inline: 0.625rem;
+      padding-inline: 0.75rem;
       border-radius: var(--border-radius);
+      font-weight: 500;
+    }
+    /* a label, its field(s) and their note, closer to each other than to the next field */
+    .group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
     }
     .row {
       display: flex;
@@ -85,45 +94,80 @@
     }
     .muted-label {
       display: block;
-      margin-bottom: 0.375rem;
       color: oklch(from var(--color-text) l c h / 55%);
     }
+    /* a note belongs to the field above it: it sits tight under that one, whatever gap the
+       column it is in keeps between fields */
     .hint-xs {
       margin: 0;
-      color: oklch(from var(--color-text) l c h / 55%);
+      color: oklch(from var(--color-text) l c h / 50%);
+      text-wrap: pretty;
+    }
+    .body > .hint-xs {
+      margin-top: -0.375rem;
+    }
+    .group > .hint-xs {
+      margin-top: -0.125rem;
+    }
+    /* an action under a label is as wide as its words, like the ones that sit in a row */
+    .group > .btn {
+      align-self: flex-start;
+    }
+    /* the empty third column of a row that sits over one ending in an icon button */
+    .icon-pad {
+      width: var(--control-height);
+      flex-shrink: 0;
     }
     .w-num {
       display: inline-block;
       width: 4rem;
       flex-shrink: 0;
     }
-    /* a segmented pill: one recessed track, equal segments, the active one raised */
+    /* a connected group, after Material 3 Expressive: no track, a hairline gap, the group's
+       outer corners round and the ones between buttons tight — and the button under the finger
+       rounds all the way, on the spring */
     .btn-group {
+      --round: calc(var(--control-height) / 2);
+      --tight: 0.375rem;
+
       display: flex;
       flex: 1;
       gap: 0.125rem;
-      padding: 0.125rem;
-      background: oklch(from var(--color-text) l c h / 5%);
-      border-radius: var(--border-radius);
 
       .icon-btn {
         flex: 1;
         width: auto;
-        height: 1.625rem;
-        border: none;
-        border-radius: 0.8125rem;
+        min-width: 0;
+        border-radius: var(--tight);
+
+        &:first-child {
+          border-start-start-radius: var(--round);
+          border-end-start-radius: var(--round);
+        }
+        &:last-child {
+          border-start-end-radius: var(--round);
+          border-end-end-radius: var(--round);
+        }
+        &:active:not(.on) {
+          border-radius: var(--round);
+        }
       }
     }
     .grow {
       flex: 1;
     }
+    .half {
+      flex: 1 1 0;
+      min-width: 0;
+    }
     .icon-btn {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 2rem;
-      min-width: 2rem;
-      height: 2rem;
+      /* as tall as the fields it sits beside */
+      width: var(--control-height);
+      min-width: var(--control-height);
+      height: var(--control-height);
       border: none;
       /* round at rest; squares off while pressed and while on — the shape says the state */
       border-radius: 1rem;
@@ -142,14 +186,15 @@
       }
 
       @media (hover: hover) {
+        /* a step up from rest, not down: under the cursor it comes forward */
         &:hover {
-          background: oklch(from var(--color-text) l c h / 6%);
-          color: var(--color-text);
+          background: oklch(from var(--color-text) l c h / 16%);
         }
       }
+      /* on is the squared shape and a step more tint, not an ink fill: a lock that is on by
+         default must not be the loudest thing in the panel */
       &.on {
-        color: var(--color-background);
-        background-color: var(--color-text);
+        background-color: oklch(from var(--color-text) l c h / 18%);
         border-radius: 0.375rem;
       }
     }
@@ -157,6 +202,8 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      /* a row of its own is as tall as a field, so a column of mixed rows keeps one rhythm */
+      min-height: var(--control-height);
     }
     .check-label {
       border: none;

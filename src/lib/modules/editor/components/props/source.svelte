@@ -3,7 +3,7 @@
   import { Icon } from "$lib/shared/components/icon";
   import { Input } from "$lib/shared/components/input";
   import { Select } from "$lib/shared/components/select";
-  import { Checkbox } from "$lib/shared/components/checkbox";
+  import { Switch } from "$lib/shared/components/switch";
   import {
     framesOf,
     isAccent,
@@ -160,9 +160,17 @@
 </script>
 
 {#if meta}
-  <div>
-    <span class="type-label muted-label">source</span>
-    <Select value={String(meta.source)} options={sourceOptions} onChange={(v) => setSourceId(+v)} />
+  <div class="group">
+    <!-- a label beside its field, like every other row: a caps label here would read as a
+         second section title right under "Data" -->
+    <div class="row">
+      <span class="type-caption field-label w-md">source</span>
+      <Select
+        value={String(meta.source)}
+        options={sourceOptions}
+        onChange={(v) => setSourceId(+v)}
+      />
+    </div>
     {#if sourceAlias != null}
       <p class="type-caption hint-xs">
         {#if aliasIsGuess(meta.source)}
@@ -188,15 +196,23 @@
        geometry and live in that section. Its own panel child, so it keeps the panel's row gap
        instead of sitting flush against the source select. -->
   <div class="row">
-    <span class="type-caption field-label w-md">gauge</span>
-    <Input type="number" value={String(ring.spec.min)} onInput={(v) => setSpec({ min: num(v) })} />
-    <span class="type-caption field-label w-md">to</span>
-    <Input type="number" value={String(ring.spec.max)} onInput={(v) => setSpec({ max: num(v) })} />
+    <Input
+      label="empty"
+      type="number"
+      value={String(ring.spec.min)}
+      onInput={(v) => setSpec({ min: num(v) })}
+    />
+    <Input
+      label="full"
+      type="number"
+      value={String(ring.spec.max)}
+      onInput={(v) => setSpec({ max: num(v) })}
+    />
   </div>
 {/if}
 {#if meta}
   <div class="check-row">
-    <Checkbox checked={isAccent(meta)} onChange={(v) => setAccent(v)} />
+    <Switch checked={isAccent(meta)} onChange={(v) => setAccent(v)} />
     <button type="button" class="check-label" onclick={() => setAccent(!isAccent(meta))}
       >tints with device accent color</button
     >
@@ -204,27 +220,27 @@
 {/if}
 {#if isSecondHand}
   <div class="check-row">
-    <Checkbox checked={isSmooth} onChange={(v) => setSourceId(v ? 0x12 : 0x72)} />
+    <Switch checked={isSmooth} onChange={(v) => setSourceId(v ? 0x12 : 0x72)} />
     <button type="button" class="check-label" onclick={() => setSourceId(isSmooth ? 0x72 : 0x12)}>
       smooth sweep (unchecked — ticks once per second)
     </button>
   </div>
 {/if}
 {#if isBrokenRing}
-  <div>
+  <div class="group">
     <p class="type-caption hint-xs">
       this source freezes a ring on the watch — it only animates a hand
     </p>
     <div class="row">
       <Button size="small" kind="secondary" onClick={() => setSourceId(0x0f)}>
-        <Icon name="undo" size={22} /> switch to second (0x0f)
+        <Icon name="undo" size={18} /> switch to second (0x0f)
       </Button>
     </div>
   </div>
 {/if}
 {#if num_}
   <div class="row">
-    <span class="grow">
+    <span class="digits">
       <Input
         label="digits"
         type="number"
@@ -234,14 +250,16 @@
         onInput={(v) => setFmt(num(v), num_.padZero)}
       />
     </span>
-    <Checkbox checked={num_.padZero} onChange={(v) => setFmt(num_.digits, v)} />
-    <button type="button" class="check-label" onclick={() => setFmt(num_.digits, !num_.padZero)}
-      >leading zeros</button
-    >
+    <span class="check-row">
+      <Switch checked={num_.padZero} onChange={(v) => setFmt(num_.digits, v)} />
+      <button type="button" class="check-label" onclick={() => setFmt(num_.digits, !num_.padZero)}
+        >leading zeros</button
+      >
+    </span>
   </div>
 {/if}
 {#if slot}
-  <div>
+  <div class="group">
     <span class="type-label muted-label">slot metrics</span>
     <!-- the menu the companion app shows for this slot; the wearer picks one of these on the
          watch, and a sibling layer bound to it (see "widget slot binding") is what draws -->
@@ -278,7 +296,7 @@
   </div>
 {/if}
 {#if showSlotBind}
-  <div>
+  <div class="group">
     <span class="type-label muted-label">widget slot binding</span>
     <Select
       value={slotBindValue}
@@ -293,7 +311,7 @@
   </div>
 {/if}
 {#if conditions.length}
-  <div>
+  <div class="group">
     <span class="type-label muted-label">conditions</span>
     {#each conditions as c, i (i)}
       <div class="row">
@@ -331,7 +349,18 @@
 {#if conditions.length || layer.kind !== "raw"}
   <div class="row">
     <Button size="small" kind="secondary" onClick={() => conditionAdded(layer.id)}>
-      <Icon name="call_split" size={22} /> add condition
+      <Icon name="call_split" size={18} /> add condition
     </Button>
   </div>
 {/if}
+
+<style>
+  /* half the row, like a field in a two-up row */
+  .digits {
+    flex: 1;
+    min-width: 0;
+  }
+  .digits + :global(.check-row) {
+    flex: 1;
+  }
+</style>
