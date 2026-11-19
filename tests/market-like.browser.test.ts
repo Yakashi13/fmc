@@ -12,9 +12,7 @@ const liked = (likes: RecordModel[]) => likes.some((l) => l.watchface === "wf1" 
 test("a like shows at once, before the server answers", async () => {
   let release = () => {};
   const scope = fork({
-    handlers: [
-      [marketApi.toggleLikeFx, () => new Promise((r) => (release = () => r([mine])))],
-    ],
+    handlers: [[marketApi.toggleLikeFx, () => new Promise((r) => (release = () => r([mine])))]],
   });
   const settled = allSettled(marketModel.likeToggleRequested, {
     scope,
