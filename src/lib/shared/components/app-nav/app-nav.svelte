@@ -213,6 +213,8 @@
 
 <style>
   nav {
+    /* it sits out page transitions (global.css) */
+    view-transition-name: app-nav;
     position: fixed;
     inset-inline: 0;
     bottom: 0;

@@ -251,6 +251,39 @@ img {
   -webkit-user-drag: none;
 }
 
+/* Page transitions (the root layout starts one per navigation): the old page sinks back and
+   fades while the new one rises into place. The app chrome — the dock, the rail — carries its
+   own name, so it holds still while the page under it changes. */
+::view-transition-old(root) {
+  animation: 0.18s ease-in both page-out;
+}
+::view-transition-new(root) {
+  animation: 0.32s cubic-bezier(0.16, 1, 0.3, 1) both page-in;
+}
+::view-transition-group(app-nav) {
+  animation: none;
+  z-index: 1;
+}
+@keyframes page-out {
+  to {
+    opacity: 0;
+    scale: 0.985;
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    translate: 0 0.75rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 /* a drag in progress owns the cursor everywhere, and doesn't select text on the way (hold-cursor.ts) */
 :root[data-held-cursor],
 :root[data-held-cursor] * {
