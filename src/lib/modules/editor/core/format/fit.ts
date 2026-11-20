@@ -57,3 +57,20 @@ export function fitForWatch(bin: Uint8Array, device: string | null): Uint8Array 
     }
   return changed ? buildBin(face) : bin;
 }
+
+/** fitForWatch in a worker (fit.worker.ts), so the page stays responsive while a heavy face is
+ *  re-encoded. Same answer, including the input itself when nothing changed.
+ *  ponytail: a worker per call — a flash is rare and the worker is gone once it answers. */
+export function fitForWatchOffThread(bin: Uint8Array, device: string | null): Promise<Uint8Array> {
+  const worker = new Worker(new URL("./fit.worker.ts", import.meta.url), { type: "module" });
+
+  return new Promise<Uint8Array>((resolve, reject) => {
+    worker.onmessage = ({ data }: MessageEvent<{ out?: Uint8Array | null; error?: string }>) =>
+      data.error ? reject(new Error(data.error)) : resolve(data.out ?? bin);
+    worker.onerror = (e) => {
+      e.preventDefault();
+      reject(new Error(e.message || "the face could not be prepared for the watch"));
+    };
+    worker.postMessage({ bin, device });
+  }).finally(() => worker.terminate());
+}

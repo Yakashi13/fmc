@@ -12,7 +12,11 @@ import {
 import { checkOtaTarget, watchDevice } from "../lib/ota-image";
 import type { Wp2State } from "../lib/wp2";
 import { rememberDial, unclaimDial } from "../lib/catalog-names";
-import { assertFlashable, fitForWatch, flashWarning } from "$lib/modules/editor/core/format";
+import {
+  assertFlashable,
+  fitForWatchOffThread,
+  flashWarning,
+} from "$lib/modules/editor/core/format";
 import { dbg, dbgListeners, errText } from "../lib/ble-protocol";
 import * as bleApi from "./ble.api";
 
@@ -113,7 +117,7 @@ export const $connecting = connectFx.pending;
 const flashFx = createEffect(async ({ bin: file, preview, key, slot, confirmed }: Pending) => {
   // every install — editor and marketplace — comes through here, so this is the one gate
   const device = watchDevice(watch!.name);
-  const bin = fitForWatch(file, device);
+  const bin = await fitForWatchOffThread(file, device);
 
   assertFlashable(bin, device);
   const warning = confirmed ? null : flashWarning(bin);
