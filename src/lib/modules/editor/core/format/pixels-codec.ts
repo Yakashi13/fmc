@@ -1,8 +1,8 @@
 // Resource payload <-> RGBA. The colour formats (`cf`) are LVGL's: 4 = RGB565, 5 = RGB565+alpha,
-// 13 = 4-bit alpha mask, 14 = 8-bit alpha mask, 24 = BGRA8888, 28 = ETC2 RGBA8 (Watch Pro 3,
-// decode only), 1 = raw JPEG (left to the browser to decode).
+// 13 = 4-bit alpha mask, 14 = 8-bit alpha mask, 24 = BGRA8888, 28 = ETC2 RGBA8 (Watch 3 Pro),
+// 1 = raw JPEG (left to the browser to decode).
 
-import { decodeEtc2, etc2Size } from "./etc2";
+import { decodeEtc2, encodeEtc2, etc2Size } from "./etc2";
 import { lz4Compress, lz4Decompress } from "./lz4";
 import type { Resource } from "./raw";
 import { u16 } from "./raw";
@@ -70,6 +70,7 @@ export function decodePixels(r: Resource): Uint8ClampedArray<ArrayBuffer> | null
 // encodePixels: RGBA -> resource of the given cf
 export function encodePixels(px: Uint8ClampedArray, w: number, h: number, cf: number): Resource {
   if (w > 2047 || h > 2047) throw new Error(`image ${w}x${h} does not fit 11-bit fields`);
+  if (cf === 28) return { cf, w, h, data: lz4Compress(encodeEtc2(px, w, h)) };
   const r565 = (r: number, g: number, b: number) => ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
   let raw: Uint8Array;
 

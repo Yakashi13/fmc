@@ -9,10 +9,10 @@ import {
   type WatchInfo,
   type WatchSlots,
 } from "../lib/ble";
-import { checkOtaTarget } from "../lib/ota-image";
+import { checkOtaTarget, watchDevice } from "../lib/ota-image";
 import type { Wp2State } from "../lib/wp2";
 import { rememberDial, unclaimDial } from "../lib/catalog-names";
-import { assertFlashable, flashWarning } from "$lib/modules/editor/core/format";
+import { assertFlashable, fitForWatch, flashWarning } from "$lib/modules/editor/core/format";
 import { dbg, dbgListeners, errText } from "../lib/ble-protocol";
 import * as bleApi from "./ble.api";
 
@@ -110,9 +110,12 @@ const connectFx = createEffect(async () => {
   return info;
 });
 export const $connecting = connectFx.pending;
-const flashFx = createEffect(async ({ bin, preview, key, slot, confirmed }: Pending) => {
+const flashFx = createEffect(async ({ bin: file, preview, key, slot, confirmed }: Pending) => {
   // every install — editor and marketplace — comes through here, so this is the one gate
-  assertFlashable(bin);
+  const device = watchDevice(watch!.name);
+  const bin = fitForWatch(file, device);
+
+  assertFlashable(bin, device);
   const warning = confirmed ? null : flashWarning(bin);
 
   if (warning) throw new NeedsConfirmError(warning);

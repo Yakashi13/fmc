@@ -4,6 +4,7 @@
 
 import type { Face, FaceNode, Resource } from "./raw";
 import { TAG, handKinds, hex, i16, u16, u32, unhex } from "./raw";
+import { overBudget, SCREEN_BUDGET } from "./budget";
 
 interface TLVNode {
   tag: number;
@@ -397,8 +398,8 @@ export function buildBin(face: Face): Uint8Array {
  * ships a 576x530 image, so the hard limit sits just past it and the gap needs a confirmation
  * (SAFE_IMAGE_SIDE).
  *
- * ponytail: a per-image side cap, not a total-memory budget — we don't know the firmware's real
- * limit. Upgrade path: sum decoded bytes per screen once someone measures where it falls over.
+ * The side cap stays alongside the per-screen memory budget (budget.ts): it covers the Watch Pro
+ * 2, which has no measured budget, and refuses one huge image before anything is decoded.
  */
 export const MAX_IMAGE_SIDE = 580;
 /** No stock face goes past this but the one above — beyond it the user has to confirm the flash. */
@@ -407,14 +408,16 @@ export const SAFE_IMAGE_SIDE = 470;
 const largest = (resources: Resource[], side: number) =>
   resources.find((r) => r.w > side || r.h > side);
 
-/** Throws when the file holds something the watch may not survive: an image too big to load, or
- *  an always-on screen without its thumbnail. A file we can't parse isn't blocked here — the
- *  watch's installer still gets to refuse it. */
-export function assertFlashable(bin: Uint8Array): void {
-  let resources: Resource[], screens: FaceNode[];
+/** Throws when the file holds something the watch may not survive: an image too big to load, a
+ *  screen past a Watch 3 Pro's memory (`device` is the watch it goes to, devices.ts), or an
+ *  always-on screen without its thumbnail. A file we can't parse isn't blocked here — the watch's
+ *  installer still gets to refuse it. Run fitForWatch first: it shrinks what it can. */
+export function assertFlashable(bin: Uint8Array, device: string | null = null): void {
+  let face: Face, resources: Resource[], screens: FaceNode[];
 
   try {
-    ({ resources, screens } = parseBin(bin));
+    face = parseBin(bin);
+    ({ resources, screens } = face);
   } catch {
     return;
   }
@@ -435,7 +438,15 @@ export function assertFlashable(bin: Uint8Array): void {
     throw new Error(
       `an image is ${big.w}×${big.h} px, over the ${MAX_IMAGE_SIDE} px limit — the watch can run out of memory loading it and restart in a loop. Resize it in the editor first.`,
     );
+  const heavy = device === "watch_3_pro" ? overBudget(face)[0] : undefined;
+
+  if (heavy)
+    throw new Error(
+      `the ${heavy.screen.tag === TAG.aod ? "always-on" : "main"} screen needs ${mb(heavy.bytes)} MB of the watch's memory, over the ${mb(SCREEN_BUDGET)} MB a Watch 3 Pro can hold — it would restart in a loop. Use fewer or smaller full-screen images.`,
+    );
 }
+
+const mb = (bytes: number) => (bytes / 1e6).toFixed(1);
 
 /** What the user has to accept before this file goes to the watch, or null when nothing. Only
  *  meant for a file assertFlashable already let through. */

@@ -1,8 +1,8 @@
 // ETC2 RGBA8 (EAC alpha + ETC2 RGB) block texture — what cf 28 resources on the CMF Watch Pro 3
 // are stored as: 4x4-pixel blocks of 16 bytes (8 alpha, 8 colour), row-major over the image
-// padded to a multiple of 4 on both axes. Decode only; spec: OpenGL ES 3.0, appendix C.
-// ponytail: no encoder — an edited cf 28 asset can't be written back; re-encode as cf 5 if that
-// ever matters (the watch takes the Pro 2 formats fine, see issue #49).
+// padded to a multiple of 4 on both axes. Spec: OpenGL ES 3.0, appendix C.
+// The encoder exists because the Watch 3 Pro holds every image of a screen decoded in RAM, and
+// cf 28 is the one format it keeps at 1 byte per pixel (see fitForWatch).
 
 const MOD = [
   [2, 8],
@@ -187,4 +187,163 @@ export function decodeEtc2(raw: Uint8Array, w: number, h: number): Uint8ClampedA
     }
   }
   return px;
+}
+
+// ---- encoder ----
+// ponytail: ETC1-compatible individual/differential blocks only (no T, H or planar) and a
+// per-subblock average as the base colour, no refinement. Good enough for watch-face art and
+// fast in a browser; a smooth gradient bands a little more than a real encoder's output would.
+
+const sq = (v: number) => v * v;
+
+/** Best modifier index and its error for one channel triple against base ± table entry. */
+function bestIdx(r: number, g: number, b: number, base: number[], t: number[]): [number, number] {
+  let best = 0,
+    err = Infinity;
+
+  for (let k = 0; k < 4; k++) {
+    const m = (k & 1 ? t[1] : t[0]) * (k & 2 ? -1 : 1);
+    const e = sq(clamp(base[0] + m) - r) + sq(clamp(base[1] + m) - g) + sq(clamp(base[2] + m) - b);
+
+    if (e < err) [best, err] = [k, e];
+  }
+  return [best, err];
+}
+
+/** One 8-byte colour block from 16 RGBA pixels in block order (i = x*4+y). */
+function encodeRgbBlock(px: Uint8Array, out: Uint8Array, o: number) {
+  let bestErr = Infinity;
+
+  for (let flip = 0; flip < 2; flip++) {
+    const inFirst = (i: number) => (flip ? (i & 3) < 2 : i >> 2 < 2);
+    const avg = [0, 1].map((half) => {
+      const s = [0, 0, 0];
+
+      for (let i = 0; i < 16; i++)
+        if (inFirst(i) === !half) for (let k = 0; k < 3; k++) s[k] += px[i * 4 + k];
+      return s.map((v) => v / 8);
+    });
+    const q5 = avg.map((c) => c.map((v) => Math.round((v * 31) / 255)));
+    const d = q5[1].map((v, k) => v - q5[0][k]);
+    const diff = d.every((v) => v >= -4 && v <= 3);
+    const q = diff ? q5 : avg.map((c) => c.map((v) => Math.round((v * 15) / 255)));
+    const bases = q.map((c) => c.map(diff ? ext5 : ext4));
+    const tables = [0, 0],
+      idx = new Uint8Array(16);
+    let total = 0;
+
+    for (let half = 0; half < 2; half++) {
+      let tErr = Infinity;
+
+      for (let t = 0; t < 8; t++) {
+        let e = 0;
+        const ks: [number, number][] = [];
+
+        for (let i = 0; i < 16; i++) {
+          if (inFirst(i) !== !half) continue;
+          const r = bestIdx(px[i * 4], px[i * 4 + 1], px[i * 4 + 2], bases[half], MOD[t]);
+
+          ks.push([i, r[0]]);
+          e += r[1];
+        }
+        if (e < tErr) {
+          tErr = e;
+          tables[half] = t;
+          for (const [i, k] of ks) idx[i] = k;
+        }
+      }
+      total += tErr;
+    }
+    if (total >= bestErr) continue;
+    bestErr = total;
+    const [a, b] = q;
+
+    if (diff) for (let k = 0; k < 3; k++) out[o + k] = (a[k] << 3) | (d[k] & 7);
+    else for (let k = 0; k < 3; k++) out[o + k] = (a[k] << 4) | b[k];
+    out[o + 3] = (tables[0] << 5) | (tables[1] << 2) | ((diff ? 1 : 0) << 1) | flip;
+    let lo = 0;
+
+    for (let i = 0; i < 16; i++) lo |= ((idx[i] >> 1) << (16 + i)) | ((idx[i] & 1) << i);
+    out[o + 4] = lo >>> 24;
+    out[o + 5] = lo >>> 16;
+    out[o + 6] = lo >>> 8;
+    out[o + 7] = lo;
+  }
+}
+
+/** One 8-byte EAC alpha block from the alpha bytes of 16 pixels in block order. */
+function encodeAlphaBlock(px: Uint8Array, out: Uint8Array, o: number) {
+  let lo = 255,
+    hi = 0;
+
+  for (let i = 0; i < 16; i++) {
+    lo = Math.min(lo, px[i * 4 + 3]);
+    hi = Math.max(hi, px[i * 4 + 3]);
+  }
+  // table 13 holds a 0 modifier at index 4: a flat block is exact
+  let best = {
+    err: lo === hi ? 0 : Infinity,
+    base: lo,
+    mult: 1,
+    t: 13,
+    idx: new Uint8Array(16).fill(4),
+  };
+
+  for (let t = 0; t < 16 && best.err > 0; t++) {
+    const tb = EAC[t],
+      tMin = Math.min(...tb),
+      tMax = Math.max(...tb);
+
+    for (let mult = 1; mult < 16; mult++) {
+      const base = clamp(Math.round((lo + hi) / 2 - ((tMin + tMax) / 2) * mult));
+      const idx = new Uint8Array(16);
+      let err = 0;
+
+      for (let i = 0; i < 16 && err < best.err; i++) {
+        const a = px[i * 4 + 3];
+        let e = Infinity;
+
+        for (let k = 0; k < 8; k++) {
+          const v = sq(clamp(base + tb[k] * mult) - a);
+
+          if (v < e) [e, idx[i]] = [v, k];
+        }
+        err += e;
+      }
+      if (err < best.err) best = { err, base, mult, t, idx };
+    }
+  }
+  out[o] = best.base;
+  out[o + 1] = (best.mult << 4) | best.t;
+  let h = 0,
+    l = 0;
+
+  for (let i = 0; i < 8; i++) h |= best.idx[i] << (21 - 3 * i);
+  for (let i = 8; i < 16; i++) l |= best.idx[i] << (45 - 3 * i);
+  out.set(
+    [h >> 16, h >> 8, h, l >> 16, l >> 8, l].map((v) => v & 255),
+    o + 2,
+  );
+}
+
+/** RGBA pixels -> ETC2 RGBA8 blocks, edge blocks padded by repeating the last row/column. */
+export function encodeEtc2(rgba: Uint8ClampedArray | Uint8Array, w: number, h: number): Uint8Array {
+  const out = new Uint8Array(etc2Size(w, h));
+  const bw = (w + 3) >> 2;
+  const blk = new Uint8Array(64);
+
+  for (let o = 0, n = 0; o < out.length; o += 16, n++) {
+    const bx = (n % bw) * 4,
+      by = ((n / bw) | 0) * 4;
+
+    for (let i = 0; i < 16; i++) {
+      const x = Math.min(bx + (i >> 2), w - 1),
+        y = Math.min(by + (i & 3), h - 1);
+
+      blk.set(rgba.subarray((y * w + x) * 4, (y * w + x) * 4 + 4), i * 4);
+    }
+    encodeAlphaBlock(blk, out, o);
+    encodeRgbBlock(blk, out, o + 8);
+  }
+  return out;
 }
