@@ -74,6 +74,10 @@ export const t = dict(
     forgot: (n: number) => `forgot ${n} device(s) — connect to pick again`,
     nothingToForget: "nothing to forget",
     filePickerDesc: "App package or firmware image",
+    rescueRetrying: (n: number) => `waiting for the watch — attempt ${n}…`,
+    stopRescue: "Stop",
+    rescueNoKey:
+      "This browser has no saved key for a watch. Without one, connecting means pairing, which needs a tap on the watch — open this page in the browser you installed the face from.",
     sendingReset: "sending factory reset…",
     // rescue page
     rescueTitle: "Rescue — FMC",
@@ -160,6 +164,10 @@ export const t = dict(
         `забыто ${n} ${plural("ru", n, { one: "устройство", few: "устройства", many: "устройств" })} — подключитесь, чтобы выбрать снова`,
       nothingToForget: "забывать нечего",
       filePickerDesc: "Пакет приложения или образ прошивки",
+      rescueRetrying: (n: number) => `ожидание часов — попытка ${n}…`,
+      stopRescue: "Стоп",
+      rescueNoKey:
+        "В этом браузере нет сохранённого ключа часов. Без него подключение — это сопряжение, а его нужно подтвердить на часах. Откройте эту страницу в браузере, из которого ставили циферблат.",
       sendingReset: "отправка сброса до заводских настроек…",
       rescueTitle: "Восстановление — FMC",
       rescue: "Восстановление",
@@ -244,6 +252,10 @@ export const t = dict(
         `забуто ${n} ${plural("uk", n, { one: "пристрій", few: "пристрої", many: "пристроїв" })} — підключіться, щоб вибрати знову`,
       nothingToForget: "нічого забувати",
       filePickerDesc: "Пакет застосунку або образ прошивки",
+      rescueRetrying: (n: number) => `очікування годинника — спроба ${n}…`,
+      stopRescue: "Стоп",
+      rescueNoKey:
+        "У цьому браузері немає збереженого ключа годинника. Без нього під'єднання — це сполучення, а його треба підтвердити на годиннику. Відкрийте цю сторінку в браузері, з якого встановлювали циферблат.",
       sendingReset: "надсилання скидання до заводських налаштувань…",
       rescueTitle: "Відновлення — FMC",
       rescue: "Відновлення",
@@ -329,6 +341,10 @@ export const t = dict(
         `${n} ${plural("es", n, { one: "dispositivo olvidado", other: "dispositivos olvidados" })} — conecta para elegir de nuevo`,
       nothingToForget: "no hay nada que olvidar",
       filePickerDesc: "Paquete de app o imagen de firmware",
+      rescueRetrying: (n: number) => `esperando al reloj — intento ${n}…`,
+      stopRescue: "Detener",
+      rescueNoKey:
+        "Este navegador no tiene guardada una clave del reloj. Sin ella, conectar significa emparejar, y eso hay que confirmarlo en el reloj. Abre esta página en el navegador desde el que instalaste la esfera.",
       sendingReset: "enviando restablecimiento de fábrica…",
       rescueTitle: "Rescate — FMC",
       rescue: "Rescate",
@@ -410,6 +426,10 @@ export const t = dict(
       forgot: (n: number) => `${n} डिवाइस भुला दिए गए — फिर से चुनने के लिए कनेक्ट करें`,
       nothingToForget: "भूलने के लिए कुछ नहीं है",
       filePickerDesc: "ऐप पैकेज या फ़र्मवेयर इमेज",
+      rescueRetrying: (n: number) => `घड़ी का इंतज़ार — प्रयास ${n}…`,
+      stopRescue: "रोकें",
+      rescueNoKey:
+        "इस ब्राउज़र में घड़ी की कोई सेव की हुई key नहीं है। इसके बिना कनेक्ट करने का मतलब पेयरिंग है, जिसे घड़ी पर पुष्टि करना पड़ता है। यह पेज उसी ब्राउज़र में खोलें जिससे आपने फ़ेस इंस्टॉल किया था।",
       sendingReset: "फ़ैक्टरी रीसेट भेजा जा रहा है…",
       rescueTitle: "रेस्क्यू — FMC",
       rescue: "रेस्क्यू",

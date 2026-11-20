@@ -82,6 +82,9 @@ const loadKey = (): Uint8Array | null => {
   return h && h.length === 32 ? fromHex(h) : null;
 };
 const saveKey = (k: Uint8Array) => localStorage.setItem(KEY_STORE, toHex(k));
+/** Whether this browser holds an auth key: without one, connecting means pairing, which needs a
+ *  tap on the watch — what the rescue page can't count on. */
+export const hasSavedKey = () => loadKey() !== null;
 
 // dev hygiene: resets Chrome's device permissions and the local auth key.
 // ponytail: doesn't fix the lock on the watch side (the bond is held by the firmware, not the browser) —
@@ -150,8 +153,9 @@ export class Watch {
   }
 
   // rescue: stop right after auth — a watch wedged on a bad face may never answer fwGet/a055,
-  // and the only thing the caller wants to send is factoryReset
-  async connect({ rescue = false } = {}): Promise<WatchInfo> {
+  // and the only thing the caller wants to send is factoryReset. again: reconnect to the watch
+  // picked on an earlier call, with no picker — the rescue page retries every time it shows up
+  async connect({ rescue = false, again = false } = {}): Promise<WatchInfo> {
     if (!navigator.bluetooth)
       throw new Error(
         "Web Bluetooth isn't available here — open this page in Chrome or Edge, or in Bluefy on an iPhone",
@@ -194,7 +198,7 @@ export class Watch {
       });
       return d;
     };
-    let device = await pick();
+    let device = again && this.device ? this.device : await pick();
 
     this.device = device;
     this.name = device.name ?? null;
