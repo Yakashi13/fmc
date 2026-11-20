@@ -1,6 +1,6 @@
 // Web Bluetooth: watch connection and flashing.
 import { noticeOf } from "../lib/notice";
-import { createEffect, createEvent, createStore, sample } from "effector";
+import { attach, combine, createEffect, createEvent, createStore, sample } from "effector";
 import { reset } from "patronum";
 import {
   NoFreeSlotError,
@@ -19,6 +19,8 @@ import {
 } from "$lib/modules/editor/core/format";
 import { dbg, dbgListeners, errText } from "../lib/ble-protocol";
 import * as bleApi from "./ble.api";
+import { t } from "../i18n";
+import { bleText, bt } from "../messages";
 
 // what a flash needs: the file, a thumbnail of the face so the watch's id list can show it
 // later (the file itself never reaches catalog-names), and a key identifying the face across
@@ -42,8 +44,10 @@ let watch: Watch | null = null; // live connection — not serialized, lives out
 
 // ---- stores ----
 export const $bleStatus = createStore("");
+// $bleStatus stays English (it is compared, and goes to the log); this is what a reader sees
+export const $bleStatusText = combine($bleStatus, bt, (s, w) => bleText(w, s));
 // the status as the watch panel shows it (see lib/notice)
-export const $bleNotice = $bleStatus.map(noticeOf);
+export const $bleNotice = $bleStatusText.map(noticeOf);
 export const $bleInfo = createStore<WatchInfo | null>(null);
 // installed watchfaces: what a055 reported, plus the ones this browser side-loaded onto this
 // watch — the firmware leaves those out of its own list
@@ -56,8 +60,9 @@ export const $slotDialogOpen = createStore(false);
 const $pendingBin = createStore<Pending | null>(null);
 // the risk the user is asked to accept before an oversized face goes out — null while not asking
 export const $sizeWarning = createStore<string | null>(null);
-// said after a flash that went out with images re-encoded to fit the watch (fitForWatch)
-export const $fitNote = createStore<string | null>(null);
+// how many images a flash re-encoded to fit the watch (fitForWatch) — null when none; the UI
+// words it (device/i18n fitNote)
+export const $fitNote = createStore<number | null>(null);
 // the watch a flash went to: $bleInfo resets the moment the link drops, which is before a flash
 // cut off by that drop fails — so the outcome reads who it was from here, not from $bleInfo
 const $flashWatch = createStore<WatchInfo | null>(null);
@@ -160,16 +165,17 @@ const otaProgressed = createEvent<number>();
 export const firmwareFlashRequested = createEvent<FirmwareFlash>();
 export const otaReset = createEvent();
 
-const flashFirmwareFx = createEffect(async ({ image, device }: FirmwareFlash) => {
-  if (!watch) throw new Error("connect the watch first");
-  const info = checkOtaTarget(image, watch.name, device);
+const flashFirmwareFx = attach({
+  source: t,
+  effect: async (t, { image, device }: FirmwareFlash) => {
+    if (!watch) throw new Error(t.connectFirstErr);
+    const info = checkOtaTarget(image, watch.name, device);
 
-  if (watch.battery !== null && watch.battery < OTA_MIN_BATTERY)
-    throw new Error(
-      `battery at ${watch.battery}% — charge it to ${OTA_MIN_BATTERY}% and keep it on the charger`,
-    );
-  dbg("ota image:", info);
-  await watch.flashFirmware(image, otaProgressed);
+    if (watch.battery !== null && watch.battery < OTA_MIN_BATTERY)
+      throw new Error(t.lowBattery(watch.battery, OTA_MIN_BATTERY));
+    dbg("ota image:", info);
+    await watch.flashFirmware(image, otaProgressed);
+  },
 });
 export const $otaFlashing = flashFirmwareFx.pending;
 
@@ -188,7 +194,8 @@ sample({
 });
 sample({
   clock: flashFirmwareFx.failData,
-  fn: (e) => e.message,
+  source: bt,
+  fn: (w, e) => bleText(w, e.message),
   target: $otaError,
 });
 reset({
@@ -227,15 +234,18 @@ const installProgressed = createEvent<number>();
 export const packageInstallRequested = createEvent<Uint8Array>();
 export const installReset = createEvent();
 
-const installPackageFx = createEffect(async (data: Uint8Array) => {
-  if (!watch) throw new Error("connect the watch first");
-  // fresh: the slot choice depends on what's there now, not on what was there at connect
-  const state = await watch.readWp2();
+const installPackageFx = attach({
+  source: t,
+  effect: async (t, data: Uint8Array) => {
+    if (!watch) throw new Error(t.connectFirstErr);
+    // fresh: the slot choice depends on what's there now, not on what was there at connect
+    const state = await watch.readWp2();
 
-  if (!state) throw new Error("the watch runs stock firmware — flash the patched firmware first");
-  const { name } = await watch.installPackage(data, state, installProgressed);
+    if (!state) throw new Error(t.stockFirmwareErr);
+    const { name } = await watch.installPackage(data, state, installProgressed);
 
-  return { name, state: (await watch.readWp2()) ?? ("stock" as const) };
+    return { name, state: (await watch.readWp2()) ?? ("stock" as const) };
+  },
 });
 export const $installing = installPackageFx.pending;
 
@@ -263,7 +273,8 @@ sample({
 });
 sample({
   clock: installPackageFx.failData,
-  fn: (e) => e.message,
+  source: bt,
+  fn: (w, e) => bleText(w, e.message),
   target: $installError,
 });
 reset({ clock: installPackageFx.finally, target: $installProgress });
@@ -330,10 +341,7 @@ reset({ clock: disconnected, target: [$dials, $slots] });
 
 sample({
   clock: flashFx.doneData,
-  fn: ({ compressed: n }) =>
-    n
-      ? `${n} ${n === 1 ? "image was" : "images were"} compressed to fit the watch's memory — they can look slightly softer than in the editor.`
-      : null,
+  fn: ({ compressed }) => compressed || null,
   target: $fitNote,
 });
 reset({ clock: [flashRequested, disconnected], target: $fitNote });
@@ -378,8 +386,9 @@ reset({
 // and pending keeps the mark so the slot dialog's retry doesn't ask a second time
 sample({
   clock: flashFx.failData,
-  filter: (e) => e instanceof NeedsConfirmError,
-  fn: (e) => e.message,
+  source: bt,
+  filter: (_, e) => e instanceof NeedsConfirmError,
+  fn: (w, e) => bleText(w, e.message),
   target: $sizeWarning,
 });
 sample({
@@ -430,7 +439,8 @@ sample({
 });
 sample({
   clock: bleApi.forgetFx.doneData,
-  fn: (n) => (n ? `forgot ${n} device(s) — connect to pick again` : "nothing to forget"),
+  source: t,
+  fn: (t, n) => (n ? t.forgot(n) : t.nothingToForget),
   target: statusChanged,
 });
 sample({

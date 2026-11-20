@@ -6,26 +6,25 @@
   import { Icon } from "$lib/shared/components/icon";
   import { MAX_IMAGE_SIDE, SAFE_IMAGE_SIDE, SCREEN_BUDGET } from "$lib/modules/editor/core/format";
   import { WF_CAPACITY, WF_CAPACITY_PRO3 } from "../lib/ble";
-  import source from "./troubleshooting.md?raw";
+  import { t } from "../i18n";
 
   // our own file, so {@html} is safe
-  const html = marked.parse(
-    source
-      .replaceAll("{WF_CAPACITY}", String(WF_CAPACITY))
-      .replaceAll("{WF_CAPACITY_PRO3}", String(WF_CAPACITY_PRO3))
-      .replaceAll("{MAX_IMAGE_SIDE}", String(MAX_IMAGE_SIDE))
-      .replaceAll("{SAFE_IMAGE_SIDE}", String(SAFE_IMAGE_SIDE))
-      .replaceAll("{SCREEN_BUDGET_MB}", String(SCREEN_BUDGET / 1e6)),
-    { async: false },
+  const html = $derived(
+    marked.parse(
+      $t.help
+        .replaceAll("{WF_CAPACITY}", String(WF_CAPACITY))
+        .replaceAll("{WF_CAPACITY_PRO3}", String(WF_CAPACITY_PRO3))
+        .replaceAll("{MAX_IMAGE_SIDE}", String(MAX_IMAGE_SIDE))
+        .replaceAll("{SAFE_IMAGE_SIDE}", String(SAFE_IMAGE_SIDE))
+        .replaceAll("{SCREEN_BUDGET_MB}", String(SCREEN_BUDGET / 1e6)),
+      { async: false },
+    ),
   );
 </script>
 
 <svelte:head>
-  <title>Before you connect — FMC</title>
-  <meta
-    name="description"
-    content="What FMC does to your CMF watch, what it cannot do, and how to fix the Bluetooth conflict with the Nothing X app."
-  />
+  <title>{$t.helpTitle}</title>
+  <meta name="description" content={$t.helpDescription} />
 </svelte:head>
 
 <div class="page">
@@ -33,7 +32,7 @@
     {@html html}
     <a class="back" href="/">
       <Icon name="storefront" size={18} />
-      Back to the watchfaces
+      {$t.backToFaces}
     </a>
   </article>
 </div>

@@ -52,10 +52,13 @@
   import PropsPanel from "../components/PropsPanel.svelte";
   import SimPanel from "../components/SimPanel.svelte";
   import ShortcutsDialog from "../components/ShortcutsDialog.svelte";
+  import { t } from "../i18n";
+  import { t as deviceT } from "$lib/modules/device/i18n";
 
   const { $user: user } = authModel;
   const {
     $bleStatus: bleStatus,
+    $bleStatusText: bleStatusText,
     $bleInfo: bleInfo,
     flashRequested,
     $flashing: flashing,
@@ -186,12 +189,12 @@
   }
 
   function openFile(e: Event) {
-    const t = e.target;
+    const el = e.target;
     const f =
-      (t instanceof HTMLInputElement ? t.files?.[0] : undefined) ||
+      (el instanceof HTMLInputElement ? el.files?.[0] : undefined) ||
       (e as DragEvent).dataTransfer?.files?.[0];
 
-    if (t instanceof HTMLInputElement) t.value = "";
+    if (el instanceof HTMLInputElement) el.value = "";
     if (!f) return;
     e.preventDefault();
 
@@ -206,17 +209,14 @@
 
   // Facer exports are directories, so this takes a whole folder rather than one file
   function openFacer(e: Event) {
-    const t = e.target;
-    const files = t instanceof HTMLInputElement ? [...(t.files ?? [])] : [];
+    const el = e.target;
+    const files = el instanceof HTMLInputElement ? [...(el.files ?? [])] : [];
 
-    if (t instanceof HTMLInputElement) t.value = "";
+    if (el instanceof HTMLInputElement) el.value = "";
     if (!files.length) return; // cancelled picker — same as above, don't detach the record
     importFacerRequested(files);
     faceDetached();
   }
-
-  const FOREIGN_HINT =
-    "Someone else's watchface — edit and flash it freely, but it can't be re-uploaded under your name. Export the .bin and open that file to start your own from it.";
 
   const isPublishedMine = $derived(Boolean($openedWf?.published) && $openedWf?.owner === $user?.id);
 
@@ -233,7 +233,7 @@
         preview: await previewBlob(),
       });
     } catch (e) {
-      errored(`save: ${e instanceof Error ? e.message : e}`);
+      errored($t.saveFailed(e instanceof Error ? e.message : String(e)));
     }
   }
 
@@ -245,11 +245,6 @@
       (watchDevice($bleInfo?.name ?? null) === "watch_3_pro" || screenMem.fit !== "fits"),
   );
   const mb = (bytes: number) => (bytes / 1e6).toFixed(1);
-  const MEM_SAYS = {
-    fits: "",
-    compressed: " — images get compressed on install",
-    "too-heavy": " — too heavy to install",
-  };
 
   const perf = import.meta.env.DEV;
   let fps = $state(0);
@@ -502,21 +497,21 @@
 
   const hasAOD = $derived($doc?.screens.some((s) => s.kind === "aod"));
   const screenItems = $derived([
-    { value: "main", label: "Main" },
+    { value: "main", label: $t.main },
     // not disabled when the face has no AOD screen — picking it creates one (see aodAdded)
-    { value: "aod", label: hasAOD ? "AOD" : "AOD +", disabled: !$doc },
+    { value: "aod", label: hasAOD ? $t.aod : $t.aodAdd, disabled: !$doc },
   ]);
   const panelItems = $derived([
-    { value: "props", label: "Properties" },
-    { value: "sim", label: "Simulator", disabled: !$doc },
+    { value: "props", label: $t.properties },
+    { value: "sim", label: $t.simulator, disabled: !$doc },
   ]);
   const mobileTitle = $derived(
     mobilePanel === "tree"
-      ? "Tree"
+      ? $t.tree
       : mobilePanel === "props"
-        ? "Properties"
+        ? $t.properties
         : mobilePanel === "sim"
-          ? "Simulator"
+          ? $t.simulator
           : undefined,
   );
 </script>
@@ -540,7 +535,7 @@
     <div class="zone start">
       <Menu align="start">
         {#snippet trigger({ toggle })}
-          <span class="tool-slot" title="File">
+          <span class="tool-slot" title={$t.file}>
             <Button size="small" kind="ghost" onClick={toggle}>
               <Icon name="menu" size={20} />
             </Button>
@@ -552,27 +547,27 @@
             newFaceRequested();
           }}
         >
-          <Icon name="note_add" /> New
+          <Icon name="note_add" />
+          {$t.newFace}
         </MenuItem>
         <MenuItem onClick={() => fileInput?.click()}>
           <Icon name="file_open" />
-          <span class="route">Open watchface <span class="type-caption">.bin, .aab</span></span>
+          <span class="route">{$t.openWatchface} <span class="type-caption">.bin, .aab</span></span>
         </MenuItem>
         <MenuItem onClick={() => dirInput?.click()}>
           <Icon name="watch" />
           <span class="route"
-            >Import export folder <span class="type-caption">Facer, WatchMaker</span></span
+            >{$t.importFolder} <span class="type-caption">Facer, WatchMaker</span></span
           >
         </MenuItem>
         {#if $doc}
           <MenuItem onClick={() => binsInput?.click()}>
             <Icon name="library_add" />
-            <span class="route"
-              >Add layers from watchfaces <span class="type-caption">.bin</span></span
-            >
+            <span class="route">{$t.addLayersFrom} <span class="type-caption">.bin</span></span>
           </MenuItem>
           <MenuItem keys={capsFor("mod+e")} onClick={() => exportBin()}>
-            <Icon name="download" /> Export .bin
+            <Icon name="download" />
+            {$t.exportBin}
           </MenuItem>
         {/if}
       </Menu>
@@ -595,17 +590,17 @@
         <input
           class="wf-name type-body"
           value={$doc.name}
-          title="Watchface name — the watch's own list shows the first 15 characters"
+          title={$t.nameHint}
           maxlength="63"
           onchange={(e) => renameFace(e.currentTarget.value.trim())}
           onkeydown={(e) => e.key === "Enter" && e.currentTarget.blur()}
         />
-        <span class="tool-slot" title="Undo (⌘Z)">
+        <span class="tool-slot" title={$t.undoHint}>
           <Button size="small" kind="ghost" disabled={!$undoN} onClick={() => undo()}>
             <Icon name="undo" size={20} />
           </Button>
         </span>
-        <span class="tool-slot" title="Redo (⇧⌘Z)">
+        <span class="tool-slot" title={$t.redoHint}>
           <Button size="small" kind="ghost" disabled={!$redoN} onClick={() => redo()}>
             <Icon name="redo" size={20} />
           </Button>
@@ -626,27 +621,23 @@
           <span
             class="tool-slot"
             title={$foreignWf
-              ? FOREIGN_HINT
+              ? $t.foreignHint
               : isPublishedMine
-                ? "Update the published watchface (⌘S)"
+                ? $t.updatePublishedHint
                 : $openedWf
-                  ? "Save changes (⌘S)"
-                  : "Save as draft (⌘S)"}
+                  ? $t.saveChangesHint
+                  : $t.saveDraftHint}
           >
             <Button size="small" kind="ghost" onClick={saveDraft} disabled={$saving || $foreignWf}>
               <Icon name="save" size={20} />
               <span class="btn-label"
-                >{$saving ? "Saving…" : isPublishedMine ? "Update" : "Save"}</span
+                >{$saving ? $t.saving : isPublishedMine ? $t.update : $t.save}</span
               >
             </Button>
           </span>
           <span
             class="tool-slot"
-            title={$foreignWf
-              ? FOREIGN_HINT
-              : isPublishedMine
-                ? "Edit name and description"
-                : "Publish"}
+            title={$foreignWf ? $t.foreignHint : isPublishedMine ? $t.editDetailsHint : $t.publish}
           >
             <Button
               size="small"
@@ -655,22 +646,22 @@
               disabled={$foreignWf}
             >
               <Icon name={isPublishedMine ? "edit_note" : "cloud_upload"} size={20} />
-              <span class="btn-label">{isPublishedMine ? "Details" : "Publish"}</span>
+              <span class="btn-label">{isPublishedMine ? $t.details : $t.publish}</span>
             </Button>
           </span>
         {/if}
         {#if $bleInfo}
-          <span class="tool-slot" title="Upload to the watch">
+          <span class="tool-slot" title={$t.uploadToWatch}>
             <Button size="small" kind="primary" onClick={flashWatch} disabled={$flashing}>
               <Icon name="bolt" size={20} />
-              <span class="btn-label">{$flashing ? "Flashing…" : "Flash"}</span>
+              <span class="btn-label">{$flashing ? $t.flashing : $t.flash}</span>
             </Button>
           </span>
         {:else}
-          <span class="tool-slot" title="Export .bin (⌘E)">
+          <span class="tool-slot" title={$t.exportBinHint}>
             <Button size="small" kind="primary" onClick={() => exportBin()}>
               <Icon name="download" size={20} />
-              <span class="btn-label">Export .bin</span>
+              <span class="btn-label">{$t.exportBin}</span>
             </Button>
           </span>
         {/if}
@@ -680,10 +671,10 @@
 
   {#if $err || ($flashing && $bleStatus) || $bleStatus?.startsWith("error:")}
     <p class="statusbar type-caption" class:error={$err || $bleStatus?.startsWith("error:")}>
-      {$err || $bleStatus}
+      {$err || $bleStatusText.replace(/^error:\s*/, "")}
     </p>
   {:else if $fitNote}
-    <p class="statusbar type-caption">{$fitNote}</p>
+    <p class="statusbar type-caption">{$deviceT.fitNote($fitNote)}</p>
   {/if}
 
   <div class="layout">
@@ -714,7 +705,7 @@
                 <!-- nothing open yet: the dial itself says what to do, instead of leaving a black
                  disc and two unlabelled toolbar icons to be figured out -->
                 <div class="canvas-empty">
-                  <h2 class="type-title">Make a watchface</h2>
+                  <h2 class="type-title">{$t.makeWatchface}</h2>
                   <div class="canvas-empty-actions">
                     <Button
                       onClick={() => {
@@ -722,14 +713,16 @@
                         newFaceRequested();
                       }}
                     >
-                      <Icon name="note_add" size={22} /> Start blank
+                      <Icon name="note_add" size={22} />
+                      {$t.startBlank}
                     </Button>
                     <Button kind="secondary" onClick={() => fileInput?.click()}>
-                      <Icon name="folder_open" size={22} /> Open a file
+                      <Icon name="folder_open" size={22} />
+                      {$t.openFile}
                     </Button>
                   </div>
                   <p class="type-caption">
-                    .bin or .aab. Facer and WatchMaker exports are under Import.
+                    {$t.emptyHint}
                   </p>
                 </div>
               {/if}
@@ -742,13 +735,13 @@
           class="memory type-caption"
           class:warn={screenMem.fit === "compressed"}
           class:error={screenMem.fit === "too-heavy"}
-          title="A Watch 3 Pro holds every image a screen shows in about {mb(
-            SCREEN_BUDGET,
-          )} MB of memory. Past that, FMC stores the largest images in the watch's own compressed format on install, and refuses a screen that still doesn't fit."
+          title={$t.memoryHint(mb(SCREEN_BUDGET))}
         >
-          Watch 3 Pro memory: {mb(screenMem.bytes)} of {mb(SCREEN_BUDGET)} MB{MEM_SAYS[
-            screenMem.fit
-          ]}
+          {$t.memory(mb(screenMem.bytes), mb(SCREEN_BUDGET))}{screenMem.fit === "compressed"
+            ? ` — ${$t.memoryCompressed}`
+            : screenMem.fit === "too-heavy"
+              ? ` — ${$t.memoryTooHeavy}`
+              : ""}
         </p>
       {/if}
       {#if perf && $doc}
@@ -760,19 +753,19 @@
            so it opens and closes with no state of its own -->
       {#if $doc}
         <details class="hint">
-          <summary class="hint-key" aria-label="Canvas controls" title="Canvas controls">
+          <summary class="hint-key" aria-label={$t.canvasControls} title={$t.canvasControls}>
             <Icon name="question_mark" size={20} />
           </summary>
           <div class="hint-card type-small">
             <ul>
-              <li><span>Click</span> select</li>
-              <li><span>Drag, arrows</span> move (⇧ ×10)</li>
-              <li><span>⌥ drag</span> move without snapping</li>
-              <li><span>Corners</span> resize (⇧ flips the aspect lock)</li>
-              <li><span>Dot above</span> rotate (⇧ snaps to 15°)</li>
+              <li><span>{$t.hintClick}</span> {$t.hintSelect}</li>
+              <li><span>{$t.hintDrag}</span> {$t.hintMove}</li>
+              <li><span>{$t.hintAltDrag}</span> {$t.hintMoveNoSnap}</li>
+              <li><span>{$t.hintCorners}</span> {$t.hintResize}</li>
+              <li><span>{$t.hintDot}</span> {$t.hintRotate}</li>
             </ul>
             <Button size="small" kind="secondary" onClick={() => (helpOpen = true)}>
-              All shortcuts
+              {$t.allShortcuts}
             </Button>
           </div>
         </details>
@@ -801,7 +794,7 @@
     {#if $doc}
       <!-- the three panels, as one floating pill over the canvas: each opens its sheet -->
       <div class="mobile-actions">
-        {#each [["tree", "account_tree", "Tree"], ["props", "tune", "Props"], ["sim", "play_arrow", "Sim"]] as [id, icon, label] (id)}
+        {#each [["tree", "account_tree", $t.tree], ["props", "tune", $t.propsShort], ["sim", "play_arrow", $t.simShort]] as [id, icon, label] (id)}
           <button
             type="button"
             class="panel-btn type-label"
@@ -827,7 +820,7 @@
     class:active={gutter?.side === side}
     role="separator"
     aria-orientation="vertical"
-    aria-label="Resize panel"
+    aria-label={$t.resizePanel}
     aria-valuenow={Math.round(side === "tree" ? treeW : rightW)}
     aria-valuemin={SIDE_MIN}
     aria-valuemax={SIDE_MAX}

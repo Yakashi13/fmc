@@ -2,6 +2,7 @@
 // so — drives the real ble.model with the transport stubbed out (see flash-size-confirm).
 import { expect, test, vi } from "vitest";
 import { bleModel } from "$lib/modules/device/model";
+import { t } from "$lib/modules/device/i18n";
 import {
   buildBin,
   encodePixels,
@@ -46,7 +47,8 @@ test("a heavy face installs compressed, and the note says so", async () => {
   await vi.waitFor(() => expect(uploads).toHaveLength(1), { timeout: 30000 });
 
   expect(parseBin(uploads[0]).resources.some((r) => r.cf === 28)).toBe(true);
-  await vi.waitFor(() =>
-    expect(bleModel.$fitNote.getState()).toMatch(/images? (was|were) compressed/),
+  await vi.waitFor(() => expect(bleModel.$fitNote.getState()).toBeGreaterThan(0));
+  expect(t.getState().fitNote(bleModel.$fitNote.getState()!)).toMatch(
+    /images? (was|were) compressed/,
   );
 }, 60000);

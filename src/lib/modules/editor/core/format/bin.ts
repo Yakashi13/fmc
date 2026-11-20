@@ -442,11 +442,12 @@ export function assertFlashable(bin: Uint8Array, device: string | null = null): 
 
   if (heavy)
     throw new Error(
-      `the ${heavy.screen.tag === TAG.aod ? "always-on" : "main"} screen needs ${mb(heavy.bytes)} MB of the watch's memory, over the ${mb(SCREEN_BUDGET)} MB a Watch 3 Pro can hold — it would restart in a loop. Use fewer or smaller full-screen images.`,
+      `the ${SCREEN_NAME[heavy.screen.tag]} screen needs ${mb(heavy.bytes)} MB of the watch's memory, over the ${mb(SCREEN_BUDGET)} MB a Watch 3 Pro can hold — it would restart in a loop. Use fewer or smaller full-screen images.`,
     );
 }
 
 const mb = (bytes: number) => (bytes / 1e6).toFixed(1);
+const SCREEN_NAME: Record<number, string> = { [TAG.main]: "main", [TAG.aod]: "always-on" };
 
 /** What the user has to accept before this file goes to the watch, or null when nothing. Only
  *  meant for a file assertFlashable already let through. */
