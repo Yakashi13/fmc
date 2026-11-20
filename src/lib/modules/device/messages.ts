@@ -51,6 +51,7 @@ const en = {
   dialNotInstalled: (id: string, d: string) => `dial ${id} not installed (${d})`,
   notAccepted: (why: string, kb: string) => `watch did not accept the file (${why}; ${kb} KB)`,
   storedNotActivated: "stored but not activated",
+  deleteFailed: (d: string) => `dial delete failed (${d})`,
   refusedReplace: (name: string) =>
     `the watch refused to replace “${name}” — flash again and pick a different dial to replace`,
   aodNoPreview:
@@ -147,6 +148,7 @@ export const bt = dict(en, {
     uploadStalled: "загрузка зависла",
     dialNotInstalled: (id, d) => `циферблат ${id} не установлен (${d})`,
     notAccepted: (why, kb) => `часы не приняли файл (${why}; ${kb} КБ)`,
+    deleteFailed: (d) => `не удалось удалить циферблат (${d})`,
     storedNotActivated: "сохранён, но не активирован",
     refusedReplace: (name) =>
       `часы отказались заменить «${name}» — загрузите ещё раз и выберите другой циферблат для замены`,
@@ -239,6 +241,7 @@ export const bt = dict(en, {
     uploadStalled: "завантаження зависло",
     dialNotInstalled: (id, d) => `циферблат ${id} не встановлено (${d})`,
     notAccepted: (why, kb) => `годинник не прийняв файл (${why}; ${kb} КБ)`,
+    deleteFailed: (d) => `не вдалося видалити циферблат (${d})`,
     storedNotActivated: "збережено, але не активовано",
     refusedReplace: (name) =>
       `годинник відмовився замінити «${name}» — завантажте ще раз і виберіть інший циферблат для заміни`,
@@ -331,6 +334,7 @@ export const bt = dict(en, {
     uploadStalled: "el envío se detuvo",
     dialNotInstalled: (id, d) => `la esfera ${id} no está instalada (${d})`,
     notAccepted: (why, kb) => `el reloj no aceptó el archivo (${why}; ${kb} KB)`,
+    deleteFailed: (d) => `no se pudo borrar la esfera (${d})`,
     storedNotActivated: "guardado pero no activado",
     refusedReplace: (name) =>
       `el reloj se negó a reemplazar «${name}» — vuelve a enviarla y elige otra esfera para reemplazar`,
@@ -425,6 +429,7 @@ export const bt = dict(en, {
     uploadStalled: "अपलोड रुक गया",
     dialNotInstalled: (id, d) => `फ़ेस ${id} इंस्टॉल नहीं है (${d})`,
     notAccepted: (why, kb) => `घड़ी ने फ़ाइल स्वीकार नहीं की (${why}; ${kb} KB)`,
+    deleteFailed: (d) => `फ़ेस हटाना विफल रहा (${d})`,
     storedNotActivated: "सेव हुई पर चालू नहीं हुई",
     refusedReplace: (name) =>
       `घड़ी ने “${name}” को बदलने से मना किया — फिर से भेजें और बदलने के लिए दूसरा फ़ेस चुनें`,
@@ -528,6 +533,7 @@ const RULES: Rule[] = [
     (w, m) => w.notAccepted(m[1] === en.storedNotActivated ? w.storedNotActivated : m[1], m[2]),
   ],
   [/^the watch refused to replace “(.+)” — /, (w, m) => w.refusedReplace(m[1])],
+  [/^dial delete failed \((.+)\)$/, (w, m) => w.deleteFailed(m[1])],
   lit("aodNoPreview"),
   [
     /^an image is (\d+)×(\d+) px, over the (\d+) px limit/,

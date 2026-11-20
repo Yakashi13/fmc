@@ -1,20 +1,27 @@
 <script lang="ts">
   // Linked from the troubleshooting page for a watch that boots to a black screen but still
-  // advertises. The only action here is a factory reset, sent right after auth.
+  // advertises. Two actions, sent right after auth: delete the faces this browser installed, or
+  // factory reset. Either keeps reconnecting until it goes through or the user stops it.
   import { Button } from "$lib/shared/components/button";
   import { rescueModel } from "../model";
+  import { hasSavedKey } from "../lib/ble";
+  import { flashedHere } from "../lib/catalog-names";
   import { t } from "../i18n";
 
   const ISSUES = "https://github.com/freethinkel/fmc/issues";
 
   const {
     resetRequested,
+    facesRequested,
+    stopRequested,
     $status: status,
     $error: error,
     $done: done,
     $busy: busy,
     $log: log,
   } = rescueModel;
+  const keyed = hasSavedKey();
+  const faces = flashedHere().length;
   const copy = () => navigator.clipboard.writeText($log.join("\n")).catch(() => {});
 </script>
 
@@ -29,13 +36,22 @@
     <!-- our own dictionary, so {@html} is safe -->
     <p>{@html $t.rescueIntro}</p>
     <p>{$t.rescueBrowser}</p>
-    <Button kind="danger" disabled={$busy} onClick={() => resetRequested()}>
-      {$t.factoryReset}
-    </Button>
+    {#if !keyed}<p class="error">{$t.rescueNoKey}</p>{/if}
+    {#if $busy}
+      <Button kind="secondary" onClick={() => stopRequested()}>{$t.stopRescue}</Button>
+    {:else}
+      {#if faces}
+        <p>{$t.deleteFacesHint}</p>
+        <Button kind="secondary" onClick={() => facesRequested()}>{$t.deleteFaces(faces)}</Button>
+      {/if}
+      <Button kind="danger" onClick={() => resetRequested()}>{$t.factoryReset}</Button>
+    {/if}
     {#if $status}<p class="status">{$status}</p>{/if}
     {#if $error}<p class="error">{$error}</p>{/if}
-    {#if $done}
+    {#if $done?.action === "reset"}
       <p class="status">{@html $t.rescueSent(ISSUES)}</p>
+    {:else if $done?.action === "faces"}
+      <p class="status">{$t.facesDeleted($done.deleted)}</p>
     {/if}
     {#if $log.length}
       <p>{$t.sendLog}</p>
