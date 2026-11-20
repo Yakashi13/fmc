@@ -264,6 +264,18 @@ img {
   animation: none;
   z-index: 1;
 }
+/* the store's section row, between two shelves: the new row alone, live, so its thumb is seen
+   sliding from the old tab (tabs/) rather than cross-fading with a picture of the old row */
+::view-transition-group(store-tabs) {
+  animation: none;
+  z-index: 1;
+}
+::view-transition-old(store-tabs):not(:only-child) {
+  display: none;
+}
+::view-transition-new(store-tabs):not(:only-child) {
+  animation: none;
+}
 @keyframes page-out {
   to {
     opacity: 0;

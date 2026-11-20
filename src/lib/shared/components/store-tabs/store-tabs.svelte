@@ -26,4 +26,12 @@
   );
 </script>
 
-<Tabs items={sections} value={current} full={phone.current} label="Store sections" />
+<!-- named for the page transition (global.css): the row holds still between two shelves, and
+     its thumb slides instead of fading with the page -->
+<Tabs
+  items={sections}
+  value={current}
+  full={phone.current}
+  label="Store sections"
+  transition="store-tabs"
+/>

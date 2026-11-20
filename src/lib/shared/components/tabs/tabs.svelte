@@ -1,3 +1,10 @@
+<script lang="ts" module>
+  // Where a link row's thumb last sat, by the row's label. Each choice of a link row is a route,
+  // and the row is mounted anew on every one of them; the new row starts its thumb here and
+  // slides to its own tab, so the switch reads the same as in a tablist that never left.
+  const last = new Map<string, { l: number; r: number }>();
+</script>
+
 <script lang="ts">
   // The app's one segmented control: a pill of mono labels, the chosen one in solid ink. Two
   // shapes of the same control — a tablist of buttons for a choice inside a page (Main / AOD,
@@ -16,9 +23,11 @@
     full?: boolean;
     /** the row's name for a screen reader, when it is navigation */
     label?: string;
+    /** a view-transition-name for the row, so it sits out a page transition (global.css) */
+    transition?: string;
     onChange?: (value: string) => void;
   }
-  const { items, value, full, label, onChange }: Props = $props();
+  const { items, value, full, label, transition, onChange }: Props = $props();
   const links = $derived(items.some((i) => i.href));
 
   // The thumb is a mask, not a moving pill: .lit repeats the row in the chosen colours and is
@@ -39,13 +48,28 @@
       box = tab
         ? { l: tab.offsetLeft, r: el.clientWidth - tab.offsetLeft - tab.offsetWidth }
         : null;
+      if (links && label && box) last.set(label, box);
     };
     const ro = new ResizeObserver(measure);
+    const from = !ready && links && label ? last.get(label) : undefined;
+    let frame: number;
 
-    measure();
-    ro.observe(el);
-    requestAnimationFrame(() => (ready = true));
-    return () => ro.disconnect();
+    if (from) {
+      // one frame at the old place, with the transition on, and only then the measured one
+      box = from;
+      frame = requestAnimationFrame(() => {
+        ready = true;
+        frame = requestAnimationFrame(() => ro.observe(el));
+      });
+    } else {
+      measure();
+      ro.observe(el);
+      frame = requestAnimationFrame(() => (ready = true));
+    }
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
   });
 
   // Roving focus, as UI SDK's Tabs (and the WAI-ARIA tabs pattern): the row is one Tab stop, on
@@ -122,7 +146,13 @@
 {/snippet}
 
 {#if links}
-  <nav class="tabs" class:full aria-label={label} bind:this={row}>
+  <nav
+    class="tabs"
+    class:full
+    aria-label={label}
+    style:view-transition-name={transition}
+    bind:this={row}
+  >
     {#each items as item (item.value)}
       <a
         class="tab type-label"
