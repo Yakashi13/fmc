@@ -18,6 +18,7 @@
   import { compact, day } from "$lib/shared/lib/format";
   import { deviceLabel } from "../lib/devices";
   import { t } from "../i18n";
+  import { t as deviceT } from "$lib/modules/device/i18n";
 
   interface Props {
     id: string;
@@ -45,6 +46,7 @@
     $bleInfo: bleInfo,
     $bleStatus: bleStatus,
     $connecting: connecting,
+    $fitNote: fitNote,
     connectRequested,
   } = bleModel;
 
@@ -179,6 +181,9 @@
                 </Button>
               {/if}
             </div>
+            {#if $installed && $fitNote}
+              <p class="fit-note type-caption">{$deviceT.fitNote($fitNote)}</p>
+            {/if}
             <div class="secondary">
               <Button kind="secondary" onClick={() => editRequested(wf)}>
                 <Icon name="edit" size={22} />
@@ -426,6 +431,11 @@
     > :global(*) {
       flex: 1 1 10rem;
     }
+  }
+  /* after an install that had to compress images to fit the watch (bleModel.$fitNote) */
+  .fit-note {
+    margin: 0;
+    color: oklch(from var(--color-text) l c h / 55%);
   }
   /* a small calendar glyph leads the date */
   .dates {

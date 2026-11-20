@@ -9,7 +9,15 @@ import { createEvent, createStore, sample } from "effector";
 import { reset } from "patronum";
 import { findLayer, patchLayer } from "../core/document/edits";
 import { withName } from "../core/document/factory";
-import type { Doc, ImageCache, ImageId, Layer, NodeId } from "../core/document/doc";
+import {
+  toLegacy,
+  type Doc,
+  type ImageCache,
+  type ImageId,
+  type Layer,
+  type NodeId,
+} from "../core/document/doc";
+import { screenMemory, TAG, type ScreenMemory } from "../core/format";
 
 interface History {
   readonly undo: readonly Doc[];
@@ -35,6 +43,17 @@ export const $dirty = createStore(false);
 export const $fileLabel = createStore("");
 export const $undoN = $history.map((h) => h.undo.length);
 export const $redoN = $history.map((h) => h.redo.length);
+/** What each screen would take in a Watch 3 Pro's memory, by screen kind (core/format/budget.ts).
+ *  ponytail: re-lays the document out on every change, drags included — structure only, no
+ *  pixels; memoize per Doc if it ever shows up in a profile. */
+export const $memory = $doc.map((doc): Partial<Record<"main" | "aod", ScreenMemory>> | null => {
+  if (!doc) return null;
+  const face = toLegacy(doc);
+
+  return Object.fromEntries(
+    face.screens.map((s) => [s.tag === TAG.aod ? "aod" : "main", screenMemory(s, face.resources)]),
+  );
+});
 
 // ---- events ----
 /** Checkpoint, then edit — what every user-visible action fires. */

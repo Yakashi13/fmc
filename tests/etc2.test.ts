@@ -31,8 +31,26 @@ describe("cf 28 — ETC2 RGBA8", () => {
     expect(at(0, 0)[3]).toBe(0);
     expect(at(212, 0)).toEqual([0, 0, 0, 37]);
   });
-  test("has no encoder", () => {
-    expect(() => encodePixels(px, r.w, r.h, 28)).toThrow(/not supported/);
+  // the encoder writes individual/differential blocks only; what it gives back has to decode
+  // close to the source through the same decoder the editor (and the watch) uses
+  test("re-encodes to within a few levels of the source", () => {
+    const again = decodePixels(encodePixels(px, r.w, r.h, 28))!;
+    let err = 0;
+
+    for (let i = 0; i < px.length; i++) err += Math.abs(again[i] - px[i]);
+    expect(err / px.length).toBeLessThan(3);
+  });
+  test("flat alpha comes back exact, flat colour within the 5-bit step", () => {
+    const flat = new Uint8ClampedArray(8 * 4 * 4);
+
+    for (let i = 0; i < 32; i++) flat.set(i < 16 ? [200, 100, 50, 255] : [0, 0, 0, 0], i * 4);
+    const out = decodePixels(encodePixels(flat, 4, 8, 28))!;
+
+    for (let i = 0; i < 32; i++) {
+      expect(out[i * 4 + 3]).toBe(i < 16 ? 255 : 0);
+      if (i < 16)
+        [200, 100, 50].forEach((v, k) => expect(Math.abs(out[i * 4 + k] - v)).toBeLessThan(4));
+    }
   });
 });
 

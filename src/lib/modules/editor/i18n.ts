@@ -5,6 +5,12 @@ import { dict, plural } from "$lib/shared/i18n";
 
 export const t = dict(
   {
+    // editor.svelte — the open screen against a Watch 3 Pro's memory (core/format/budget.ts)
+    memory: (used: string, max: string) => `Watch 3 Pro memory: ${used} of ${max} MB`,
+    memoryCompressed: "images get compressed on install",
+    memoryTooHeavy: "too heavy to install",
+    memoryHint: (max: string) =>
+      `A Watch 3 Pro holds every image a screen shows in about ${max} MB of memory. Past that, FMC stores the largest images in the watch's own compressed format on install, and refuses a screen that still doesn't fit.`,
     // editor.svelte — File menu
     file: "File",
     newFace: "New",
@@ -187,6 +193,11 @@ export const t = dict(
   },
   {
     ru: {
+      memory: (used: string, max: string) => `Память Watch 3 Pro: ${used} из ${max} МБ`,
+      memoryCompressed: "изображения сожмутся при установке",
+      memoryTooHeavy: "слишком тяжёлый для установки",
+      memoryHint: (max: string) =>
+        `Watch 3 Pro держит все изображения экрана примерно в ${max} МБ памяти. Сверх этого FMC при установке сохраняет самые большие изображения в собственном сжатом формате часов, а экран, который всё равно не помещается, не устанавливает.`,
       file: "Файл",
       newFace: "Новый",
       openWatchface: "Открыть циферблат",
@@ -350,6 +361,11 @@ export const t = dict(
         "Это не экспорт циферблата: нет watchface.json (Facer), watch.pxml (WatchMaker) или пакета .aab",
     },
     uk: {
+      memory: (used: string, max: string) => `Пам'ять Watch 3 Pro: ${used} з ${max} МБ`,
+      memoryCompressed: "зображення стиснуться під час встановлення",
+      memoryTooHeavy: "завеликий для встановлення",
+      memoryHint: (max: string) =>
+        `Watch 3 Pro тримає всі зображення екрана приблизно в ${max} МБ пам'яті. Понад це FMC під час встановлення зберігає найбільші зображення у власному стиснутому форматі годинника, а екран, який усе одно не вміщується, не встановлює.`,
       file: "Файл",
       newFace: "Новий",
       openWatchface: "Відкрити циферблат",
@@ -513,6 +529,11 @@ export const t = dict(
         "Це не експорт циферблата: немає watchface.json (Facer), watch.pxml (WatchMaker) чи пакета .aab",
     },
     es: {
+      memory: (used: string, max: string) => `Memoria del Watch 3 Pro: ${used} de ${max} MB`,
+      memoryCompressed: "las imágenes se comprimen al instalar",
+      memoryTooHeavy: "demasiado pesada para instalar",
+      memoryHint: (max: string) =>
+        `El Watch 3 Pro guarda todas las imágenes de una pantalla en unos ${max} MB de memoria. Por encima de eso, FMC guarda las imágenes más grandes en el formato comprimido del propio reloj al instalar, y rechaza una pantalla que aun así no cabe.`,
       file: "Archivo",
       newFace: "Nueva",
       openWatchface: "Abrir esfera",
@@ -676,6 +697,11 @@ export const t = dict(
         "No es una exportación de esfera: falta watchface.json (Facer), watch.pxml (WatchMaker) o un paquete .aab",
     },
     hi: {
+      memory: (used: string, max: string) => `Watch 3 Pro मेमोरी: ${max} MB में से ${used} MB`,
+      memoryCompressed: "इंस्टॉल पर इमेज कंप्रेस होंगी",
+      memoryTooHeavy: "इंस्टॉल करने के लिए बहुत भारी",
+      memoryHint: (max: string) =>
+        `Watch 3 Pro किसी स्क्रीन की सभी इमेज लगभग ${max} MB मेमोरी में रखता है। इससे ज़्यादा होने पर FMC इंस्टॉल के समय सबसे बड़ी इमेज को घड़ी के अपने कंप्रेस्ड फ़ॉर्मेट में सेव करता है, और जो स्क्रीन फिर भी फ़िट न हो उसे इंस्टॉल नहीं करता।`,
       file: "फ़ाइल",
       newFace: "नया",
       openWatchface: "वॉच फ़ेस खोलें",

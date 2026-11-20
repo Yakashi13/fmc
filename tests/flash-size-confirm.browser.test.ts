@@ -34,14 +34,19 @@ test("an oversized face waits for the user, and goes out once they accept", asyn
   await vi.waitFor(() => expect(bleModel.$bleInfo.getState()).not.toBeNull());
 
   bleModel.flashRequested({ bin });
-  await vi.waitFor(() => expect(bleModel.$sizeWarning.getState()).toMatch(/576×530/));
+  // each attempt goes through a worker first (fitForWatchOffThread): give it time to start
+  await vi.waitFor(() => expect(bleModel.$sizeWarning.getState()).toMatch(/576×530/), {
+    timeout: 5000,
+  });
   bleModel.sizeWarningClosed(); // backing out sends nothing…
   expect(bleModel.$sizeWarning.getState()).toBeNull();
 
   bleModel.flashRequested({ bin });
-  await vi.waitFor(() => expect(bleModel.$sizeWarning.getState()).not.toBeNull());
+  await vi.waitFor(() => expect(bleModel.$sizeWarning.getState()).not.toBeNull(), {
+    timeout: 5000,
+  });
   bleModel.sizeConfirmed();
   bleModel.sizeWarningClosed(); // what the dialog reports as accepting shuts it
-  await vi.waitFor(() => expect(uploads).toHaveLength(1));
+  await vi.waitFor(() => expect(uploads).toHaveLength(1), { timeout: 5000 });
   expect(uploads[0]).toBe(bin); // …and accepting sends the file it asked about
 });

@@ -71,7 +71,10 @@ editor/core/
   format/          # the .bin file, and nothing about editing
     bin.ts           parseBin/buildBin: TLV tree, header, resource table
     lz4.ts           the block codec every resource payload is stored under
-    pixels-codec.ts  Resource payload <-> RGBA (cf 4/5/13/24, 1 = JPEG)
+    pixels-codec.ts  Resource payload <-> RGBA (cf 4/5/13/24/28, 1 = JPEG)
+    etc2.ts          cf 28 (ETC2 RGBA8) block codec
+    budget.ts        what a screen takes in a Watch 3 Pro's RAM (SCREEN_BUDGET)
+    fit.ts           fitForWatch: the file shrunk in RAM before it goes to a watch
     raw.ts           Face/FaceNode/Resource + TAG + byte primitives
   document/        # the document the editor edits
     doc.ts           Doc/Layer/Screen, meta + condition decoding, fromLegacy/toLegacy

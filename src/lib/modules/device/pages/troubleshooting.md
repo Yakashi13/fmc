@@ -36,7 +36,9 @@ A Watch Pro 2 holds {WF_CAPACITY} watchfaces, a Watch 3 Pro {WF_CAPACITY_PRO3}. 
 
 The watch has to hold every image of a face in memory. A face with a 1386×1386 image, three times the screen, ran a CMF Watch 3 Pro out of memory: it showed the logo, went black and restarted, again and again, and nothing could connect to it.
 
-FMC now prevents this in two places. Images you add in the editor are scaled down to fit the screen. Before any install, FMC also checks the file and refuses it if an image is more than {MAX_IMAGE_SIDE} px on a side, wherever the file came from. Past {SAFE_IMAGE_SIDE} px, bigger than factory faces use, it asks you to confirm before installing.
+It isn't only one huge image: what counts is everything a screen shows at once. A Watch 3 Pro keeps every image of the screen on display decoded in about 6.5 MB of memory, which it shares with the display itself. A face with nine full-screen layers needed about 10 MB and sent a Watch 3 Pro into the same loop.
+
+FMC now prevents this in several places. Images you add in the editor are scaled down to fit the screen. Before any install, FMC also checks the file and refuses it if an image is more than {MAX_IMAGE_SIDE} px on a side, wherever the file came from. Past {SAFE_IMAGE_SIDE} px, bigger than factory faces use, it asks you to confirm before installing. On the way to the watch, layers without transparency are stored without the unused transparency byte. For a Watch 3 Pro, if a screen still needs more than {SCREEN_BUDGET_MB} MB, FMC stores its largest layers in the compressed format the watch's own faces use, which costs a little sharpness. A face that still doesn't fit is refused.
 
 A second loop shows up only on the always-on display: the screen flashes to full brightness over and over until you switch to a factory face. The face reported doing this on a Watch 3 Pro had lost the small thumbnail every factory always-on screen carries. That is our best lead, not a confirmed cause. FMC now refuses a file like that before the install, and the editor puts the thumbnail back, so open the face in the editor and install it from there.
 

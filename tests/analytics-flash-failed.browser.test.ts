@@ -32,7 +32,8 @@ test("a flash cut off by a disconnect still names the watch it was going to", as
   bleModel.connectRequested();
   await vi.waitFor(() => expect(bleModel.$bleInfo.getState()).not.toBeNull());
   bleModel.flashRequested({ bin: new Uint8Array() });
-  await vi.waitFor(() => expect(sent).toHaveLength(2));
+  // the file goes through a worker first (fitForWatchOffThread), which a loaded run starts slowly
+  await vi.waitFor(() => expect(sent).toHaveLength(2), { timeout: 5000 });
 
   expect(sent).toEqual([
     ["watch_connect", { device: "CMF Watch Pro 2" }],

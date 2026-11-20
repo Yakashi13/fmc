@@ -57,6 +57,8 @@ const en = {
     "the always-on screen has no preview thumbnail, and the watch can crash in a loop on it. Open the face in the editor and flash it from there — the editor puts the thumbnail back.",
   imageOverLimit: (w: string, h: string, max: string) =>
     `an image is ${w}×${h} px, over the ${max} px limit — the watch can run out of memory loading it and restart in a loop. Resize it in the editor first.`,
+  screenOverBudget: (aod: boolean, need: string, max: string) =>
+    `the ${aod ? "always-on" : "main"} screen needs ${need} MB of the watch's memory, over the ${max} MB a Watch 3 Pro can hold — it would restart in a loop. Use fewer or smaller full-screen images.`,
   bigImage: (w: string, h: string) =>
     `This face has a ${w}×${h} px image, larger than factory faces use. The watch may run out of memory loading it and restart in a loop, and there is no confirmed way out of that loop yet.`,
   // firmware update
@@ -152,6 +154,8 @@ export const bt = dict(en, {
       "у экрана always-on нет миниатюры, и часы могут на нём зациклиться на перезагрузке. Откройте циферблат в редакторе и загрузите оттуда — редактор вернёт миниатюру.",
     imageOverLimit: (w, h, max) =>
       `изображение ${w}×${h} px больше предела в ${max} px — часам может не хватить памяти, и они зациклятся на перезагрузке. Сначала уменьшите его в редакторе.`,
+    screenOverBudget: (aod, need, max) =>
+      `${aod ? "экрану always-on" : "основному экрану"} нужно ${need} МБ памяти часов, а Watch 3 Pro вмещает ${max} МБ — часы зациклятся на перезагрузке. Используйте меньше полноэкранных изображений или уменьшите их.`,
     bigImage: (w, h) =>
       `В циферблате есть изображение ${w}×${h} px — больше, чем в заводских. Часам может не хватить памяти, и они зациклятся на перезагрузке, а проверенного способа выйти из этого цикла пока нет.`,
     noOtaChannel: "часы не открыли канал обновления прошивки — переподключитесь и повторите",
@@ -242,6 +246,8 @@ export const bt = dict(en, {
       "екран always-on не має мініатюри, і годинник може циклічно перезавантажуватися на ньому. Відкрийте циферблат у редакторі й завантажте звідти — редактор поверне мініатюру.",
     imageOverLimit: (w, h, max) =>
       `зображення ${w}×${h} px перевищує межу ${max} px — годиннику може забракнути пам'яті, і він циклічно перезавантажуватиметься. Спершу зменште його в редакторі.`,
+    screenOverBudget: (aod, need, max) =>
+      `${aod ? "екрану always-on" : "основному екрану"} потрібно ${need} МБ пам'яті годинника, а Watch 3 Pro вміщує ${max} МБ — годинник циклічно перезавантажуватиметься. Використайте менше повноекранних зображень або зменште їх.`,
     bigImage: (w, h) =>
       `У циферблаті є зображення ${w}×${h} px — більше, ніж у заводських. Годиннику може забракнути пам'яті, і він циклічно перезавантажуватиметься, а перевіреного способу вийти з цього циклу поки немає.`,
     noOtaChannel: "годинник не відкрив канал оновлення прошивки — під'єднайтеся знову й повторіть",
@@ -332,6 +338,8 @@ export const bt = dict(en, {
       "la pantalla siempre activa no tiene miniatura, y el reloj puede quedarse reiniciándose en bucle con ella. Abre la esfera en el editor y envíala desde allí — el editor repone la miniatura.",
     imageOverLimit: (w, h, max) =>
       `una imagen mide ${w}×${h} px, más del límite de ${max} px — el reloj puede quedarse sin memoria al cargarla y reiniciarse en bucle. Redúcela primero en el editor.`,
+    screenOverBudget: (aod, need, max) =>
+      `la pantalla ${aod ? "siempre activa" : "principal"} necesita ${need} MB de memoria del reloj, más de los ${max} MB que caben en un Watch 3 Pro — se reiniciaría en bucle. Usa menos imágenes a pantalla completa o hazlas más pequeñas.`,
     bigImage: (w, h) =>
       `Esta esfera tiene una imagen de ${w}×${h} px, mayor que las de las esferas de fábrica. El reloj puede quedarse sin memoria al cargarla y reiniciarse en bucle, y aún no hay una forma confirmada de salir de ese bucle.`,
     noOtaChannel:
@@ -424,6 +432,8 @@ export const bt = dict(en, {
       "ऑलवेज़-ऑन स्क्रीन का थंबनेल नहीं है, और घड़ी उस पर बार-बार रीस्टार्ट हो सकती है। फ़ेस को एडिटर में खोलें और वहीं से भेजें — एडिटर थंबनेल वापस जोड़ देता है।",
     imageOverLimit: (w, h, max) =>
       `एक इमेज ${w}×${h} px की है, ${max} px की सीमा से बड़ी — घड़ी की मेमोरी खत्म हो सकती है और वह बार-बार रीस्टार्ट हो सकती है। पहले एडिटर में इसे छोटा करें।`,
+    screenOverBudget: (aod, need, max) =>
+      `${aod ? "ऑलवेज़-ऑन" : "मुख्य"} स्क्रीन को घड़ी की ${need} MB मेमोरी चाहिए, जबकि Watch 3 Pro में ${max} MB ही आती है — घड़ी बार-बार रीस्टार्ट होगी। कम या छोटी फ़ुल-स्क्रीन इमेज इस्तेमाल करें।`,
     bigImage: (w, h) =>
       `इस फ़ेस में ${w}×${h} px की इमेज है, जो फ़ैक्टरी फ़ेस से बड़ी है। घड़ी की मेमोरी खत्म हो सकती है और वह बार-बार रीस्टार्ट हो सकती है, और इस लूप से निकलने का कोई पक्का तरीका अभी नहीं है।`,
     noOtaChannel: "घड़ी ने फ़र्मवेयर अपडेट चैनल नहीं खोला — फिर से कनेक्ट करके कोशिश करें",
@@ -524,6 +534,10 @@ const RULES: Rule[] = [
     (w, m) => w.imageOverLimit(m[1], m[2], m[3]),
   ],
   [/^This face has a (\d+)×(\d+) px image/, (w, m) => w.bigImage(m[1], m[2])],
+  [
+    /^the (.+?) screen needs ([\d.]+) MB of the watch's memory, over the ([\d.]+) MB/,
+    (w, m) => w.screenOverBudget(m[1] === "always-on", m[2], m[3]),
+  ],
   lit("noOtaChannel"),
   [/^the watch refused the update \((.+)\)$/, (w, m) => w.refusedUpdate(m[1])],
   [/^the watch refused to start \((.+)\)$/, (w, m) => w.refusedStart(m[1])],

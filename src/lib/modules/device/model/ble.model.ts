@@ -9,10 +9,14 @@ import {
   type WatchInfo,
   type WatchSlots,
 } from "../lib/ble";
-import { checkOtaTarget } from "../lib/ota-image";
+import { checkOtaTarget, watchDevice } from "../lib/ota-image";
 import type { Wp2State } from "../lib/wp2";
 import { rememberDial, unclaimDial } from "../lib/catalog-names";
-import { assertFlashable, flashWarning } from "$lib/modules/editor/core/format";
+import {
+  assertFlashable,
+  fitForWatchOffThread,
+  flashWarning,
+} from "$lib/modules/editor/core/format";
 import { dbg, dbgListeners, errText } from "../lib/ble-protocol";
 import * as bleApi from "./ble.api";
 import { t } from "../i18n";
@@ -56,6 +60,9 @@ export const $slotDialogOpen = createStore(false);
 const $pendingBin = createStore<Pending | null>(null);
 // the risk the user is asked to accept before an oversized face goes out — null while not asking
 export const $sizeWarning = createStore<string | null>(null);
+// how many images a flash re-encoded to fit the watch (fitForWatch) — null when none; the UI
+// words it (device/i18n fitNote)
+export const $fitNote = createStore<number | null>(null);
 // the watch a flash went to: $bleInfo resets the moment the link drops, which is before a flash
 // cut off by that drop fails — so the outcome reads who it was from here, not from $bleInfo
 const $flashWatch = createStore<WatchInfo | null>(null);
@@ -114,9 +121,12 @@ const connectFx = createEffect(async () => {
   return info;
 });
 export const $connecting = connectFx.pending;
-const flashFx = createEffect(async ({ bin, preview, key, slot, confirmed }: Pending) => {
+const flashFx = createEffect(async ({ bin: file, preview, key, slot, confirmed }: Pending) => {
   // every install — editor and marketplace — comes through here, so this is the one gate
-  assertFlashable(bin);
+  const device = watchDevice(watch!.name);
+  const { bin, compressed } = await fitForWatchOffThread(file, device);
+
+  assertFlashable(bin, device);
   const warning = confirmed ? null : flashWarning(bin);
 
   if (warning) throw new NeedsConfirmError(warning);
@@ -128,7 +138,7 @@ const flashFx = createEffect(async ({ bin, preview, key, slot, confirmed }: Pend
   rememberDial(id, name, preview, watch!.serial);
   // …and only now does the merged dial list know about it, so refresh it
   watch!.mergeDials();
-  return id;
+  return { id, compressed };
 });
 export const $flashing = flashFx.pending;
 const removeDialFx = createEffect((id: number) => {
@@ -328,6 +338,13 @@ sample({
   target: $slots,
 });
 reset({ clock: disconnected, target: [$dials, $slots] });
+
+sample({
+  clock: flashFx.doneData,
+  fn: ({ compressed }) => compressed || null,
+  target: $fitNote,
+});
+reset({ clock: [flashRequested, disconnected], target: $fitNote });
 
 sample({
   clock: flashFx.failData,

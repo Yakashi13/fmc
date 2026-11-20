@@ -93,6 +93,9 @@ export const t = dict(
       "What FMC does to your CMF watch, what it cannot do, and how to fix the Bluetooth conflict with the Nothing X app.",
     help: helpEn,
     backToFaces: "Back to the watchfaces",
+    // after a flash that had to compress images (bleModel.$fitNote)
+    fitNote: (n: number) =>
+      `${n} ${n === 1 ? "image was" : "images were"} compressed to fit the watch's memory — they can look slightly softer than in the editor.`,
   },
   {
     ru: {
@@ -172,6 +175,8 @@ export const t = dict(
       helpTitle: "Перед подключением — FMC",
       helpDescription:
         "Что FMC делает с вашими часами CMF, чего он не умеет и как решить конфликт Bluetooth с приложением Nothing X.",
+      fitNote: (n: number) =>
+        `${n} ${plural("ru", n, { one: "изображение сжато", few: "изображения сжаты", many: "изображений сжато" })}, чтобы циферблат поместился в память часов — на часах они могут выглядеть чуть мягче, чем в редакторе.`,
       help: helpRu,
       backToFaces: "К циферблатам",
     },
@@ -254,6 +259,8 @@ export const t = dict(
       helpTitle: "Перед підключенням — FMC",
       helpDescription:
         "Що FMC робить з вашим годинником CMF, чого він не вміє і як усунути конфлікт Bluetooth із застосунком Nothing X.",
+      fitNote: (n: number) =>
+        `${n} ${plural("uk", n, { one: "зображення стиснуто", few: "зображення стиснуто", many: "зображень стиснуто" })}, щоб циферблат помістився в пам'ять годинника — на годиннику вони можуть виглядати трохи м'якше, ніж у редакторі.`,
       help: helpUk,
       backToFaces: "До циферблатів",
     },
@@ -337,6 +344,8 @@ export const t = dict(
       helpTitle: "Antes de conectar — FMC",
       helpDescription:
         "Qué le hace FMC a tu reloj CMF, qué no puede hacer y cómo resolver el conflicto de Bluetooth con la app Nothing X.",
+      fitNote: (n: number) =>
+        `${n} ${plural("es", n, { one: "imagen se comprimió", other: "imágenes se comprimieron" })} para que la esfera quepa en la memoria del reloj — pueden verse algo más suaves que en el editor.`,
       help: helpEs,
       backToFaces: "Volver a las esferas",
     },
@@ -416,6 +425,8 @@ export const t = dict(
       helpTitle: "कनेक्ट करने से पहले — FMC",
       helpDescription:
         "FMC आपकी CMF घड़ी के साथ क्या करता है, क्या नहीं कर सकता, और Nothing X ऐप के साथ Bluetooth की टक्कर कैसे ठीक करें।",
+      fitNote: (n: number) =>
+        `घड़ी की मेमोरी में फ़ेस फ़िट करने के लिए ${n} इमेज कंप्रेस की गईं — घड़ी पर वे एडिटर से थोड़ी धुंधली दिख सकती हैं।`,
       help: helpHi,
       backToFaces: "वॉचफ़ेस पर वापस",
     },
