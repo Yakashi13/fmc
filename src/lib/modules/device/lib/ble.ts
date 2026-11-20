@@ -76,6 +76,8 @@ export const capacityOf = (name: string | null) =>
   /watch (3 pro|pro 3)/i.test(name ?? "") ? WF_CAPACITY_PRO3 : WF_CAPACITY;
 
 const KEY_STORE = "fmc_authkey";
+// how long the rescue page waits for a pairing to be confirmed before it reconnects and asks again
+const RESCUE_PAIR_MS = 30000;
 const loadKey = (): Uint8Array | null => {
   const h = localStorage.getItem(KEY_STORE);
 
@@ -85,6 +87,15 @@ const saveKey = (k: Uint8Array) => localStorage.setItem(KEY_STORE, toHex(k));
 /** Whether this browser holds an auth key: without one, connecting means pairing, which needs a
  *  tap on the watch — what the rescue page can't count on. */
 export const hasSavedKey = () => loadKey() !== null;
+/** Takes a key copied out of another browser or address, where the watch was paired: the line
+ *  `fmc_authkey=<32 hex>` the old address's /rescue prints, or the bare digits. False if the
+ *  text holds no key. */
+export function importKey(text: string): boolean {
+  const m = /fmc_authkey=([0-9a-f]{32})\b/i.exec(text) ?? /^\s*([0-9a-f]{32})\s*$/i.exec(text);
+
+  if (m) localStorage.setItem(KEY_STORE, m[1].toLowerCase());
+  return Boolean(m);
+}
 
 // dev hygiene: resets Chrome's device permissions and the local auth key.
 // ponytail: doesn't fix the lock on the watch side (the bond is held by the firmware, not the browser) —
@@ -325,27 +336,26 @@ export class Watch {
       dbg("subscriptions done, key saved:", Boolean(loadKey()));
       const k = loadKey();
 
-      // rescue never pairs: pairing waits for a tap on a watch whose screen may never light up.
-      // Fail now and say why, instead of hanging on a confirmation nobody can give
-      if (rescue && !k)
-        throw new Error(
-          "no saved key for this watch in this browser — rescue can't pair, it needs a tap on the watch",
-        );
+      // rescue pairs only when it must, and never waits on it for long: the confirmation is a tap
+      // on a watch whose screen may never light up, so a try that gets no answer ends and the
+      // caller comes back for another
+      const pairMs = rescue ? RESCUE_PAIR_MS : undefined;
+
       if (k) {
         try {
           await this.authenticate(k);
         } catch (e) {
           // a stale key (the watch was re-paired/reset) shows up as authFailed or silence on the first
           // encrypted exchange (authMac = 0x49); other errors don't touch the saved key. On rescue
-          // the key is all there is, and a wedged watch going silent proves nothing: keep it, and
-          // let the caller try again
-          if (
-            rescue ||
-            !/rejected the auth key|timeout waiting for 0x49/.test((e as Error).message)
-          )
-            throw e;
-          dbg("stored key stale, clearing:", (e as Error).message);
-          localStorage.removeItem(KEY_STORE);
+          // a wedged watch going silent proves nothing — keep the key and let the caller try again;
+          // an outright refusal does mean pairing, but the key stays until a new one replaces it
+          const stale = rescue
+            ? /rejected the auth key/
+            : /rejected the auth key|timeout waiting for 0x49/;
+
+          if (!stale.test((e as Error).message)) throw e;
+          dbg("stored key stale:", (e as Error).message);
+          if (!rescue) localStorage.removeItem(KEY_STORE);
           // pairing needs the shell service — if it's not visible on the current connection, reconnect,
           // same as on first pairing (§233), and re-subscribe to notifications
           if (!this.chars[UUID.shellWrite]) {
@@ -355,9 +365,9 @@ export class Watch {
             await connectOrRepick("reconnection");
             await subscribe();
           }
-          await this.pair();
+          await this.pair(pairMs);
         }
-      } else await this.pair();
+      } else await this.pair(pairMs);
       if (!rescue) await this.fetchInfo();
     } catch (e) {
       // without this a failed pair()/authenticate() leaves the physical GATT link hanging:
@@ -897,7 +907,8 @@ export class Watch {
   // then rebooted and factory-reset the watch. Guessing at this firmware costs more than it
   // returns; read what it volunteers instead (onNotify dumps the payload of unknown commands).
 
-  async pair() {
+  /** `ms`: give up on the confirmation after this long (rescue); without it the wait is the user's. */
+  async pair(ms?: number) {
     if (!this.chars[UUID.shellWrite]) {
       // the shell service's own UUID isn't fixed (seen as 77d4e67c, docs assumed 77d4ff00) —
       // Web Bluetooth only exposes services listed in optionalServices at requestDevice() time,
@@ -908,10 +919,27 @@ export class Watch {
     }
     this.status("pairing — confirm on the watch");
     await this.codec.setKey(null);
-    const gotSecret = new Promise<string>((res) => (this.shellWaiter = res));
+    let giveUp: (e: Error) => void = () => {};
+    const gotSecret = new Promise<string>((res, rej) => {
+      this.shellWaiter = res;
+      giveUp = rej;
+    });
+    // a watch that drops the link will never answer: without this the wait outlives the connection
+    const dropped = () =>
+      giveUp(new Error("the watch disconnected before the pairing was confirmed"));
+    const timer =
+      ms && setTimeout(() => giveUp(new Error("timeout waiting for the pairing confirmation")), ms);
+    let str: string;
 
-    await this.chars[UUID.shellWrite].writeValue(utf8("AT GETSECRET") as BufferSource);
-    const str = (await gotSecret).trim();
+    this.device?.addEventListener("gattserverdisconnected", dropped);
+    try {
+      await this.chars[UUID.shellWrite].writeValue(utf8("AT GETSECRET") as BufferSource);
+      str = (await gotSecret).trim();
+    } finally {
+      clearTimeout(timer);
+      this.device?.removeEventListener("gattserverdisconnected", dropped);
+      this.shellWaiter = null;
+    }
 
     if (!str.endsWith(",OK") || str.length < 42) throw new Error(`pairing rejected: ${str}`);
     const secret = fromHex(str.slice(10, 42));

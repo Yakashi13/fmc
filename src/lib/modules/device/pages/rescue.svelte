@@ -4,8 +4,7 @@
   // factory reset. Either keeps reconnecting until it goes through or the user stops it.
   import { Button } from "$lib/shared/components/button";
   import { rescueModel } from "../model";
-  import { hasSavedKey } from "../lib/ble";
-  import { flashedHere } from "../lib/catalog-names";
+  import { Textarea } from "$lib/shared/components/textarea";
   import { t } from "../i18n";
 
   const ISSUES = "https://github.com/freethinkel/fmc/issues";
@@ -14,14 +13,19 @@
     resetRequested,
     facesRequested,
     stopRequested,
+    keyTextChanged,
+    keySubmitted,
+    $keyText: keyText,
+    $keyed: keyed,
+    $keyImported: keyImported,
+    $keyRejected: keyRejected,
+    $faces: faces,
     $status: status,
     $error: error,
     $done: done,
     $busy: busy,
     $log: log,
   } = rescueModel;
-  const keyed = hasSavedKey();
-  const faces = flashedHere().length;
   const copy = () => navigator.clipboard.writeText($log.join("\n")).catch(() => {});
 </script>
 
@@ -36,13 +40,28 @@
     <!-- our own dictionary, so {@html} is safe -->
     <p>{@html $t.rescueIntro}</p>
     <p>{$t.rescueBrowser}</p>
-    {#if !keyed}<p class="error">{$t.rescueNoKey}</p>{/if}
+    {#if !$keyed}
+      <p class="error">{$t.rescueNoKey}</p>
+      <p>{$t.rescueKeyHint}</p>
+      <div class="key">
+        <Textarea
+          value={$keyText}
+          rows={2}
+          placeholder="fmc_authkey=…"
+          onInput={(text) => keyTextChanged(text)}
+        />
+      </div>
+      <Button kind="secondary" onClick={() => keySubmitted()}>{$t.rescueKeySave}</Button>
+      {#if $keyRejected}<p class="error">{$t.rescueKeyBad}</p>{/if}
+    {:else if $keyImported}
+      <p class="status">{$t.rescueKeySaved}</p>
+    {/if}
     {#if $busy}
       <Button kind="secondary" onClick={() => stopRequested()}>{$t.stopRescue}</Button>
     {:else}
-      {#if faces}
+      {#if $faces}
         <p>{$t.deleteFacesHint}</p>
-        <Button kind="secondary" onClick={() => facesRequested()}>{$t.deleteFaces(faces)}</Button>
+        <Button kind="secondary" onClick={() => facesRequested()}>{$t.deleteFaces($faces)}</Button>
       {/if}
       <Button kind="danger" onClick={() => resetRequested()}>{$t.factoryReset}</Button>
     {/if}
@@ -81,6 +100,9 @@
   }
   p {
     margin: 0;
+  }
+  .key {
+    width: 100%;
   }
   .status {
     color: oklch(from var(--color-text) l c h / 55%);

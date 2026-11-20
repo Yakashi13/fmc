@@ -70,6 +70,19 @@ export const unclaimDial = (id: number) => {
   if (e?.serial) write({ ...flashed(), [id]: { ...e, serial: undefined } });
 };
 
+// the faces another browser or address installed, from the `fmc_dial_names=<json>` line its
+// /rescue prints: without them the rescue page has nothing to delete. What this browser already
+// knows wins. Text with no such line, or a broken one, changes nothing.
+export const importFlashed = (text: string) => {
+  try {
+    const theirs = JSON.parse(/^fmc_dial_names=(\{.*\})\s*$/m.exec(text)?.[1] ?? "{}");
+
+    write({ ...theirs, ...flashed() });
+  } catch {
+    /* not ours to fix */
+  }
+};
+
 // every dial this browser has flashed, to any watch — what the rescue page can delete without
 // reading the watch's own list (a wedged watch may not answer for it)
 export const flashedHere = () => Object.keys(flashed()).map(Number);

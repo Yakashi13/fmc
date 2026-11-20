@@ -97,3 +97,23 @@ test("delete asks the watch for every face this browser installed, and counts th
   expect(watch.resets).toBe(0);
   localStorage.removeItem("fmc_dial_names");
 });
+
+test("a pasted key is saved with the faces that came with it; text without a key is refused", async () => {
+  localStorage.removeItem("fmc_authkey");
+  rescueModel.keyTextChanged("fmc_authkey=null\nfmc_dial_names=null");
+  rescueModel.keySubmitted();
+  await vi.waitFor(() => expect(rescueModel.$keyRejected.getState()).toBe(true));
+  expect(localStorage.getItem("fmc_authkey")).toBeNull();
+
+  rescueModel.keyTextChanged(
+    'fmc_authkey=00112233445566778899AABBCCDDEEFF\nfmc_dial_names={"77":{"name":"Old"}}',
+  );
+  rescueModel.keySubmitted();
+  await vi.waitFor(() => expect(rescueModel.$keyed.getState()).toBe(true));
+
+  expect(localStorage.getItem("fmc_authkey")).toBe("00112233445566778899aabbccddeeff");
+  expect(rescueModel.$faces.getState()).toBe(1);
+  expect(rescueModel.$keyRejected.getState()).toBe(false);
+  localStorage.removeItem("fmc_authkey");
+  localStorage.removeItem("fmc_dial_names");
+});
