@@ -76,7 +76,9 @@ const rescueFx = attach({
             for (const id of flashedHere()) if (await w.deleteDial(id, FILLER)) deleted++;
             return { action, deleted };
           } catch (e) {
-            if (pickerClosed(e) || stopping) throw e;
+            // no key is no key on every attempt: say it once instead of retrying forever
+            if (pickerClosed(e) || stopping || (e as Error).message.startsWith("no saved key"))
+              throw e;
             logged(`attempt ${attempt} failed: ${(e as Error).message}`);
             statusChanged(t.rescueRetrying(attempt + 1));
             await new Promise((r) => setTimeout(r, RETRY_MS));

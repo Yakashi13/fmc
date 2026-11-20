@@ -325,13 +325,25 @@ export class Watch {
       dbg("subscriptions done, key saved:", Boolean(loadKey()));
       const k = loadKey();
 
+      // rescue never pairs: pairing waits for a tap on a watch whose screen may never light up.
+      // Fail now and say why, instead of hanging on a confirmation nobody can give
+      if (rescue && !k)
+        throw new Error(
+          "no saved key for this watch in this browser — rescue can't pair, it needs a tap on the watch",
+        );
       if (k) {
         try {
           await this.authenticate(k);
         } catch (e) {
           // a stale key (the watch was re-paired/reset) shows up as authFailed or silence on the first
-          // encrypted exchange (authMac = 0x49); other errors don't touch the saved key
-          if (!/rejected the auth key|timeout waiting for 0x49/.test((e as Error).message)) throw e;
+          // encrypted exchange (authMac = 0x49); other errors don't touch the saved key. On rescue
+          // the key is all there is, and a wedged watch going silent proves nothing: keep it, and
+          // let the caller try again
+          if (
+            rescue ||
+            !/rejected the auth key|timeout waiting for 0x49/.test((e as Error).message)
+          )
+            throw e;
           dbg("stored key stale, clearing:", (e as Error).message);
           localStorage.removeItem(KEY_STORE);
           // pairing needs the shell service — if it's not visible on the current connection, reconnect,
