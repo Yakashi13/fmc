@@ -12,6 +12,8 @@
   import PublishDialog from "../components/PublishDialog.svelte";
   import GlyphsDialog from "../components/GlyphsDialog.svelte";
   import { bleModel } from "$lib/modules/device/model";
+  import { watchDevice } from "$lib/modules/device/lib/ota-image";
+  import { SCREEN_BUDGET } from "../core/format";
   import { renderDoc } from "../core/render/render";
   import { SCREEN } from "../core/render/screen";
   import type { LayerHit, Point } from "../core/render/canvas";
@@ -57,6 +59,7 @@
     $bleInfo: bleInfo,
     flashRequested,
     $flashing: flashing,
+    $fitNote: fitNote,
   } = bleModel;
   const {
     $openedWf: openedWf,
@@ -68,6 +71,7 @@
   } = marketModel;
   const {
     $doc: doc,
+    $memory: memory,
     $store: store,
     $sim: sim,
     $screen: screen,
@@ -232,6 +236,20 @@
       errored(`save: ${e instanceof Error ? e.message : e}`);
     }
   }
+
+  // the open screen against a Watch 3 Pro's memory: shown while one is connected, and for any
+  // watch once the screen gets compressed on install or can't go on a Watch 3 Pro at all
+  const screenMem = $derived($memory?.[$screen] ?? null);
+  const showMem = $derived(
+    !!screenMem &&
+      (watchDevice($bleInfo?.name ?? null) === "watch_3_pro" || screenMem.fit !== "fits"),
+  );
+  const mb = (bytes: number) => (bytes / 1e6).toFixed(1);
+  const MEM_SAYS = {
+    fits: "",
+    compressed: " — images get compressed on install",
+    "too-heavy": " — too heavy to install",
+  };
 
   const perf = import.meta.env.DEV;
   let fps = $state(0);
@@ -664,6 +682,8 @@
     <p class="statusbar type-caption" class:error={$err || $bleStatus?.startsWith("error:")}>
       {$err || $bleStatus}
     </p>
+  {:else if $fitNote}
+    <p class="statusbar type-caption">{$fitNote}</p>
   {/if}
 
   <div class="layout">
@@ -717,6 +737,20 @@
           </div>
         </div>
       </div>
+      {#if showMem && screenMem}
+        <p
+          class="memory type-caption"
+          class:warn={screenMem.fit === "compressed"}
+          class:error={screenMem.fit === "too-heavy"}
+          title="A Watch 3 Pro holds every image a screen shows in about {mb(
+            SCREEN_BUDGET,
+          )} MB of memory. Past that, FMC stores the largest images in the watch's own compressed format on install, and refuses a screen that still doesn't fit."
+        >
+          Watch 3 Pro memory: {mb(screenMem.bytes)} of {mb(SCREEN_BUDGET)} MB{MEM_SAYS[
+            screenMem.fit
+          ]}
+        </p>
+      {/if}
       {#if perf && $doc}
         <p class="fps type-caption type-mono" class:slow={fps > 0 && fps < 50}>
           {fps} fps · {drawMs} ms draw
@@ -1154,6 +1188,35 @@
   @media (max-width: 767px) {
     .fps {
       display: none;
+    }
+  }
+
+  /* the open screen's share of a Watch 3 Pro's memory, over the canvas's top edge */
+  .memory {
+    position: absolute;
+    top: 0.5rem;
+    inset-inline-end: 0.5rem;
+    z-index: 2;
+    margin: 0;
+    padding: 0.125rem 0.5rem;
+    border-radius: calc(var(--border-radius) - 0.25rem);
+    background: oklch(from var(--color-background) l c h / 70%);
+    color: oklch(from var(--color-text) l c h / 55%);
+
+    &.warn {
+      color: var(--color-text);
+    }
+    &.error {
+      color: var(--color-error);
+    }
+  }
+  /* on a phone the screen switch floats over the canvas's top edge: sit under it, centred */
+  @media (max-width: 767px) {
+    .memory {
+      top: 3.25rem;
+      inset-inline: 1rem;
+      text-align: center;
+      background: none;
     }
   }
 

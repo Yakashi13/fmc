@@ -56,6 +56,8 @@ export const $slotDialogOpen = createStore(false);
 const $pendingBin = createStore<Pending | null>(null);
 // the risk the user is asked to accept before an oversized face goes out — null while not asking
 export const $sizeWarning = createStore<string | null>(null);
+// said after a flash that went out with images re-encoded to fit the watch (fitForWatch)
+export const $fitNote = createStore<string | null>(null);
 // the watch a flash went to: $bleInfo resets the moment the link drops, which is before a flash
 // cut off by that drop fails — so the outcome reads who it was from here, not from $bleInfo
 const $flashWatch = createStore<WatchInfo | null>(null);
@@ -117,7 +119,7 @@ export const $connecting = connectFx.pending;
 const flashFx = createEffect(async ({ bin: file, preview, key, slot, confirmed }: Pending) => {
   // every install — editor and marketplace — comes through here, so this is the one gate
   const device = watchDevice(watch!.name);
-  const bin = await fitForWatchOffThread(file, device);
+  const { bin, compressed } = await fitForWatchOffThread(file, device);
 
   assertFlashable(bin, device);
   const warning = confirmed ? null : flashWarning(bin);
@@ -131,7 +133,7 @@ const flashFx = createEffect(async ({ bin: file, preview, key, slot, confirmed }
   rememberDial(id, name, preview, watch!.serial);
   // …and only now does the merged dial list know about it, so refresh it
   watch!.mergeDials();
-  return id;
+  return { id, compressed };
 });
 export const $flashing = flashFx.pending;
 const removeDialFx = createEffect((id: number) => {
@@ -325,6 +327,16 @@ sample({
   target: $slots,
 });
 reset({ clock: disconnected, target: [$dials, $slots] });
+
+sample({
+  clock: flashFx.doneData,
+  fn: ({ compressed: n }) =>
+    n
+      ? `${n} ${n === 1 ? "image was" : "images were"} compressed to fit the watch's memory — they can look slightly softer than in the editor.`
+      : null,
+  target: $fitNote,
+});
+reset({ clock: [flashRequested, disconnected], target: $fitNote });
 
 sample({
   clock: flashFx.failData,

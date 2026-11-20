@@ -13,6 +13,7 @@ import {
   overBudget,
   parseBin,
   screenBytes,
+  screenMemory,
   shownResources,
   TAG,
 } from "$lib/modules/editor/core/format";
@@ -74,11 +75,12 @@ describe("a main screen of nine full-screen RGB565+alpha images", () => {
     expect(() => assertFlashable(bin, "watch_pro_2")).not.toThrow();
   });
   test("goes through once fitted: the largest images become ETC2, close to the source", () => {
-    const fitted = fitForWatch(bin, "watch_3_pro");
+    const { bin: fitted, compressed } = fitForWatch(bin, "watch_3_pro");
     const out = parseBin(fitted);
 
     expect(() => assertFlashable(fitted, "watch_3_pro")).not.toThrow();
-    expect(out.resources.filter((r) => r.cf === 28).length).toBeGreaterThan(0);
+    expect(compressed).toBeGreaterThan(0);
+    expect(out.resources.filter((r) => r.cf === 28)).toHaveLength(compressed);
     out.resources.forEach((r, i) => {
       if (r.cf !== 28) return;
       const a = decodePixels(face.resources[i])!,
@@ -90,13 +92,13 @@ describe("a main screen of nine full-screen RGB565+alpha images", () => {
     });
   });
   test("is left alone for a Watch Pro 2 — it has no ETC2", () => {
-    expect(fitForWatch(bin, "watch_pro_2")).toBe(bin);
+    expect(fitForWatch(bin, "watch_pro_2").bin).toBe(bin);
   });
 });
 
 test("an opaque RGB565+alpha image is stored as RGB565, pixel for pixel", () => {
   const face = heavy(1, true);
-  const out = parseBin(fitForWatch(buildBin(face), null));
+  const out = parseBin(fitForWatch(buildBin(face), null).bin);
   const i = face.resources.findIndex((r) => r.w === 466 && r.cf === 5);
 
   expect(out.resources[i].cf).toBe(4);
@@ -106,5 +108,26 @@ test("an opaque RGB565+alpha image is stored as RGB565, pixel for pixel", () => 
 test("a face with nothing to change comes back as the same bytes", () => {
   const bin = read("Pro3__SlopeTime.bin");
 
-  expect(fitForWatch(bin, "watch_3_pro")).toBe(bin);
+  expect(fitForWatch(bin, "watch_3_pro")).toEqual({ bin, compressed: 0 });
+});
+
+describe("screenMemory — what the editor shows against the budget", () => {
+  const mainOf = (face: ReturnType<typeof parseBin>) =>
+    screenMemory(
+      face.screens.find((s) => s.tag === TAG.main)!,
+      face.resources,
+    );
+
+  test("a factory face fits", () => {
+    expect(mainOf(parseBin(read("Default__276__Dichotomy.bin"))).fit).toBe("fits");
+  });
+  test("nine full-screen layers get compressed on install", () => {
+    expect(mainOf(heavy(9)).fit).toBe("compressed");
+  });
+  test("full-screen JPEGs can't be compressed further, so too many of them are too heavy", () => {
+    const face = heavy(12);
+
+    face.resources = face.resources.map((r) => (r.w === 466 ? { ...r, cf: 1 } : r));
+    expect(mainOf(face)).toEqual({ bytes: expect.any(Number), fit: "too-heavy" });
+  });
 });

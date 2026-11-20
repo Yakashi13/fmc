@@ -4,10 +4,10 @@ import { fitForWatch } from "./fit";
 
 self.onmessage = ({ data }: MessageEvent<{ bin: Uint8Array; device: string | null }>) => {
   try {
-    const out = fitForWatch(data.bin, data.device);
+    const { bin: out, compressed } = fitForWatch(data.bin, data.device);
 
-    if (out === data.bin) self.postMessage({ out: null });
-    else self.postMessage({ out }, { transfer: [out.buffer] });
+    if (out === data.bin) self.postMessage({ out: null, compressed });
+    else self.postMessage({ out, compressed }, { transfer: [out.buffer] });
   } catch (e) {
     self.postMessage({ error: e instanceof Error ? e.message : String(e) });
   }

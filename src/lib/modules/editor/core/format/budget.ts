@@ -63,6 +63,30 @@ export function shownResources(screen: FaceNode, resources: Resource[]): Set<num
 export const screenBytes = (screen: FaceNode, resources: Resource[]) =>
   [...shownResources(screen, resources)].reduce((n, i) => n + decodedBytes(resources[i]), 0);
 
+/** Formats fitForWatch can re-encode as ETC2 (JPEG stays JPEG). */
+export const TO_ETC2 = [4, 5, 24];
+
+const etc2Bytes = (r: Resource) =>
+  TO_ETC2.includes(r.cf) ? decodedBytes({ ...r, cf: 28 }) : decodedBytes(r);
+
+export interface ScreenMemory {
+  bytes: number;
+  /** "compressed": over the budget as is, but fitForWatch gets it under by re-encoding. */
+  fit: "fits" | "compressed" | "too-heavy";
+}
+
+/** What a screen will take on a Watch 3 Pro, and whether it gets on the watch at all. */
+export function screenMemory(screen: FaceNode, resources: Resource[]): ScreenMemory {
+  const shown = [...shownResources(screen, resources)];
+  const bytes = shown.reduce((n, i) => n + decodedBytes(resources[i]), 0);
+  const floor = shown.reduce((n, i) => n + etc2Bytes(resources[i]), 0);
+
+  return {
+    bytes,
+    fit: bytes <= SCREEN_BUDGET ? "fits" : floor <= SCREEN_BUDGET ? "compressed" : "too-heavy",
+  };
+}
+
 /** The screens of a face that a Watch 3 Pro can't hold, with what each needs. */
 export const overBudget = (face: Face) =>
   face.screens

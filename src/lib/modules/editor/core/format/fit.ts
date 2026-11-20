@@ -2,7 +2,7 @@
 // anyway, stored in a format that costs it less (see budget.ts for why it matters).
 
 import { buildBin, parseBin } from "./bin";
-import { decodedBytes, overBudget, shownResources } from "./budget";
+import { decodedBytes, overBudget, shownResources, TO_ETC2 } from "./budget";
 import { decodePixels, encodePixels } from "./pixels-codec";
 import type { Resource } from "./raw";
 
@@ -23,18 +23,25 @@ function dropOpaqueAlpha(r: Resource): Resource {
  * The file as it should go to the watch. Every model: opaque cf 5 images become cf 4. A Watch 3
  * Pro screen still over its budget then has its largest shown images re-encoded as ETC2 (cf 28,
  * 1 byte per pixel, the format the watch's own faces use) until it fits — lossy, so only as far
- * as needed. JPEG is left alone. Returns the input itself when nothing changed, and a file it
- * can't parse untouched (assertFlashable decides about those).
+ * as needed. JPEG is left alone. `bin` is the input itself when nothing changed, and a file it
+ * can't parse comes back untouched (assertFlashable decides about those); `compressed` counts
+ * the images re-encoded as ETC2.
  */
-export function fitForWatch(bin: Uint8Array, device: string | null): Uint8Array {
+export interface Fitted {
+  bin: Uint8Array;
+  compressed: number;
+}
+
+export function fitForWatch(bin: Uint8Array, device: string | null): Fitted {
   let face;
 
   try {
     face = parseBin(bin);
   } catch {
-    return bin;
+    return { bin, compressed: 0 };
   }
-  let changed = false;
+  let changed = false,
+    compressed = 0;
   const swap = (i: number, r: Resource) => {
     if (r === face.resources[i]) return;
     face.resources[i] = r;
@@ -45,7 +52,7 @@ export function fitForWatch(bin: Uint8Array, device: string | null): Uint8Array 
   if (device === "watch_3_pro")
     for (const { screen } of overBudget(face)) {
       const heaviest = [...shownResources(screen, face.resources)]
-        .filter((i) => [4, 5, 24].includes(face.resources[i].cf))
+        .filter((i) => TO_ETC2.includes(face.resources[i].cf))
         .sort((a, b) => decodedBytes(face.resources[b]) - decodedBytes(face.resources[a]));
 
       for (const i of heaviest) {
@@ -53,20 +60,25 @@ export function fitForWatch(bin: Uint8Array, device: string | null): Uint8Array 
         const r = face.resources[i];
 
         swap(i, encodePixels(decodePixels(r)!, r.w, r.h, 28));
+        compressed++;
       }
     }
-  return changed ? buildBin(face) : bin;
+  return { bin: changed ? buildBin(face) : bin, compressed };
 }
 
 /** fitForWatch in a worker (fit.worker.ts), so the page stays responsive while a heavy face is
  *  re-encoded. Same answer, including the input itself when nothing changed.
  *  ponytail: a worker per call — a flash is rare and the worker is gone once it answers. */
-export function fitForWatchOffThread(bin: Uint8Array, device: string | null): Promise<Uint8Array> {
+export function fitForWatchOffThread(bin: Uint8Array, device: string | null): Promise<Fitted> {
   const worker = new Worker(new URL("./fit.worker.ts", import.meta.url), { type: "module" });
 
-  return new Promise<Uint8Array>((resolve, reject) => {
-    worker.onmessage = ({ data }: MessageEvent<{ out?: Uint8Array | null; error?: string }>) =>
-      data.error ? reject(new Error(data.error)) : resolve(data.out ?? bin);
+  return new Promise<Fitted>((resolve, reject) => {
+    worker.onmessage = ({
+      data,
+    }: MessageEvent<{ out?: Uint8Array | null; compressed?: number; error?: string }>) =>
+      data.error
+        ? reject(new Error(data.error))
+        : resolve({ bin: data.out ?? bin, compressed: data.compressed ?? 0 });
     worker.onerror = (e) => {
       e.preventDefault();
       reject(new Error(e.message || "the face could not be prepared for the watch"));

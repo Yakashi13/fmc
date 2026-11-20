@@ -30,12 +30,15 @@ test("the worker fits a heavy face the same way the main thread does", async () 
   const bin = buildBin(face);
   const off = await fitForWatchOffThread(bin, "watch_3_pro");
 
-  expect(off).not.toBe(bin);
+  expect(off.bin).not.toBe(bin);
   expect(off).toEqual(fitForWatch(bin, "watch_3_pro"));
 }, 60000);
 
 test("a face with nothing to fit comes back as the caller's own bytes", async () => {
   const bin = new Uint8Array(await (await fetch(url)).arrayBuffer());
 
-  expect(await fitForWatchOffThread(bin, "watch_3_pro")).toBe(bin);
+  const off = await fitForWatchOffThread(bin, "watch_3_pro");
+
+  expect(off.bin).toBe(bin);
+  expect(off.compressed).toBe(0);
 });
