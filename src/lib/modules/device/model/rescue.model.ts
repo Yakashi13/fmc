@@ -6,17 +6,24 @@
 // after the one pick the page keeps reconnecting to the same watch until the reset goes out or
 // the user stops it. ponytail: a fixed short pause between attempts — Web Bluetooth can't
 // watch for the advertisement without a flag, so gatt.connect() itself is the probe.
-import { attach, createEffect, createEvent, createStore, sample } from "effector";
+import { attach, createEffect, createEvent, createStore, sample, type StoreValue } from "effector";
 import { Watch } from "../lib/ble";
+import { flashedHere } from "../lib/catalog-names";
+import { buildBin, TAG } from "$lib/modules/editor/core/format";
 import { dbgListeners } from "../lib/ble-protocol";
 import { t } from "../i18n";
 import { bleText, bt } from "../messages";
 
 export const resetRequested = createEvent();
+/** The gentler action: delete the faces this browser installed, the bad one among them. */
+export const facesRequested = createEvent();
 export const stopRequested = createEvent();
+export type RescueResult = { action: "reset" } | { action: "faces"; deleted: number };
+type Words = StoreValue<typeof t>;
+
 export const $status = createStore("");
 export const $error = createStore<string | null>(null);
-export const $done = createStore(false);
+export const $done = createStore<RescueResult | null>(null);
 // everything ble.ts logged during the attempt, for the user to paste into an issue
 export const $log = createStore<string[]>([]);
 
@@ -27,48 +34,78 @@ let stopping = false;
 // the picker closed without a choice, or no permission: nothing to retry
 const pickerClosed = (e: unknown) => e instanceof Error && /NotFound|Security|Abort/.test(e.name);
 const logged = createEvent<string>();
+// what the watch pulls during a delete and throws away: the smallest file that parses as a face
+const FILLER = buildBin({
+  name: "FMC rescue",
+  screens: [{ tag: TAG.main, subs: [{ tag: TAG.name, text: "FMC rescue" }] }],
+  resources: [],
+});
 const stopFx = createEffect(() => {
   stopping = true;
 });
-const resetFx = attach({
+const rescueFx = attach({
   source: t,
-  effect: async (t): Promise<boolean> => {
-    const w = new Watch((s: string) => statusChanged(s));
+  mapParams: (action: RescueResult["action"], t) => ({ action, t }),
+  effect: createEffect(
+    async ({
+      action,
+      t,
+    }: {
+      action: RescueResult["action"];
+      t: Words;
+    }): Promise<RescueResult | null> => {
+      const w = new Watch((s: string) => statusChanged(s));
 
-    stopping = false;
-    dbgListeners.add(logged);
-    try {
-      for (let attempt = 1; !stopping; attempt++) {
+      stopping = false;
+      dbgListeners.add(logged);
+      try {
+        for (let attempt = 1; !stopping; attempt++) {
+          try {
+            await w.connect({ rescue: true, again: attempt > 1 });
+            if (stopping) break;
+            if (action === "reset") {
+              statusChanged(t.sendingReset);
+              await w.factoryReset();
+              return { action };
+            }
+            statusChanged(t.deletingFaces);
+            let deleted = 0;
+
+            // a delete the watch answers "not there" for is fine: an older face, or one the
+            // last attempt already took before the link dropped
+            for (const id of flashedHere()) if (await w.deleteDial(id, FILLER)) deleted++;
+            return { action, deleted };
+          } catch (e) {
+            if (pickerClosed(e) || stopping) throw e;
+            logged(`attempt ${attempt} failed: ${(e as Error).message}`);
+            statusChanged(t.rescueRetrying(attempt + 1));
+            await new Promise((r) => setTimeout(r, RETRY_MS));
+          }
+        }
+        return null;
+      } finally {
+        dbgListeners.delete(logged);
         try {
-          await w.connect({ rescue: true, again: attempt > 1 });
-          if (stopping) break;
-          statusChanged(t.sendingReset);
-          await w.factoryReset();
-          return true;
-        } catch (e) {
-          if (pickerClosed(e) || stopping) throw e;
-          logged(`attempt ${attempt} failed: ${(e as Error).message}`);
-          statusChanged(t.rescueRetrying(attempt + 1));
-          await new Promise((r) => setTimeout(r, RETRY_MS));
+          w.device?.gatt?.disconnect();
+        } catch {
+          /* already gone */
         }
       }
-      return false;
-    } finally {
-      dbgListeners.delete(logged);
-      try {
-        w.device?.gatt?.disconnect();
-      } catch {
-        /* already gone */
-      }
-    }
-  },
+    },
+  ),
 });
 
-export const $busy = resetFx.pending;
+export const $busy = rescueFx.pending;
 
 sample({
   clock: resetRequested,
-  target: resetFx,
+  fn: () => "reset" as const,
+  target: rescueFx,
+});
+sample({
+  clock: facesRequested,
+  fn: () => "faces" as const,
+  target: rescueFx,
 });
 sample({
   clock: stopRequested,
@@ -80,15 +117,15 @@ sample({
   fn: bleText,
   target: $status,
 });
-$error.on(resetRequested, () => null);
+$error.on(rescueFx, () => null);
 sample({
-  clock: resetFx.failData,
+  clock: rescueFx.failData,
   source: bt,
   fn: (w, e) => (stopping ? null : bleText(w, e.message)),
   target: $error,
 });
-$done.on(resetRequested, () => false).on(resetFx.doneData, (_, sent) => sent);
+$done.on(rescueFx, () => null).on(rescueFx.doneData, (_, result) => result);
 $log
-  .on(resetRequested, () => [])
+  .on(rescueFx, () => [])
   .on(logged, (log, line) => [...log, line])
-  .on(resetFx.failData, (log, e) => [...log, `error: ${e.message}`]);
+  .on(rescueFx.failData, (log, e) => [...log, `error: ${e.message}`]);

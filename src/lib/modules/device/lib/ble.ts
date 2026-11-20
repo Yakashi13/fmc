@@ -950,6 +950,74 @@ export class Watch {
     await this.send(CMD.factoryReset, new Uint8Array([MARKER]));
   }
 
+  /**
+   * Deletes an installed dial: the upload handshake with old_wf_id = the dial and new_wf_id = 0
+   * (cmf-watch-utils `wf-delete`). The watch still pulls a file, so `filler` (any valid face)
+   * goes over and is thrown away. False when the watch says that dial isn't there (0x0a).
+   * ponytail: the upload's chunk loop, without its slot bookkeeping — fold the two together if
+   * this outgrows the rescue page. Verified on a Watch Pro 2 by the CLI only, not from here.
+   */
+  async deleteDial(id: number, filler: Uint8Array): Promise<boolean> {
+    await this.sendData(CMD.wfInit1Req, new Uint8Array([MARKER]));
+    const r1 = await this.waitFor(CMD.wfInit1Rep);
+
+    if (!r1.length || r1[0] !== 1)
+      throw new Error(`watch rejected the upload (init1: ${toHex(r1)})`);
+    const init2 = new Uint8Array(13),
+      dv2 = new DataView(init2.buffer);
+
+    init2[0] = 3;
+    dv2.setUint32(1, id, true);
+    dv2.setUint32(5, 0, true);
+    dv2.setUint32(9, filler.length, true);
+    await this.sendData(CMD.wfInit2Req, init2);
+    const r2 = await this.waitFor(CMD.wfInit2Rep);
+
+    if (r2[0] === 0x0a) return false;
+    if (!r2.length || r2[0] !== 1)
+      throw new Error(`watch rejected the upload (init2: ${toHex(r2)})`);
+    try {
+      return await new Promise<boolean>((resolve, reject) => {
+        let watchdog: ReturnType<typeof setTimeout>;
+        const kick = () => {
+          clearTimeout(watchdog);
+          watchdog = setTimeout(() => reject(new Error("upload stalled")), 30000);
+        };
+
+        kick();
+        this.handlers.set(CMD.wfChunkReq, async (p) => {
+          if (p.length < 9) return reject(new Error(`short chunk request: ${toHex(p)}`));
+          kick();
+          const dv = new DataView(p.buffer, p.byteOffset);
+          const off = dv.getUint32(0),
+            len = dv.getUint32(4);
+
+          if (off + len > filler.length)
+            return reject(new Error(`chunk request out of bounds: ${off}+${len}`));
+          try {
+            await this.sendData(CMD.wfChunkWrite, filler.slice(off, off + len));
+          } catch (e) {
+            reject(e as Error);
+          }
+        });
+        this.handlers.set(CMD.wfFinishAck1, async (p) => {
+          clearTimeout(watchdog);
+          try {
+            await this.sendData(CMD.wfFinishAck2, new Uint8Array([MARKER]));
+          } catch {
+            /* ack is best-effort */
+          }
+          if (p[0] === 1) resolve(true);
+          else if (p[0] === 0x0a) resolve(false);
+          else reject(new Error(`dial delete failed (finish: ${toHex(p)})`));
+        });
+      });
+    } finally {
+      this.handlers.delete(CMD.wfChunkReq);
+      this.handlers.delete(CMD.wfFinishAck1);
+    }
+  }
+
   async fetchInfo() {
     const now = Math.floor(Date.now() / 1000),
       tz = -new Date().getTimezoneOffset() * 60;

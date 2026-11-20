@@ -74,6 +74,15 @@ export const t = dict(
     forgot: (n: number) => `forgot ${n} device(s) — connect to pick again`,
     nothingToForget: "nothing to forget",
     filePickerDesc: "App package or firmware image",
+    deleteFaces: (n: number) =>
+      `Delete the ${n} ${n === 1 ? "face" : "faces"} installed from this browser`,
+    deletingFaces: "deleting the faces installed from this browser…",
+    facesDeleted: (n: number) =>
+      n
+        ? `Deleted ${n} ${n === 1 ? "face" : "faces"}. Restart the watch: hold the button for 15 seconds. If it still goes black, use the factory reset.`
+        : "The watch had none of the faces installed from this browser. Use the factory reset.",
+    deleteFacesHint:
+      "Gentler than a reset: only the faces this browser installed go, everything else stays. Not yet confirmed on a stuck watch — if it doesn't help, use the factory reset.",
     rescueRetrying: (n: number) => `waiting for the watch — attempt ${n}…`,
     stopRescue: "Stop",
     rescueNoKey:
@@ -164,6 +173,15 @@ export const t = dict(
         `забыто ${n} ${plural("ru", n, { one: "устройство", few: "устройства", many: "устройств" })} — подключитесь, чтобы выбрать снова`,
       nothingToForget: "забывать нечего",
       filePickerDesc: "Пакет приложения или образ прошивки",
+      deleteFaces: (n: number) =>
+        `Удалить ${n} ${plural("ru", n, { one: "циферблат", few: "циферблата", many: "циферблатов" })}, установленных из этого браузера`,
+      deletingFaces: "удаление циферблатов, установленных из этого браузера…",
+      facesDeleted: (n: number) =>
+        n
+          ? `Удалено: ${n}. Перезапустите часы — удерживайте кнопку 15 секунд. Если экран всё равно гаснет, сделайте сброс до заводских.`
+          : "На часах нет циферблатов, установленных из этого браузера. Сделайте сброс до заводских.",
+      deleteFacesHint:
+        "Бережнее сброса: уходят только циферблаты, установленные из этого браузера, всё остальное остаётся. На зависших часах ещё не проверено — если не поможет, сделайте сброс до заводских.",
       rescueRetrying: (n: number) => `ожидание часов — попытка ${n}…`,
       stopRescue: "Стоп",
       rescueNoKey:
@@ -252,6 +270,15 @@ export const t = dict(
         `забуто ${n} ${plural("uk", n, { one: "пристрій", few: "пристрої", many: "пристроїв" })} — підключіться, щоб вибрати знову`,
       nothingToForget: "нічого забувати",
       filePickerDesc: "Пакет застосунку або образ прошивки",
+      deleteFaces: (n: number) =>
+        `Видалити ${n} ${plural("uk", n, { one: "циферблат", few: "циферблати", many: "циферблатів" })}, встановлених із цього браузера`,
+      deletingFaces: "видалення циферблатів, встановлених із цього браузера…",
+      facesDeleted: (n: number) =>
+        n
+          ? `Видалено: ${n}. Перезапустіть годинник — утримуйте кнопку 15 секунд. Якщо екран усе одно гасне, скиньте до заводських налаштувань.`
+          : "На годиннику немає циферблатів, встановлених із цього браузера. Скиньте до заводських налаштувань.",
+      deleteFacesHint:
+        "Дбайливіше за скидання: зникають лише циферблати, встановлені з цього браузера, усе інше лишається. На завислому годиннику ще не перевірено — якщо не допоможе, скиньте до заводських налаштувань.",
       rescueRetrying: (n: number) => `очікування годинника — спроба ${n}…`,
       stopRescue: "Стоп",
       rescueNoKey:
@@ -341,6 +368,15 @@ export const t = dict(
         `${n} ${plural("es", n, { one: "dispositivo olvidado", other: "dispositivos olvidados" })} — conecta para elegir de nuevo`,
       nothingToForget: "no hay nada que olvidar",
       filePickerDesc: "Paquete de app o imagen de firmware",
+      deleteFaces: (n: number) =>
+        `Borrar ${n} ${plural("es", n, { one: "esfera instalada", other: "esferas instaladas" })} desde este navegador`,
+      deletingFaces: "borrando las esferas instaladas desde este navegador…",
+      facesDeleted: (n: number) =>
+        n
+          ? `Borradas: ${n}. Reinicia el reloj: mantén pulsado el botón 15 segundos. Si sigue quedándose en negro, restablece los datos de fábrica.`
+          : "El reloj no tenía ninguna esfera instalada desde este navegador. Restablece los datos de fábrica.",
+      deleteFacesHint:
+        "Más suave que un restablecimiento: solo se van las esferas que instaló este navegador y todo lo demás se queda. Aún sin confirmar en un reloj bloqueado; si no ayuda, restablece los datos de fábrica.",
       rescueRetrying: (n: number) => `esperando al reloj — intento ${n}…`,
       stopRescue: "Detener",
       rescueNoKey:
@@ -426,6 +462,14 @@ export const t = dict(
       forgot: (n: number) => `${n} डिवाइस भुला दिए गए — फिर से चुनने के लिए कनेक्ट करें`,
       nothingToForget: "भूलने के लिए कुछ नहीं है",
       filePickerDesc: "ऐप पैकेज या फ़र्मवेयर इमेज",
+      deleteFaces: (n: number) => `इस ब्राउज़र से इंस्टॉल किए गए ${n} फ़ेस हटाएं`,
+      deletingFaces: "इस ब्राउज़र से इंस्टॉल किए गए फ़ेस हटाए जा रहे हैं…",
+      facesDeleted: (n: number) =>
+        n
+          ? `${n} फ़ेस हटाए गए। घड़ी रीस्टार्ट करें: बटन 15 सेकंड दबाए रखें। अगर स्क्रीन फिर भी काली हो जाए, तो फ़ैक्टरी रीसेट करें।`
+          : "घड़ी पर इस ब्राउज़र से इंस्टॉल किया कोई फ़ेस नहीं था। फ़ैक्टरी रीसेट करें।",
+      deleteFacesHint:
+        "रीसेट से हल्का: सिर्फ़ इस ब्राउज़र से इंस्टॉल किए गए फ़ेस हटते हैं, बाकी सब रहता है। अटकी घड़ी पर अभी पुष्टि नहीं हुई — अगर मदद न मिले, तो फ़ैक्टरी रीसेट करें।",
       rescueRetrying: (n: number) => `घड़ी का इंतज़ार — प्रयास ${n}…`,
       stopRescue: "रोकें",
       rescueNoKey:

@@ -70,6 +70,10 @@ export const unclaimDial = (id: number) => {
   if (e?.serial) write({ ...flashed(), [id]: { ...e, serial: undefined } });
 };
 
+// every dial this browser has flashed, to any watch — what the rescue page can delete without
+// reading the watch's own list (a wedged watch may not answer for it)
+export const flashedHere = () => Object.keys(flashed()).map(Number);
+
 // ids this browser put on that particular watch — what a055 leaves out of the installed list
 export const flashedOn = (serial: string) =>
   Object.entries(flashed())
