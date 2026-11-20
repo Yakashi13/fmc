@@ -86,7 +86,7 @@ export const t = dict(
     rescueRetrying: (n: number) => `waiting for the watch — attempt ${n}…`,
     stopRescue: "Stop",
     rescueNoKey:
-      "This browser has no saved key for a watch. Without one, connecting means pairing, which needs a tap on the watch — open this page in the browser you installed the face from.",
+      "This browser has no saved key for a watch, so rescue has to pair, and pairing waits for a tap on the watch. If you installed the face from another browser, open this page there. Otherwise start anyway: each time the status says “confirm on the watch”, press the crown and tap the screen, even if it stays black. We haven't confirmed that a black screen takes the tap.",
     sendingReset: "sending factory reset…",
     // rescue page
     rescueTitle: "Rescue — FMC",
@@ -185,7 +185,7 @@ export const t = dict(
       rescueRetrying: (n: number) => `ожидание часов — попытка ${n}…`,
       stopRescue: "Стоп",
       rescueNoKey:
-        "В этом браузере нет сохранённого ключа часов. Без него подключение — это сопряжение, а его нужно подтвердить на часах. Откройте эту страницу в браузере, из которого ставили циферблат.",
+        "В этом браузере нет сохранённого ключа часов, поэтому восстановлению придётся выполнить сопряжение, а его нужно подтвердить нажатием на часах. Если вы ставили циферблат из другого браузера, откройте эту страницу там. Иначе всё равно запускайте: каждый раз, когда статус просит подтвердить на часах, нажмите колёсико и коснитесь экрана, даже если он остаётся чёрным. Мы не проверяли, что чёрный экран принимает нажатие.",
       sendingReset: "отправка сброса до заводских настроек…",
       rescueTitle: "Восстановление — FMC",
       rescue: "Восстановление",
@@ -282,7 +282,7 @@ export const t = dict(
       rescueRetrying: (n: number) => `очікування годинника — спроба ${n}…`,
       stopRescue: "Стоп",
       rescueNoKey:
-        "У цьому браузері немає збереженого ключа годинника. Без нього під'єднання — це сполучення, а його треба підтвердити на годиннику. Відкрийте цю сторінку в браузері, з якого встановлювали циферблат.",
+        "У цьому браузері немає збереженого ключа годинника, тому відновленню доведеться виконати сполучення, а його треба підтвердити дотиком на годиннику. Якщо ви встановлювали циферблат з іншого браузера, відкрийте цю сторінку там. Інакше все одно запускайте: щоразу, коли статус просить підтвердити на годиннику, натисніть коліщатко й торкніться екрана, навіть якщо він лишається чорним. Ми не перевіряли, що чорний екран приймає дотик.",
       sendingReset: "надсилання скидання до заводських налаштувань…",
       rescueTitle: "Відновлення — FMC",
       rescue: "Відновлення",
@@ -380,7 +380,7 @@ export const t = dict(
       rescueRetrying: (n: number) => `esperando al reloj — intento ${n}…`,
       stopRescue: "Detener",
       rescueNoKey:
-        "Este navegador no tiene guardada una clave del reloj. Sin ella, conectar significa emparejar, y eso hay que confirmarlo en el reloj. Abre esta página en el navegador desde el que instalaste la esfera.",
+        "Este navegador no tiene guardada una clave del reloj, así que el rescate tiene que emparejar, y eso hay que confirmarlo con un toque en el reloj. Si instalaste la esfera desde otro navegador, abre esta página allí. Si no, empieza igualmente: cada vez que el estado pida confirmar en el reloj, pulsa la corona y toca la pantalla, aunque siga en negro. No hemos comprobado que una pantalla en negro acepte el toque.",
       sendingReset: "enviando restablecimiento de fábrica…",
       rescueTitle: "Rescate — FMC",
       rescue: "Rescate",
@@ -473,7 +473,7 @@ export const t = dict(
       rescueRetrying: (n: number) => `घड़ी का इंतज़ार — प्रयास ${n}…`,
       stopRescue: "रोकें",
       rescueNoKey:
-        "इस ब्राउज़र में घड़ी की कोई सेव की हुई key नहीं है। इसके बिना कनेक्ट करने का मतलब पेयरिंग है, जिसे घड़ी पर पुष्टि करना पड़ता है। यह पेज उसी ब्राउज़र में खोलें जिससे आपने फ़ेस इंस्टॉल किया था।",
+        "इस ब्राउज़र में घड़ी की कोई सेव की हुई key नहीं है, इसलिए रेस्क्यू को पेयरिंग करनी होगी, और उसे घड़ी पर टैप करके पुष्टि करना पड़ता है। अगर आपने फ़ेस किसी और ब्राउज़र से इंस्टॉल किया था, तो यह पेज वहीं खोलें। नहीं तो फिर भी शुरू करें: जब भी स्टेटस घड़ी पर पुष्टि करने को कहे, क्राउन दबाएँ और स्क्रीन पर टैप करें, भले ही वह काली रहे। काली स्क्रीन टैप लेती है या नहीं, यह हमने जाँचा नहीं है।",
       sendingReset: "फ़ैक्टरी रीसेट भेजा जा रहा है…",
       rescueTitle: "रेस्क्यू — FMC",
       rescue: "रेस्क्यू",

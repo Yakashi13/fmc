@@ -25,6 +25,8 @@ const en = {
   fwSent: "firmware sent — the watch installs it and restarts",
   installing: (name: string) => `installing ${name}…`,
   confirmOnWatch: "pairing — confirm on the watch",
+  pairingDropped: "the watch disconnected before the pairing was confirmed",
+  pairingTimeout: "timeout waiting for the pairing confirmation",
   authenticating: "authenticating…",
   // connecting
   noWebBluetooth:
@@ -51,8 +53,6 @@ const en = {
   dialNotInstalled: (id: string, d: string) => `dial ${id} not installed (${d})`,
   notAccepted: (why: string, kb: string) => `watch did not accept the file (${why}; ${kb} KB)`,
   storedNotActivated: "stored but not activated",
-  rescueNoKey:
-    "no saved key for this watch in this browser — rescue can't pair, it needs a tap on the watch",
   deleteFailed: (d: string) => `dial delete failed (${d})`,
   refusedReplace: (name: string) =>
     `the watch refused to replace “${name}” — flash again and pick a different dial to replace`,
@@ -127,6 +127,8 @@ export const bt = dict(en, {
     fwSent: "прошивка отправлена — часы установят её и перезагрузятся",
     installing: (name) => `установка ${name}…`,
     confirmOnWatch: "сопряжение — подтвердите на часах",
+    pairingDropped: "часы отключились раньше, чем сопряжение подтвердили",
+    pairingTimeout: "сопряжение не подтвердили вовремя",
     authenticating: "авторизация…",
     noWebBluetooth:
       "Web Bluetooth здесь недоступен — откройте страницу в Chrome или Edge, а на iPhone в Bluefy",
@@ -151,8 +153,6 @@ export const bt = dict(en, {
     dialNotInstalled: (id, d) => `циферблат ${id} не установлен (${d})`,
     notAccepted: (why, kb) => `часы не приняли файл (${why}; ${kb} КБ)`,
     deleteFailed: (d) => `не удалось удалить циферблат (${d})`,
-    rescueNoKey:
-      "в этом браузере нет ключа часов — восстановление не может выполнить сопряжение, для него нужно нажатие на часах",
     storedNotActivated: "сохранён, но не активирован",
     refusedReplace: (name) =>
       `часы отказались заменить «${name}» — загрузите ещё раз и выберите другой циферблат для замены`,
@@ -222,6 +222,8 @@ export const bt = dict(en, {
     fwSent: "прошивку надіслано — годинник встановить її та перезапуститься",
     installing: (name) => `встановлення ${name}…`,
     confirmOnWatch: "сполучення — підтвердьте на годиннику",
+    pairingDropped: "годинник від'єднався раніше, ніж сполучення підтвердили",
+    pairingTimeout: "сполучення не підтвердили вчасно",
     authenticating: "автентифікація…",
     noWebBluetooth:
       "Web Bluetooth тут недоступний — відкрийте сторінку в Chrome чи Edge, а на iPhone у Bluefy",
@@ -246,8 +248,6 @@ export const bt = dict(en, {
     dialNotInstalled: (id, d) => `циферблат ${id} не встановлено (${d})`,
     notAccepted: (why, kb) => `годинник не прийняв файл (${why}; ${kb} КБ)`,
     deleteFailed: (d) => `не вдалося видалити циферблат (${d})`,
-    rescueNoKey:
-      "у цьому браузері немає ключа годинника — відновлення не може виконати сполучення, для нього потрібне натискання на годиннику",
     storedNotActivated: "збережено, але не активовано",
     refusedReplace: (name) =>
       `годинник відмовився замінити «${name}» — завантажте ще раз і виберіть інший циферблат для заміни`,
@@ -317,6 +317,8 @@ export const bt = dict(en, {
     fwSent: "firmware enviado — el reloj lo instala y se reinicia",
     installing: (name) => `instalando ${name}…`,
     confirmOnWatch: "emparejando — confirma en el reloj",
+    pairingDropped: "el reloj se desconectó antes de confirmar el emparejamiento",
+    pairingTimeout: "no se confirmó el emparejamiento a tiempo",
     authenticating: "autenticando…",
     noWebBluetooth:
       "Web Bluetooth no está disponible aquí — abre esta página en Chrome o Edge, o en Bluefy en un iPhone",
@@ -341,8 +343,6 @@ export const bt = dict(en, {
     dialNotInstalled: (id, d) => `la esfera ${id} no está instalada (${d})`,
     notAccepted: (why, kb) => `el reloj no aceptó el archivo (${why}; ${kb} KB)`,
     deleteFailed: (d) => `no se pudo borrar la esfera (${d})`,
-    rescueNoKey:
-      "este navegador no tiene la clave del reloj — el rescate no puede emparejar, eso requiere tocar el reloj",
     storedNotActivated: "guardado pero no activado",
     refusedReplace: (name) =>
       `el reloj se negó a reemplazar «${name}» — vuelve a enviarla y elige otra esfera para reemplazar`,
@@ -414,6 +414,8 @@ export const bt = dict(en, {
     fwSent: "फ़र्मवेयर भेज दिया — घड़ी इसे इंस्टॉल करके रीस्टार्ट होगी",
     installing: (name) => `${name} इंस्टॉल हो रहा है…`,
     confirmOnWatch: "पेयरिंग — घड़ी पर पुष्टि करें",
+    pairingDropped: "पेयरिंग की पुष्टि से पहले घड़ी डिस्कनेक्ट हो गई",
+    pairingTimeout: "पेयरिंग की पुष्टि समय पर नहीं हुई",
     authenticating: "प्रमाणीकरण हो रहा है…",
     noWebBluetooth:
       "यहां Web Bluetooth उपलब्ध नहीं है — यह पेज Chrome या Edge में खोलें, या iPhone पर Bluefy में",
@@ -438,7 +440,6 @@ export const bt = dict(en, {
     dialNotInstalled: (id, d) => `फ़ेस ${id} इंस्टॉल नहीं है (${d})`,
     notAccepted: (why, kb) => `घड़ी ने फ़ाइल स्वीकार नहीं की (${why}; ${kb} KB)`,
     deleteFailed: (d) => `फ़ेस हटाना विफल रहा (${d})`,
-    rescueNoKey: "इस ब्राउज़र में घड़ी की key नहीं है — रेस्क्यू पेयर नहीं कर सकता, उसके लिए घड़ी पर टैप चाहिए",
     storedNotActivated: "सेव हुई पर चालू नहीं हुई",
     refusedReplace: (name) =>
       `घड़ी ने “${name}” को बदलने से मना किया — फिर से भेजें और बदलने के लिए दूसरा फ़ेस चुनें`,
@@ -518,6 +519,8 @@ const RULES: Rule[] = [
   lit("fwSent"),
   [/^installing (.+)…$/, (w, m) => w.installing(m[1])],
   lit("confirmOnWatch"),
+  lit("pairingDropped"),
+  lit("pairingTimeout"),
   lit("authenticating"),
   lit("noWebBluetooth"),
   [/^(.+) timed out — the watch is probably connected/, (w, m) => w.timedOut(m[1])],
@@ -544,7 +547,6 @@ const RULES: Rule[] = [
   [/^the watch refused to replace “(.+)” — /, (w, m) => w.refusedReplace(m[1])],
   [/^dial delete failed \((.+)\)$/, (w, m) => w.deleteFailed(m[1])],
   lit("aodNoPreview"),
-  lit("rescueNoKey"),
   [
     /^an image is (\d+)×(\d+) px, over the (\d+) px limit/,
     (w, m) => w.imageOverLimit(m[1], m[2], m[3]),
