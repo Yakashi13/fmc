@@ -87,6 +87,15 @@ const saveKey = (k: Uint8Array) => localStorage.setItem(KEY_STORE, toHex(k));
 /** Whether this browser holds an auth key: without one, connecting means pairing, which needs a
  *  tap on the watch — what the rescue page can't count on. */
 export const hasSavedKey = () => loadKey() !== null;
+/** Takes a key copied out of another browser or address, where the watch was paired: the line
+ *  `fmc_authkey=<32 hex>` the old address's /rescue prints, or the bare digits. False if the
+ *  text holds no key. */
+export function importKey(text: string): boolean {
+  const m = /fmc_authkey=([0-9a-f]{32})\b/i.exec(text) ?? /^\s*([0-9a-f]{32})\s*$/i.exec(text);
+
+  if (m) localStorage.setItem(KEY_STORE, m[1].toLowerCase());
+  return Boolean(m);
+}
 
 // dev hygiene: resets Chrome's device permissions and the local auth key.
 // ponytail: doesn't fix the lock on the watch side (the bond is held by the firmware, not the browser) —

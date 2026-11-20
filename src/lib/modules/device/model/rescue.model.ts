@@ -7,8 +7,8 @@
 // the user stops it. ponytail: a fixed short pause between attempts — Web Bluetooth can't
 // watch for the advertisement without a flag, so gatt.connect() itself is the probe.
 import { attach, createEffect, createEvent, createStore, sample, type StoreValue } from "effector";
-import { Watch } from "../lib/ble";
-import { flashedHere } from "../lib/catalog-names";
+import { hasSavedKey, importKey, Watch } from "../lib/ble";
+import { flashedHere, importFlashed } from "../lib/catalog-names";
 import { buildBin, TAG } from "$lib/modules/editor/core/format";
 import { dbgListeners } from "../lib/ble-protocol";
 import { t } from "../i18n";
@@ -96,6 +96,31 @@ const rescueFx = attach({
 });
 
 export const $busy = rescueFx.pending;
+
+// A key paired somewhere this page can't read — another browser, or the address the site moved
+// from — pasted in by hand, with the faces installed there if the text carries them.
+export const keyTextChanged = createEvent<string>();
+export const keySubmitted = createEvent();
+export const $keyText = createStore("").on(keyTextChanged, (_, text) => text);
+const importKeyFx = createEffect((text: string) => {
+  if (!importKey(text)) throw new Error("no key in the pasted text");
+  importFlashed(text);
+  return flashedHere().length;
+});
+
+export const $keyed = createStore(hasSavedKey()).on(importKeyFx.done, () => true);
+export const $keyImported = createStore(false).on(importKeyFx.done, () => true);
+export const $keyRejected = createStore(false)
+  .on(importKeyFx.fail, () => true)
+  .reset(importKeyFx.done, keyTextChanged);
+/** How many faces the delete action would ask the watch for. */
+export const $faces = createStore(flashedHere().length).on(importKeyFx.doneData, (_, n) => n);
+
+sample({
+  clock: keySubmitted,
+  source: $keyText,
+  target: importKeyFx,
+});
 
 sample({
   clock: resetRequested,

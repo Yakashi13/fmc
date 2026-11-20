@@ -85,6 +85,12 @@ export const t = dict(
       "Gentler than a reset: only the faces this browser installed go, everything else stays. Not yet confirmed on a stuck watch — if it doesn't help, use the factory reset.",
     rescueRetrying: (n: number) => `waiting for the watch — attempt ${n}…`,
     stopRescue: "Stop",
+    rescueKeyHint:
+      "Coming from another browser, or from the old address fmc.freethinkel.dev? Open /rescue there, copy what it shows and paste it here.",
+    rescueKeySave: "Save key",
+    rescueKeyBad:
+      "There is no key in this text. It is the line fmc_authkey= followed by 32 characters, 0–9 and a–f.",
+    rescueKeySaved: "Key saved. Start below: this needs no tap on the watch.",
     rescueNoKey:
       "This browser has no saved key for a watch, so rescue has to pair, and pairing waits for a tap on the watch. If you installed the face from another browser, open this page there. Otherwise start anyway: each time the status says “confirm on the watch”, press the crown and tap the screen, even if it stays black. We haven't confirmed that a black screen takes the tap.",
     sendingReset: "sending factory reset…",
@@ -184,6 +190,12 @@ export const t = dict(
         "Бережнее сброса: уходят только циферблаты, установленные из этого браузера, всё остальное остаётся. На зависших часах ещё не проверено — если не поможет, сделайте сброс до заводских.",
       rescueRetrying: (n: number) => `ожидание часов — попытка ${n}…`,
       stopRescue: "Стоп",
+      rescueKeyHint:
+        "Ключ остался в другом браузере или на старом адресе fmc.freethinkel.dev? Откройте там /rescue, скопируйте текст и вставьте сюда.",
+      rescueKeySave: "Сохранить ключ",
+      rescueKeyBad:
+        "В этом тексте нет ключа. Это строка fmc_authkey= и 32 символа после неё, 0–9 и a–f.",
+      rescueKeySaved: "Ключ сохранён. Запускайте ниже: нажатие на часах не понадобится.",
       rescueNoKey:
         "В этом браузере нет сохранённого ключа часов, поэтому восстановлению придётся выполнить сопряжение, а его нужно подтвердить нажатием на часах. Если вы ставили циферблат из другого браузера, откройте эту страницу там. Иначе всё равно запускайте: каждый раз, когда статус просит подтвердить на часах, нажмите колёсико и коснитесь экрана, даже если он остаётся чёрным. Мы не проверяли, что чёрный экран принимает нажатие.",
       sendingReset: "отправка сброса до заводских настроек…",
@@ -281,6 +293,12 @@ export const t = dict(
         "Дбайливіше за скидання: зникають лише циферблати, встановлені з цього браузера, усе інше лишається. На завислому годиннику ще не перевірено — якщо не допоможе, скиньте до заводських налаштувань.",
       rescueRetrying: (n: number) => `очікування годинника — спроба ${n}…`,
       stopRescue: "Стоп",
+      rescueKeyHint:
+        "Ключ лишився в іншому браузері або на старій адресі fmc.freethinkel.dev? Відкрийте там /rescue, скопіюйте текст і вставте сюди.",
+      rescueKeySave: "Зберегти ключ",
+      rescueKeyBad:
+        "У цьому тексті немає ключа. Це рядок fmc_authkey= і 32 символи після нього, 0–9 та a–f.",
+      rescueKeySaved: "Ключ збережено. Запускайте нижче: дотик до годинника не знадобиться.",
       rescueNoKey:
         "У цьому браузері немає збереженого ключа годинника, тому відновленню доведеться виконати сполучення, а його треба підтвердити дотиком на годиннику. Якщо ви встановлювали циферблат з іншого браузера, відкрийте цю сторінку там. Інакше все одно запускайте: щоразу, коли статус просить підтвердити на годиннику, натисніть коліщатко й торкніться екрана, навіть якщо він лишається чорним. Ми не перевіряли, що чорний екран приймає дотик.",
       sendingReset: "надсилання скидання до заводських налаштувань…",
@@ -379,6 +397,12 @@ export const t = dict(
         "Más suave que un restablecimiento: solo se van las esferas que instaló este navegador y todo lo demás se queda. Aún sin confirmar en un reloj bloqueado; si no ayuda, restablece los datos de fábrica.",
       rescueRetrying: (n: number) => `esperando al reloj — intento ${n}…`,
       stopRescue: "Detener",
+      rescueKeyHint:
+        "¿La clave quedó en otro navegador o en la dirección antigua fmc.freethinkel.dev? Abre /rescue allí, copia el texto y pégalo aquí.",
+      rescueKeySave: "Guardar clave",
+      rescueKeyBad:
+        "No hay ninguna clave en este texto. Es la línea fmc_authkey= seguida de 32 caracteres, 0–9 y a–f.",
+      rescueKeySaved: "Clave guardada. Empieza abajo: no hace falta tocar el reloj.",
       rescueNoKey:
         "Este navegador no tiene guardada una clave del reloj, así que el rescate tiene que emparejar, y eso hay que confirmarlo con un toque en el reloj. Si instalaste la esfera desde otro navegador, abre esta página allí. Si no, empieza igualmente: cada vez que el estado pida confirmar en el reloj, pulsa la corona y toca la pantalla, aunque siga en negro. No hemos comprobado que una pantalla en negro acepte el toque.",
       sendingReset: "enviando restablecimiento de fábrica…",
@@ -472,6 +496,12 @@ export const t = dict(
         "रीसेट से हल्का: सिर्फ़ इस ब्राउज़र से इंस्टॉल किए गए फ़ेस हटते हैं, बाकी सब रहता है। अटकी घड़ी पर अभी पुष्टि नहीं हुई — अगर मदद न मिले, तो फ़ैक्टरी रीसेट करें।",
       rescueRetrying: (n: number) => `घड़ी का इंतज़ार — प्रयास ${n}…`,
       stopRescue: "रोकें",
+      rescueKeyHint:
+        "key किसी और ब्राउज़र में या पुराने पते fmc.freethinkel.dev पर रह गई है? वहाँ /rescue खोलें, जो टेक्स्ट दिखे उसे कॉपी करें और यहाँ पेस्ट करें।",
+      rescueKeySave: "key सेव करें",
+      rescueKeyBad:
+        "इस टेक्स्ट में key नहीं है। यह fmc_authkey= वाली लाइन है, जिसके बाद 32 अक्षर आते हैं, 0–9 और a–f।",
+      rescueKeySaved: "key सेव हो गई। नीचे शुरू करें: घड़ी पर टैप की ज़रूरत नहीं पड़ेगी।",
       rescueNoKey:
         "इस ब्राउज़र में घड़ी की कोई सेव की हुई key नहीं है, इसलिए रेस्क्यू को पेयरिंग करनी होगी, और उसे घड़ी पर टैप करके पुष्टि करना पड़ता है। अगर आपने फ़ेस किसी और ब्राउज़र से इंस्टॉल किया था, तो यह पेज वहीं खोलें। नहीं तो फिर भी शुरू करें: जब भी स्टेटस घड़ी पर पुष्टि करने को कहे, क्राउन दबाएँ और स्क्रीन पर टैप करें, भले ही वह काली रहे। काली स्क्रीन टैप लेती है या नहीं, यह हमने जाँचा नहीं है।",
       sendingReset: "फ़ैक्टरी रीसेट भेजा जा रहा है…",
