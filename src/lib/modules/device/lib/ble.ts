@@ -82,7 +82,11 @@ type ListenKey = (typeof LISTEN)[number];
 // commands and their answers, and the data channel a face delete runs over; the shell to pair
 const RESCUE_LISTEN = (keyed: boolean): ListenKey[] =>
   keyed ? ["cmdRead", "dataRead"] : ["cmdRead", "dataRead", "shellRead"];
-const RESCUE_SUB_MS = 3000;
+// A live watch answers a subscription in 8–11 ms (emulator); one past its crash, still
+// advertising and accepting a link, never does until it reboots. ponytail: 500 ms, not the
+// emulator's 300, to leave room for a slow host stack — lower it if real logs show no answer
+// ever takes that long.
+const RESCUE_SUB_MS = 500;
 /** `p`, or `err()` if it hasn't settled within `ms`. */
 export const within = <T>(p: Promise<T>, ms: number, err: () => Error): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -95,7 +99,7 @@ export const within = <T>(p: Promise<T>, ms: number, err: () => Error): Promise<
 // The watch drops every frame for its first 200 ms on a link (the command channel opens on a
 // timer in its connected callback; WP3 firmware, seen in the emulator), so on rescue — which
 // connects as early as it can — authName is re-sent at this pace until it is answered.
-const RESCUE_NAME_MS = 100;
+const RESCUE_NAME_MS = 20;
 // how long the rescue page waits for a pairing to be confirmed before it reconnects and asks again
 const RESCUE_PAIR_MS = 30000;
 const loadKey = (): Uint8Array | null => {
