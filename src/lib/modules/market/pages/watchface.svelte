@@ -3,6 +3,7 @@
   import { Badge } from "$lib/shared/components/badge";
   import { Button } from "$lib/shared/components/button";
   import { Icon } from "$lib/shared/components/icon";
+  import { Menu, MenuItem } from "$lib/shared/components/menu";
   import { Skeleton } from "$lib/shared/components/skeleton";
   import { downloadUrl, fileUrl } from "$lib/shared/api";
   import { authModel } from "$lib/modules/auth/model";
@@ -41,6 +42,9 @@
     $likePending: likePending,
     editRequested,
     dialScreenSet,
+    $canModerate: canModerate,
+    removeRequested,
+    publishToggleRequested,
   } = marketModel;
   const {
     $bleInfo: bleInfo,
@@ -59,6 +63,10 @@
   const owner = $derived(wf?.expand?.owner);
   const likeCount = $derived($likes.filter((l) => l.watchface === id).length);
   const liked = $derived($likes.some((l) => l.watchface === id && l.user === $user?.id));
+
+  function remove() {
+    if (wf && confirm($t.confirmDelete(wf.name))) removeRequested(wf);
+  }
 
   // ponytail: Web Share where it exists, clipboard everywhere else — no share-sheet dependency
   let copied = $state(false);
@@ -106,6 +114,32 @@
             />
             {compact(likeCount)}
           </button>
+          <!-- the face's other actions; add a row here, and widen the {#if} when it isn't
+               moderator-only -->
+          {#if $canModerate}
+            <Menu align="end">
+              {#snippet trigger({ toggle })}
+                <button
+                  class="round type-small"
+                  title={$t.more}
+                  aria-label={$t.more}
+                  onclick={toggle}
+                >
+                  <Icon name="more_horiz" size={22} />
+                </button>
+              {/snippet}
+              {#if wf.published}
+                <MenuItem onClick={() => publishToggleRequested(wf)}>
+                  <Icon name="visibility_off" size={20} />
+                  {$t.unpublish}
+                </MenuItem>
+              {/if}
+              <MenuItem danger onClick={remove}>
+                <Icon name="delete" size={20} />
+                {$t.delete}
+              </MenuItem>
+            </Menu>
+          {/if}
         </div>
       {/if}
     </div>
