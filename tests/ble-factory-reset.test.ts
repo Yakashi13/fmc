@@ -20,6 +20,7 @@ test("factory reset goes out after two time writes in the reference format", asy
 
   expect(sent[0][1].length).toBe(8);
   expect(dv.getInt32(0)).toBeGreaterThanOrEqual(before);
-  expect(dv.getInt32(4)).toBe(-new Date().getTimezoneOffset() * 60000);
+  // | 0: in UTC the offset is -0, which the int32 field reads back as 0
+  expect(dv.getInt32(4)).toBe((-new Date().getTimezoneOffset() * 60000) | 0);
   expect([...sent[2][1]]).toEqual([MARKER]);
 });
