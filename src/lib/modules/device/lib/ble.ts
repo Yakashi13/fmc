@@ -92,6 +92,10 @@ export const within = <T>(p: Promise<T>, ms: number, err: () => Error): Promise<
     new Promise<never>((_, rej) => (timer = setTimeout(() => rej(err()), ms))),
   ]).finally(() => clearTimeout(timer));
 };
+// The watch drops every frame for its first 200 ms on a link (the command channel opens on a
+// timer in its connected callback; WP3 firmware, seen in the emulator), so on rescue — which
+// connects as early as it can — authName is re-sent at this pace until it is answered.
+const RESCUE_NAME_MS = 100;
 // how long the rescue page waits for a pairing to be confirmed before it reconnects and asks again
 const RESCUE_PAIR_MS = 30000;
 const loadKey = (): Uint8Array | null => {
@@ -376,7 +380,7 @@ export class Watch {
 
       if (k) {
         try {
-          await this.authenticate(k);
+          await this.authenticate(k, rescue);
         } catch (e) {
           // a stale key (the watch was re-paired/reset) shows up as authFailed or silence on the first
           // encrypted exchange (authMac = 0x49); other errors don't touch the saved key. On rescue
@@ -996,7 +1000,8 @@ export class Watch {
     await this.authenticate(k1);
   }
 
-  async authenticate(k1: Uint8Array) {
+  /** `repeatName`: re-send authName until the watch answers it — see RESCUE_NAME_MS. */
+  async authenticate(k1: Uint8Array, repeatName = false) {
     this.status("authenticating…");
     await this.codec.setKey(k1);
     // the watch sends authFailed if it can't decrypt with the key — we react immediately instead of waiting for the timeout
@@ -1008,8 +1013,16 @@ export class Watch {
     const wait = (key: number) => Promise.race([this.waitFor(key), failed]);
 
     try {
-      await this.send(CMD.authName, cat(new Uint8Array([MARKER]), utf8("fmc")));
-      await wait(CMD.authMac);
+      const name = () => this.send(CMD.authName, cat(new Uint8Array([MARKER]), utf8("fmc")));
+
+      await name();
+      const again = repeatName ? setInterval(() => name().catch(() => {}), RESCUE_NAME_MS) : 0;
+
+      try {
+        await wait(CMD.authMac);
+      } finally {
+        clearInterval(again);
+      }
       await this.send(CMD.authNonceReq, new Uint8Array([MARKER]));
       const nonce = await wait(CMD.authNonceRep);
 
@@ -1022,8 +1035,19 @@ export class Watch {
   }
 
   // Gadgetbridge's FACTORY_RESET: the marker byte and nothing else. The watch wipes itself and
-  // reboots; it won't answer, so there is nothing to wait for.
+  // reboots; it won't answer, so there is nothing to wait for. It ignores the reset until a time
+  // write has marked the link live (SetLinkFlg in the 0x8004 handler; WP3 firmware, confirmed in
+  // the cmf-watch-utils emulator), and a clock more than 2 min off takes the time only on the
+  // second write: so the time twice, then the reset. The payload is the reference client's
+  // (cmf_watch.py: >ii unix seconds, UTC offset in ms) — a malformed one once reset a watch.
   async factoryReset() {
+    const time = new Uint8Array(8);
+    const dv = new DataView(time.buffer);
+
+    dv.setInt32(0, Math.floor(Date.now() / 1000));
+    dv.setInt32(4, -new Date().getTimezoneOffset() * 60000);
+    await this.send(CMD.time, time);
+    await this.send(CMD.time, time);
     await this.send(CMD.factoryReset, new Uint8Array([MARKER]));
   }
 
