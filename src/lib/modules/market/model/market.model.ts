@@ -98,9 +98,10 @@ export const $likes = createStore<RecordModel[]>([]);
 // it doesn't need patching when downloads/likes move elsewhere
 export const $watchface = createStore<RecordModel | null>(null);
 export const $watchfaceLoading = marketApi.loadWatchfaceFx.pending;
-// the owner, or a moderator (a `users` flag a superuser sets in the PocketBase admin UI) —
-// the same test as the watchfaces deleteRule, so the menu never offers what the server refuses
-export const $canRemove = combine($watchface, authModel.$user, (wf, user) =>
+// the owner, or a moderator (a `users` flag a superuser sets in the PocketBase admin UI): who
+// may delete or unpublish the face — the watchfaces rules' test, so the menu never offers what
+// the server refuses
+export const $canModerate = combine($watchface, authModel.$user, (wf, user) =>
   Boolean(wf && user && (wf.owner === user.id || user.moderator === true)),
 );
 export const $items = createStore<RecordModel[]>([]);
@@ -341,12 +342,24 @@ sample({
   clock: marketApi.removeFx.done,
   target: marketApi.loadMarketFx,
 });
-// deleted from its own showcase page: nothing left to show there
+// deleted or unpublished from its own showcase page: nothing left to show there (a moderator
+// can't even view an unpublished face), and the market shelf has to drop it
 sample({
   clock: marketApi.removeFx.done,
   source: $watchface,
   filter: (wf, { params }) => wf?.id === params.id,
   target: navigateToMarketFx,
+});
+sample({
+  clock: marketApi.togglePublishFx.doneData,
+  source: $watchface,
+  filter: (wf, r) => wf?.id === r.id && !r.published,
+  target: navigateToMarketFx,
+});
+sample({
+  clock: marketApi.togglePublishFx.doneData,
+  filter: (r) => !r.published,
+  target: marketApi.loadMarketFx,
 });
 
 sample({

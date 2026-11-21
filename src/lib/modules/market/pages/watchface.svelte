@@ -42,8 +42,9 @@
     $likePending: likePending,
     editRequested,
     dialScreenSet,
-    $canRemove: canRemove,
+    $canModerate: canModerate,
     removeRequested,
+    publishToggleRequested,
   } = marketModel;
   const {
     $bleInfo: bleInfo,
@@ -115,7 +116,7 @@
           </button>
           <!-- the face's other actions; add a row here, and widen the {#if} when it isn't
                moderator-only -->
-          {#if $canRemove}
+          {#if $canModerate}
             <Menu align="end">
               {#snippet trigger({ toggle })}
                 <button
@@ -127,6 +128,12 @@
                   <Icon name="more_horiz" size={22} />
                 </button>
               {/snippet}
+              {#if wf.published}
+                <MenuItem onClick={() => publishToggleRequested(wf)}>
+                  <Icon name="visibility_off" size={20} />
+                  {$t.unpublish}
+                </MenuItem>
+              {/if}
               <MenuItem danger onClick={remove}>
                 <Icon name="delete" size={20} />
                 {$t.delete}
