@@ -80,6 +80,7 @@ const en = {
     `the image is built for board "${img}", but the record is for the ${device} (board "${board}")`,
   boardVsWatch: (img: string, name: string, device: string, board: string) =>
     `the image is built for board "${img}", but “${name}” is a ${device} (board "${board}")`,
+  stockOnlyPro3: (name: string) => `this way out is for a CMF Watch 3 Pro, not ${name}`,
   otaOnly: (device: string, name: string) =>
     `firmware updates are for the ${device} only, this is “${name}”`,
   // apps (the App Loader stub)
@@ -180,6 +181,7 @@ export const bt = dict(en, {
       `образ собран для платы "${img}", а запись для ${device} (плата "${board}")`,
     boardVsWatch: (img, name, device, board) =>
       `образ собран для платы "${img}", а «${name}» — это ${device} (плата "${board}")`,
+    stockOnlyPro3: (name) => `это средство только для CMF Watch 3 Pro, а это ${name}`,
     otaOnly: (device, name) => `обновления прошивки только для ${device}, а это «${name}»`,
     stubReply: "неожиданный ответ App Loader",
     appRunning: (name) => `${name} запущено на часах — выйдите из него и попробуйте снова`,
@@ -276,6 +278,7 @@ export const bt = dict(en, {
       `образ зібрано для плати "${img}", а запис для ${device} (плата "${board}")`,
     boardVsWatch: (img, name, device, board) =>
       `образ зібрано для плати "${img}", а «${name}» — це ${device} (плата "${board}")`,
+    stockOnlyPro3: (name) => `цей спосіб лише для CMF Watch 3 Pro, а це ${name}`,
     otaOnly: (device, name) => `оновлення прошивки лише для ${device}, а це «${name}»`,
     stubReply: "неочікувана відповідь App Loader",
     appRunning: (name) => `${name} запущено на годиннику — вийдіть із нього й спробуйте знову`,
@@ -373,6 +376,7 @@ export const bt = dict(en, {
       `la imagen está hecha para la placa "${img}", pero el registro es para el ${device} (placa "${board}")`,
     boardVsWatch: (img, name, device, board) =>
       `la imagen está hecha para la placa "${img}", pero «${name}» es un ${device} (placa "${board}")`,
+    stockOnlyPro3: (name) => `esta salida es solo para el CMF Watch 3 Pro, no para ${name}`,
     otaOnly: (device, name) =>
       `las actualizaciones de firmware son solo para el ${device}, este es «${name}»`,
     stubReply: "respuesta inesperada del App Loader",
@@ -470,6 +474,7 @@ export const bt = dict(en, {
       `इमेज बोर्ड "${img}" के लिए बनी है, पर रिकॉर्ड ${device} (बोर्ड "${board}") के लिए है`,
     boardVsWatch: (img, name, device, board) =>
       `इमेज बोर्ड "${img}" के लिए बनी है, पर “${name}” एक ${device} (बोर्ड "${board}") है`,
+    stockOnlyPro3: (name) => `यह तरीका सिर्फ़ CMF Watch 3 Pro के लिए है, ${name} के लिए नहीं`,
     otaOnly: (device, name) => `फ़र्मवेयर अपडेट सिर्फ़ ${device} के लिए हैं, यह “${name}” है`,
     stubReply: "App Loader से अनपेक्षित जवाब",
     appRunning: (name) => `${name} घड़ी पर चल रहा है — उससे बाहर निकलें और फिर कोशिश करें`,
@@ -580,6 +585,7 @@ const RULES: Rule[] = [
     /^the image is built for board "(.+)", but “(.+)” is a (.+) \(board "(.+)"\)$/,
     (w, m) => w.boardVsWatch(m[1], m[2], m[3], m[4]),
   ],
+  [/^this way out is for a CMF Watch 3 Pro, not (.+)$/, (w, m) => w.stockOnlyPro3(m[1])],
   [/^firmware updates are for the (.+) only, this is “(.+)”$/, (w, m) => w.otaOnly(m[1], m[2])],
   lit("stubReply"),
   [/^(.+) is running on the watch — /, (w, m) => w.appRunning(m[1])],

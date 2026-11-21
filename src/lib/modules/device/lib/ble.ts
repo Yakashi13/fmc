@@ -100,6 +100,18 @@ export const within = <T>(p: Promise<T>, ms: number, err: () => Error): Promise<
 // timer in its connected callback; WP3 firmware, seen in the emulator), so on rescue — which
 // connects as early as it can — authName is re-sent at this pace until it is answered.
 const RESCUE_NAME_MS = 20;
+// The way out of a boot loop on a Watch 3 Pro (fw 1.0.1.77, found in the emulator): the face list
+// lives in RAM that outlives the crash reboot — WfmPara_Load reads it at 0x3800f73a, behind a
+// magic — and the shell takes `dbg` with no auth. A zero over the magic makes the next boot
+// rebuild the list from the stock faces alone (WFM _REST), so the bad face is never loaded again;
+// its file stays. ponytail: the address is that firmware's; another build needs its own, and a
+// write there lands in RAM only, so a wrong one is lost at the next restart.
+export const ESCAPE_CMD = "dbg mwb 0x3800f73a 0";
+// how long a shell blast keeps writing, and how often: the shell opens ~200 ms into a link
+const SHELL_BLAST_MS = 1000;
+const SHELL_BLAST_EVERY_MS = 15;
+// a live watch answers the shell in milliseconds; one past its fault, never
+const SHELL_ANSWER_MS = 1500;
 // how long the rescue page waits for a pairing to be confirmed before it reconnects and asks again
 const RESCUE_PAIR_MS = 30000;
 const loadKey = (): Uint8Array | null => {
@@ -149,6 +161,7 @@ export class Watch {
   handlers = new Map<number, (p: Uint8Array) => void | Promise<void>>();
   rx: Promise<void> = Promise.resolve(); // serializes inbound notifications, see subscribe()
   shellWaiter: ((s: string) => void) | null = null;
+  shellService: string | null = null; // where shellBlast found the shell, for its next try
   device: BluetoothDevice | null = null;
   name: string | null = null; // advertised — the only model id there is
   battery: number | null = null;
@@ -162,7 +175,10 @@ export class Watch {
   headerCount: number | null = null;
 
   get slots(): WatchSlots {
-    return { used: this.headerCount ?? this.installedWf.length, capacity: this.capacity };
+    return {
+      used: this.headerCount ?? this.installedWf.length,
+      capacity: this.capacity,
+    };
   }
 
   constructor(onStatus: (s: string) => void = () => {}) {
@@ -187,6 +203,130 @@ export class Watch {
     this.onDials?.([...this.installedWf], this.slots);
   }
 
+  // like in fmc CLI: the advertisement doesn't always carry the service, so match by name and by manufacturer id too
+  private async pick(): Promise<BluetoothDevice> {
+    let d: BluetoothDevice;
+
+    try {
+      d = await navigator.bluetooth.requestDevice({
+        filters: [
+          { services: [0xefe7] },
+          { namePrefix: "CMF Watch" },
+          { manufacturerData: [{ companyIdentifier: 0x0ccb }] },
+        ],
+        optionalServices: SERVICES,
+      });
+    } catch (e) {
+      dbg("requestDevice failed:", errText(e));
+      // the picker closed without a choice (Chromium's NotFoundError), or no permission
+      if (e instanceof Error && /NotFound|Security|Abort/.test(e.name)) throw e;
+      // ponytail: a Web BLE browser outside Chromium (Bluefy) refuses some of the above —
+      // likely the manufacturerData filter or numeric UUIDs; ask again with the plainest form
+      d = await navigator.bluetooth.requestDevice({
+        // this form is the one Bluefy took (3.9.3, iOS 18.7). A watch another app on the phone
+        // holds stays invisible to it whatever the filters — the help page says to free it
+        filters: [
+          { namePrefix: "CMF Watch" },
+          ...SERVICES.map((u) => ({ services: [fullUuid(u)] })),
+        ],
+        optionalServices: SERVICES.map(fullUuid),
+      });
+    }
+
+    dbg("device chosen:", d.name, d.id);
+    d.addEventListener("gattserverdisconnected", () => {
+      dbg("gattserverdisconnected");
+      this.status("disconnected");
+    });
+    return d;
+  }
+
+  /**
+   * Rescue's way out of a boot loop on a Watch 3 Pro: from the moment the link is up, `cmd` goes
+   * to the shell again and again for SHELL_BLAST_MS — the shell opens ~200 ms into a link and the
+   * watch faults ~100 ms after that, so only a stream gets a write into that window. Then asks the
+   * shell its version: true if it answers, which a watch past its fault never does (it keeps the
+   * link for seconds, until its watchdog restarts it, so a link still up proves nothing).
+   * again: the watch picked on an earlier call, with no picker.
+   */
+  async shellBlast(cmd: string, again = false): Promise<boolean> {
+    const device = again && this.device ? this.device : await this.pick();
+
+    this.device = device;
+    this.name = device.name ?? null;
+    if (!/watch (3 pro|pro 3)/i.test(this.name ?? ""))
+      throw new Error(`this way out is for a CMF Watch 3 Pro, not ${this.name ?? "this watch"}`);
+    const server = await within(
+      device.gatt!.connect(),
+      15000,
+      () =>
+        new Error(
+          "connection timed out — the watch is probably connected to another app or browser tab; close it (phone app, fmc CLI, old editor tab) and retry",
+        ),
+    );
+    const start = performance.now();
+    const shell: Record<string, BluetoothRemoteGATTCharacteristic> = {};
+
+    // targeted lookup once a full discovery has found the shell's service: fewer round trips,
+    // and every one of them is out of a window a few hundred ms long
+    if (this.shellService) {
+      const svc = await server.getPrimaryService(this.shellService);
+
+      for (const u of [UUID.shellWrite, UUID.shellRead]) shell[u] = await svc.getCharacteristic(u);
+    } else {
+      for (const svc of await server.getPrimaryServices())
+        for (const c of await svc.getCharacteristics().catch(() => []))
+          if (fullUuid(c.uuid) === UUID.shellWrite || fullUuid(c.uuid) === UUID.shellRead) {
+            shell[fullUuid(c.uuid)] = c;
+            this.shellService = svc.uuid;
+          }
+    }
+    const [w, r] = [shell[UUID.shellWrite], shell[UUID.shellRead]];
+
+    if (!w || !r) throw new Error("characteristic shell not found");
+    const elapsed = () => Math.round(performance.now() - start);
+    const write = (line: string) => {
+      const bytes = utf8(`${line}\r\n`) as BufferSource;
+
+      return w.properties.writeWithoutResponse
+        ? w.writeValueWithoutResponse(bytes)
+        : w.writeValueWithResponse(bytes);
+    };
+    let n = 0;
+
+    dbg("shell blast: shell found", elapsed(), "ms in");
+    while (device.gatt!.connected && elapsed() < SHELL_BLAST_MS) {
+      await write(cmd).then(
+        () => n++,
+        (e) => dbg("shell blast: write failed:", errText(e)),
+      );
+      await new Promise((res) => setTimeout(res, SHELL_BLAST_EVERY_MS));
+    }
+    dbg("shell blast:", n, "writes,", elapsed(), "ms in");
+    if (!device.gatt!.connected) return false;
+    const answered = new Promise<boolean>((res) =>
+      r.addEventListener("characteristicvaluechanged", () => {
+        const s = new TextDecoder().decode(r.value!);
+
+        dbg("shell:", s.trim());
+        if (s.includes("GETVERSION:")) res(true);
+      }),
+    );
+    const silent = () => new Error("timeout waiting for GETVERSION");
+
+    try {
+      await within(r.startNotifications(), SHELL_ANSWER_MS, silent);
+      await write("AT GETVERSION");
+      return await within(answered, SHELL_ANSWER_MS, silent);
+    } catch (e) {
+      dbg("shell blast:", errText(e));
+      // a watch past its fault keeps the link until it restarts; let go, so the next try is a
+      // fresh link to the next boot and not an instant reconnect to this one
+      device.gatt!.disconnect();
+      return false;
+    }
+  }
+
   // rescue: stop right after auth — a watch wedged on a bad face may never answer fwGet/a055,
   // and the only thing the caller wants to send is factoryReset. again: reconnect to the watch
   // picked on an earlier call, with no picker — the rescue page retries every time it shows up
@@ -196,44 +336,7 @@ export class Watch {
         "Web Bluetooth isn't available here — open this page in Chrome or Edge, or in Bluefy on an iPhone",
       );
     this.status("requesting device…");
-    // like in fmc CLI: the advertisement doesn't always carry the service, so match by name and by manufacturer id too
-    const pick = async () => {
-      let d: BluetoothDevice;
-
-      try {
-        d = await navigator.bluetooth.requestDevice({
-          filters: [
-            { services: [0xefe7] },
-            { namePrefix: "CMF Watch" },
-            { manufacturerData: [{ companyIdentifier: 0x0ccb }] },
-          ],
-          optionalServices: SERVICES,
-        });
-      } catch (e) {
-        dbg("requestDevice failed:", errText(e));
-        // the picker closed without a choice (Chromium's NotFoundError), or no permission
-        if (e instanceof Error && /NotFound|Security|Abort/.test(e.name)) throw e;
-        // ponytail: a Web BLE browser outside Chromium (Bluefy) refuses some of the above —
-        // likely the manufacturerData filter or numeric UUIDs; ask again with the plainest form
-        d = await navigator.bluetooth.requestDevice({
-          // this form is the one Bluefy took (3.9.3, iOS 18.7). A watch another app on the phone
-          // holds stays invisible to it whatever the filters — the help page says to free it
-          filters: [
-            { namePrefix: "CMF Watch" },
-            ...SERVICES.map((u) => ({ services: [fullUuid(u)] })),
-          ],
-          optionalServices: SERVICES.map(fullUuid),
-        });
-      }
-
-      dbg("device chosen:", d.name, d.id);
-      d.addEventListener("gattserverdisconnected", () => {
-        dbg("gattserverdisconnected");
-        this.status("disconnected");
-      });
-      return d;
-    };
-    let device = again && this.device ? this.device : await pick();
+    let device = again && this.device ? this.device : await this.pick();
 
     this.device = device;
     this.name = device.name ?? null;
@@ -300,7 +403,7 @@ export class Watch {
       } catch (e) {
         if (!/not offered to this origin/i.test((e as Error).message)) throw e;
         this.status("re-picking device…");
-        device = await pick();
+        device = await this.pick();
         await Promise.race([discover(), timeout(15000, what)]);
       }
     };
