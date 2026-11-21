@@ -76,6 +76,22 @@ export const capacityOf = (name: string | null) =>
   /watch (3 pro|pro 3)/i.test(name ?? "") ? WF_CAPACITY_PRO3 : WF_CAPACITY;
 
 const KEY_STORE = "fmc_authkey";
+const LISTEN = ["cmdRead", "dataRead", "shellRead", "otaRead"] as const;
+
+type ListenKey = (typeof LISTEN)[number];
+// commands and their answers, and the data channel a face delete runs over; the shell to pair
+const RESCUE_LISTEN = (keyed: boolean): ListenKey[] =>
+  keyed ? ["cmdRead", "dataRead"] : ["cmdRead", "dataRead", "shellRead"];
+const RESCUE_SUB_MS = 3000;
+/** `p`, or `err()` if it hasn't settled within `ms`. */
+export const within = <T>(p: Promise<T>, ms: number, err: () => Error): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  return Promise.race([
+    p,
+    new Promise<never>((_, rej) => (timer = setTimeout(() => rej(err()), ms))),
+  ]).finally(() => clearTimeout(timer));
+};
 // how long the rescue page waits for a pairing to be confirmed before it reconnects and asks again
 const RESCUE_PAIR_MS = 30000;
 const loadKey = (): Uint8Array | null => {
@@ -299,9 +315,19 @@ export class Watch {
       }
       throw e;
     }
-    const subscribe = async () => {
-      for (const key of ["cmdRead", "dataRead", "shellRead", "otaRead"] as const) {
+    // Rescue listens only where its actions get answers — the shell only when it has to pair, the
+    // firmware-update channel never — and gives each subscription RESCUE_SUB_MS. On a watch stuck
+    // in a boot loop this is the first step the watch itself has to answer (Windows can serve the
+    // service list from its cache), and it answers at once or not before it restarts ~17 s later:
+    // failing fast leaves time for more tries in the windows it is up.
+    const subscribed = new Set<string>();
+    const subscribe = async (
+      keys: readonly ListenKey[] = rescue ? RESCUE_LISTEN(Boolean(loadKey())) : LISTEN,
+    ) => {
+      for (const key of keys) {
         const ch = this.chars[UUID[key]];
+
+        if (subscribed.has(ch?.uuid)) continue;
         // shell service is only needed for first-time pairing; some firmwares hide it. The
         // firmware-update channel only for a firmware update, which checks for it itself
         if (!ch) {
@@ -314,7 +340,14 @@ export class Watch {
           write: ch.properties.write,
           writeNoResp: ch.properties.writeWithoutResponse,
         });
-        await ch.startNotifications();
+        await (rescue
+          ? within(
+              ch.startNotifications(),
+              RESCUE_SUB_MS,
+              () => new Error(`the watch didn't answer the ${key} subscription`),
+            )
+          : ch.startNotifications());
+        subscribed.add(ch.uuid);
         ch.addEventListener("characteristicvaluechanged", (e) => {
           const value = (e.target as BluetoothRemoteGATTCharacteristic).value!;
           const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
@@ -365,9 +398,13 @@ export class Watch {
             await connectOrRepick("reconnection");
             await subscribe();
           }
+          await subscribe(["shellRead"]);
           await this.pair(pairMs);
         }
-      } else await this.pair(pairMs);
+      } else {
+        await subscribe(["shellRead"]);
+        await this.pair(pairMs);
+      }
       if (!rescue) await this.fetchInfo();
     } catch (e) {
       // without this a failed pair()/authenticate() leaves the physical GATT link hanging:
