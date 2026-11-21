@@ -7,7 +7,7 @@
 // the user stops it. ponytail: a fixed short pause between attempts — Web Bluetooth can't
 // watch for the advertisement without a flag, so gatt.connect() itself is the probe.
 import { attach, createEffect, createEvent, createStore, sample, type StoreValue } from "effector";
-import { hasSavedKey, importKey, Watch } from "../lib/ble";
+import { ESCAPE_CMD, hasSavedKey, importKey, Watch } from "../lib/ble";
 import { flashedHere, importFlashed } from "../lib/catalog-names";
 import { buildBin, TAG } from "$lib/modules/editor/core/format";
 import { dbgListeners } from "../lib/ble-protocol";
@@ -17,8 +17,13 @@ import { bleText, bt } from "../messages";
 export const resetRequested = createEvent();
 /** The gentler action: delete the faces this browser installed, the bad one among them. */
 export const facesRequested = createEvent();
+/** The way out that needs no key: make the next boot fall back to the stock faces (Watch 3 Pro). */
+export const stockRequested = createEvent();
 export const stopRequested = createEvent();
-export type RescueResult = { action: "reset" } | { action: "faces"; deleted: number };
+export type RescueResult =
+  | { action: "reset" }
+  | { action: "faces"; deleted: number }
+  | { action: "stock" };
 type Words = StoreValue<typeof t>;
 
 export const $status = createStore("");
@@ -33,6 +38,8 @@ const RETRY_MS = 300;
 let stopping = false;
 // the picker closed without a choice, or no permission: nothing to retry
 const pickerClosed = (e: unknown) => e instanceof Error && /NotFound|Security|Abort/.test(e.name);
+// shellBlast refusing another model: retrying won't change the watch
+const wrongModel = (e: unknown) => e instanceof Error && /for a CMF Watch 3 Pro/.test(e.message);
 const logged = createEvent<string>();
 // what the watch pulls during a delete and throws away: the smallest file that parses as a face
 const FILLER = buildBin({
@@ -61,6 +68,11 @@ const rescueFx = attach({
       try {
         for (let attempt = 1; !stopping; attempt++) {
           try {
+            if (action === "stock") {
+              statusChanged(t.switchingToStock);
+              if (await w.shellBlast(ESCAPE_CMD, attempt > 1)) return { action };
+              throw new Error("the watch went quiet: it is still restarting");
+            }
             await w.connect({ rescue: true, again: attempt > 1 });
             if (stopping) break;
             if (action === "reset") {
@@ -76,7 +88,7 @@ const rescueFx = attach({
             for (const id of flashedHere()) if (await w.deleteDial(id, FILLER)) deleted++;
             return { action, deleted };
           } catch (e) {
-            if (pickerClosed(e) || stopping) throw e;
+            if (pickerClosed(e) || wrongModel(e) || stopping) throw e;
             logged(`attempt ${attempt} failed: ${(e as Error).message}`);
             statusChanged(t.rescueRetrying(attempt + 1));
             await new Promise((r) => setTimeout(r, RETRY_MS));
@@ -130,6 +142,11 @@ sample({
 sample({
   clock: facesRequested,
   fn: () => "faces" as const,
+  target: rescueFx,
+});
+sample({
+  clock: stockRequested,
+  fn: () => "stock" as const,
   target: rescueFx,
 });
 sample({

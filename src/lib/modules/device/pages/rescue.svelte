@@ -12,6 +12,7 @@
   const {
     resetRequested,
     facesRequested,
+    stockRequested,
     stopRequested,
     keyTextChanged,
     keySubmitted,
@@ -59,6 +60,8 @@
     {#if $busy}
       <Button kind="secondary" onClick={() => stopRequested()}>{$t.stopRescue}</Button>
     {:else}
+      <p>{$t.stockFaceHint}</p>
+      <Button kind="secondary" onClick={() => stockRequested()}>{$t.stockFace}</Button>
       {#if $faces}
         <p>{$t.deleteFacesHint}</p>
         <Button kind="secondary" onClick={() => facesRequested()}>{$t.deleteFaces($faces)}</Button>
@@ -69,6 +72,8 @@
     {#if $error}<p class="error">{$error}</p>{/if}
     {#if $done?.action === "reset"}
       <p class="status">{@html $t.rescueSent(ISSUES)}</p>
+    {:else if $done?.action === "stock"}
+      <p class="status">{$t.stockFaceDone}</p>
     {:else if $done?.action === "faces"}
       <p class="status">{$t.facesDeleted($done.deleted)}</p>
     {/if}

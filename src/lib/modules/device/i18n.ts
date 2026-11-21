@@ -84,6 +84,12 @@ export const t = dict(
     deleteFacesHint:
       "Gentler than a reset: only the faces this browser installed go, everything else stays. Not yet confirmed on a stuck watch — if it doesn't help, use the factory reset.",
     rescueRetrying: (n: number) => `waiting for the watch — attempt ${n}…`,
+    stockFace: "Switch to a stock face (Watch 3 Pro)",
+    stockFaceHint:
+      "For a Watch 3 Pro stuck restarting on a face: the watch forgets its installed faces and starts on a stock one. No key needed, nothing is wiped. Works on firmware 1.0.1.77 in our emulator, not yet confirmed on a real watch — keep the watch near the computer and let it run for a few minutes.",
+    switchingToStock: "switching to a stock face…",
+    stockFaceDone:
+      "Done: the watch stayed connected, so it is no longer restarting. The faces you installed are gone from its list; put back the ones you want.",
     stopRescue: "Stop",
     rescueKeyHint:
       "Coming from another browser, or from the old address fmc.freethinkel.dev? Open /rescue there, copy what it shows and paste it here.",
@@ -189,6 +195,12 @@ export const t = dict(
       deleteFacesHint:
         "Бережнее сброса: уходят только циферблаты, установленные из этого браузера, всё остальное остаётся. На зависших часах ещё не проверено — если не поможет, сделайте сброс до заводских.",
       rescueRetrying: (n: number) => `ожидание часов — попытка ${n}…`,
+      stockFace: "Переключить на стоковый циферблат (Watch 3 Pro)",
+      stockFaceHint:
+        "Для Watch 3 Pro, который перезагружается на циферблате по кругу: часы забывают установленные циферблаты и запускаются со стокового. Ключ не нужен, ничего не стирается. Работает на прошивке 1.0.1.77 в нашем эмуляторе, на настоящих часах пока не подтверждено — держите часы рядом с компьютером и дайте поработать несколько минут.",
+      switchingToStock: "переключение на стоковый циферблат…",
+      stockFaceDone:
+        "Готово: часы остались на связи, значит, больше не перезагружаются. Установленных циферблатов в их списке больше нет — поставьте нужные заново.",
       stopRescue: "Стоп",
       rescueKeyHint:
         "Ключ остался в другом браузере или на старом адресе fmc.freethinkel.dev? Откройте там /rescue, скопируйте текст и вставьте сюда.",
@@ -292,6 +304,12 @@ export const t = dict(
       deleteFacesHint:
         "Дбайливіше за скидання: зникають лише циферблати, встановлені з цього браузера, усе інше лишається. На завислому годиннику ще не перевірено — якщо не допоможе, скиньте до заводських налаштувань.",
       rescueRetrying: (n: number) => `очікування годинника — спроба ${n}…`,
+      stockFace: "Перемкнути на стоковий циферблат (Watch 3 Pro)",
+      stockFaceHint:
+        "Для Watch 3 Pro, що перезавантажується на циферблаті по колу: годинник забуває встановлені циферблати й запускається зі стокового. Ключ не потрібен, нічого не стирається. Працює на прошивці 1.0.1.77 у нашому емуляторі, на справжньому годиннику ще не підтверджено — тримайте годинник біля комп’ютера й дайте попрацювати кілька хвилин.",
+      switchingToStock: "перемикання на стоковий циферблат…",
+      stockFaceDone:
+        "Готово: годинник лишився на зв’язку, отже, більше не перезавантажується. Встановлених циферблатів у його списку більше немає — поставте потрібні знову.",
       stopRescue: "Стоп",
       rescueKeyHint:
         "Ключ лишився в іншому браузері або на старій адресі fmc.freethinkel.dev? Відкрийте там /rescue, скопіюйте текст і вставте сюди.",
@@ -396,6 +414,12 @@ export const t = dict(
       deleteFacesHint:
         "Más suave que un restablecimiento: solo se van las esferas que instaló este navegador y todo lo demás se queda. Aún sin confirmar en un reloj bloqueado; si no ayuda, restablece los datos de fábrica.",
       rescueRetrying: (n: number) => `esperando al reloj — intento ${n}…`,
+      stockFace: "Cambiar a una esfera de fábrica (Watch 3 Pro)",
+      stockFaceHint:
+        "Para un Watch 3 Pro que se reinicia una y otra vez en una esfera: el reloj olvida las esferas instaladas y arranca con una de fábrica. No hace falta clave y no se borra nada. Funciona con el firmware 1.0.1.77 en nuestro emulador, aún sin confirmar en un reloj real: deja el reloj cerca del ordenador unos minutos.",
+      switchingToStock: "cambiando a una esfera de fábrica…",
+      stockFaceDone:
+        "Hecho: el reloj siguió conectado, así que ya no se reinicia. Las esferas que instalaste ya no están en su lista; vuelve a poner las que quieras.",
       stopRescue: "Detener",
       rescueKeyHint:
         "¿La clave quedó en otro navegador o en la dirección antigua fmc.freethinkel.dev? Abre /rescue allí, copia el texto y pégalo aquí.",
@@ -495,6 +519,12 @@ export const t = dict(
       deleteFacesHint:
         "रीसेट से हल्का: सिर्फ़ इस ब्राउज़र से इंस्टॉल किए गए फ़ेस हटते हैं, बाकी सब रहता है। अटकी घड़ी पर अभी पुष्टि नहीं हुई — अगर मदद न मिले, तो फ़ैक्टरी रीसेट करें।",
       rescueRetrying: (n: number) => `घड़ी का इंतज़ार — प्रयास ${n}…`,
+      stockFace: "स्टॉक फ़ेस पर स्विच करें (Watch 3 Pro)",
+      stockFaceHint:
+        "उस Watch 3 Pro के लिए जो किसी फ़ेस पर बार-बार रीस्टार्ट होता है: घड़ी इंस्टॉल किए गए फ़ेस भूल जाती है और स्टॉक फ़ेस से शुरू होती है। कुंजी की ज़रूरत नहीं, कुछ भी मिटता नहीं। हमारे एमुलेटर में फ़र्मवेयर 1.0.1.77 पर काम करता है, असली घड़ी पर अभी पुष्टि नहीं हुई — घड़ी को कंप्यूटर के पास रखें और कुछ मिनट चलने दें।",
+      switchingToStock: "स्टॉक फ़ेस पर स्विच हो रहा है…",
+      stockFaceDone:
+        "हो गया: घड़ी जुड़ी रही, यानी अब रीस्टार्ट नहीं हो रही। आपके इंस्टॉल किए फ़ेस उसकी सूची से हट गए हैं; जो चाहिए उन्हें फिर से लगाएँ।",
       stopRescue: "रोकें",
       rescueKeyHint:
         "key किसी और ब्राउज़र में या पुराने पते fmc.freethinkel.dev पर रह गई है? वहाँ /rescue खोलें, जो टेक्स्ट दिखे उसे कॉपी करें और यहाँ पेस्ट करें।",
