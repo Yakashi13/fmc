@@ -110,6 +110,8 @@ export const ESCAPE_CMD = "dbg mwb 0x3800f73a 0";
 // how long a shell blast keeps writing, and how often: the shell opens ~200 ms into a link
 const SHELL_BLAST_MS = 1000;
 const SHELL_BLAST_EVERY_MS = 15;
+// the shell's service on the Watch 3 Pro (and the Pro 2), see SERVICES
+const SHELL_SERVICE = "77d4e67c-2fe2-2334-0d35-9ccd078f529c";
 // a live watch answers the shell in milliseconds; one past its fault, never
 const SHELL_ANSWER_MS = 1500;
 // how long the rescue page waits for a pairing to be confirmed before it reconnects and asks again
@@ -256,6 +258,10 @@ export class Watch {
     this.name = device.name ?? null;
     if (!/watch (3 pro|pro 3)/i.test(this.name ?? ""))
       throw new Error(`this way out is for a CMF Watch 3 Pro, not ${this.name ?? "this watch"}`);
+    const t0 = performance.now();
+    const since = () => `${Math.round(performance.now() - t0)} ms`;
+
+    dbg("shell blast: connecting");
     const server = await within(
       device.gatt!.connect(),
       15000,
@@ -267,13 +273,19 @@ export class Watch {
     const start = performance.now();
     const shell: Record<string, BluetoothRemoteGATTCharacteristic> = {};
 
-    // targeted lookup once a full discovery has found the shell's service: fewer round trips,
-    // and every one of them is out of a window a few hundred ms long
-    if (this.shellService) {
-      const svc = await server.getPrimaryService(this.shellService);
+    dbg("shell blast: connected after", since());
+    // one targeted lookup, not a full discovery: on real hardware the full one never came back
+    // inside the window a looping watch answers in (fmc.tools/rescue logs, Windows). The shell's
+    // service is 77d4e67c on the Watch 3 Pro too (its firmware's GATT table); a full discovery
+    // is the fallback should a build ever move it
+    try {
+      const svc = await server.getPrimaryService(this.shellService ?? SHELL_SERVICE);
 
+      dbg("shell blast: service after", since());
       for (const u of [UUID.shellWrite, UUID.shellRead]) shell[u] = await svc.getCharacteristic(u);
-    } else {
+    } catch (e) {
+      dbg("shell blast: targeted lookup failed after", since(), errText(e));
+      if (!device.gatt!.connected) throw e;
       for (const svc of await server.getPrimaryServices())
         for (const c of await svc.getCharacteristics().catch(() => []))
           if (fullUuid(c.uuid) === UUID.shellWrite || fullUuid(c.uuid) === UUID.shellRead) {
@@ -294,7 +306,7 @@ export class Watch {
     };
     let n = 0;
 
-    dbg("shell blast: shell found", elapsed(), "ms in");
+    dbg("shell blast: shell found after", since());
     while (device.gatt!.connected && elapsed() < SHELL_BLAST_MS) {
       await write(cmd).then(
         () => n++,
@@ -302,7 +314,14 @@ export class Watch {
       );
       await new Promise((res) => setTimeout(res, SHELL_BLAST_EVERY_MS));
     }
-    dbg("shell blast:", n, "writes,", elapsed(), "ms in");
+    dbg(
+      "shell blast:",
+      n,
+      "writes, link",
+      device.gatt!.connected ? "up" : "dropped",
+      "after",
+      since(),
+    );
     if (!device.gatt!.connected) return false;
     const answered = new Promise<boolean>((res) =>
       r.addEventListener("characteristicvaluechanged", () => {

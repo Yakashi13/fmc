@@ -25,10 +25,17 @@ const fakeWatch = (name: string, answers: boolean) => {
         });
     },
   };
-  const service = { uuid: "fff0", getCharacteristics: async () => [write, read] };
+  const service = {
+    uuid: "77d4e67c-2fe2-2334-0d35-9ccd078f529c",
+    getCharacteristics: async () => [write, read],
+    getCharacteristic: async (u: string) => [write, read].find((c) => c.uuid === u)!,
+  };
   const gatt = {
     connected: false,
-    connect: async () => ((gatt.connected = true), { getPrimaryServices: async () => [service] }),
+    connect: async () => (
+      (gatt.connected = true),
+      { getPrimaryServices: async () => [service], getPrimaryService: async () => service }
+    ),
     disconnect: vi.fn(() => (gatt.connected = false)),
   };
 
