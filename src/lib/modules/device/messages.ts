@@ -34,6 +34,7 @@ const en = {
   timedOut: (what: string) =>
     `${what} timed out — the watch is probably connected to another app or browser tab; close it (phone app, fmc CLI, old editor tab) and retry`,
   charNotFound: (key: string) => `characteristic ${key} not found`,
+  subNoAnswer: (key: string) => `the watch didn't answer the ${key} subscription`,
   timeoutWaiting: (cmd: string) => `timeout waiting for ${cmd}`,
   pairingNotFound:
     "pairing service not found — reconnect and try again; if this keeps happening the watch may be using a new service UUID (see SERVICES in ble.ts)",
@@ -135,6 +136,7 @@ export const bt = dict(en, {
     timedOut: (what) =>
       `${what}: время ожидания истекло — вероятно, часы подключены к другому приложению или вкладке; закройте его (приложение на телефоне, fmc CLI, старую вкладку редактора) и повторите`,
     charNotFound: (key) => `характеристика ${key} не найдена`,
+    subNoAnswer: (key) => `часы не ответили на подписку ${key}`,
     timeoutWaiting: (cmd) => `нет ответа на ${cmd}`,
     pairingNotFound:
       "сервис сопряжения не найден — переподключитесь и попробуйте снова; если повторяется, возможно, у часов новый UUID сервиса (см. SERVICES в ble.ts)",
@@ -230,6 +232,7 @@ export const bt = dict(en, {
     timedOut: (what) =>
       `${what}: час очікування вичерпано — мабуть, годинник під'єднаний до іншого застосунку чи вкладки; закрийте їх (застосунок на телефоні, fmc CLI, стару вкладку редактора) і повторіть`,
     charNotFound: (key) => `характеристику ${key} не знайдено`,
+    subNoAnswer: (key) => `годинник не відповів на підписку ${key}`,
     timeoutWaiting: (cmd) => `немає відповіді на ${cmd}`,
     pairingNotFound:
       "сервіс сполучення не знайдено — під'єднайтеся знову; якщо це повторюється, можливо, годинник має новий UUID сервісу (див. SERVICES у ble.ts)",
@@ -325,6 +328,7 @@ export const bt = dict(en, {
     timedOut: (what) =>
       `${what}: se agotó el tiempo — seguramente el reloj está conectado a otra app o pestaña; ciérrala (la app del teléfono, fmc CLI, una pestaña antigua del editor) y reintenta`,
     charNotFound: (key) => `no se encontró la característica ${key}`,
+    subNoAnswer: (key) => `el reloj no respondió a la suscripción ${key}`,
     timeoutWaiting: (cmd) => `sin respuesta a ${cmd}`,
     pairingNotFound:
       "no se encontró el servicio de emparejamiento — reconecta e inténtalo de nuevo; si se repite, puede que el reloj use un UUID de servicio nuevo (ver SERVICES en ble.ts)",
@@ -422,6 +426,7 @@ export const bt = dict(en, {
     timedOut: (what) =>
       `${what}: समय समाप्त — घड़ी शायद किसी दूसरे ऐप या टैब से जुड़ी है; उसे बंद करें (फ़ोन ऐप, fmc CLI, एडिटर का पुराना टैब) और फिर कोशिश करें`,
     charNotFound: (key) => `कैरेक्टरिस्टिक ${key} नहीं मिली`,
+    subNoAnswer: (key) => `घड़ी ने ${key} सब्सक्रिप्शन का जवाब नहीं दिया`,
     timeoutWaiting: (cmd) => `${cmd} का जवाब नहीं आया`,
     pairingNotFound:
       "पेयरिंग सर्विस नहीं मिली — फिर से कनेक्ट करके कोशिश करें; बार-बार हो तो घड़ी शायद नया सर्विस UUID इस्तेमाल कर रही है (ble.ts में SERVICES देखें)",
@@ -525,6 +530,7 @@ const RULES: Rule[] = [
   lit("noWebBluetooth"),
   [/^(.+) timed out — the watch is probably connected/, (w, m) => w.timedOut(m[1])],
   [/^characteristic (.+) not found$/, (w, m) => w.charNotFound(m[1])],
+  [/^the watch didn't answer the (.+) subscription$/, (w, m) => w.subNoAnswer(m[1])],
   [/^timeout waiting for (\S+)$/, (w, m) => w.timeoutWaiting(m[1])],
   lit("pairingNotFound"),
   [/^pairing rejected: (.+)$/s, (w, m) => w.pairingRejected(m[1])],

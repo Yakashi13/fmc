@@ -76,6 +76,30 @@ export const capacityOf = (name: string | null) =>
   /watch (3 pro|pro 3)/i.test(name ?? "") ? WF_CAPACITY_PRO3 : WF_CAPACITY;
 
 const KEY_STORE = "fmc_authkey";
+const LISTEN = ["cmdRead", "dataRead", "shellRead", "otaRead"] as const;
+
+type ListenKey = (typeof LISTEN)[number];
+// commands and their answers, and the data channel a face delete runs over; the shell to pair
+const RESCUE_LISTEN = (keyed: boolean): ListenKey[] =>
+  keyed ? ["cmdRead", "dataRead"] : ["cmdRead", "dataRead", "shellRead"];
+// A live watch answers a subscription in 8–11 ms (emulator); one past its crash, still
+// advertising and accepting a link, never does until it reboots. ponytail: 500 ms, not the
+// emulator's 300, to leave room for a slow host stack — lower it if real logs show no answer
+// ever takes that long.
+const RESCUE_SUB_MS = 500;
+/** `p`, or `err()` if it hasn't settled within `ms`. */
+export const within = <T>(p: Promise<T>, ms: number, err: () => Error): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  return Promise.race([
+    p,
+    new Promise<never>((_, rej) => (timer = setTimeout(() => rej(err()), ms))),
+  ]).finally(() => clearTimeout(timer));
+};
+// The watch drops every frame for its first 200 ms on a link (the command channel opens on a
+// timer in its connected callback; WP3 firmware, seen in the emulator), so on rescue — which
+// connects as early as it can — authName is re-sent at this pace until it is answered.
+const RESCUE_NAME_MS = 20;
 // how long the rescue page waits for a pairing to be confirmed before it reconnects and asks again
 const RESCUE_PAIR_MS = 30000;
 const loadKey = (): Uint8Array | null => {
@@ -299,9 +323,19 @@ export class Watch {
       }
       throw e;
     }
-    const subscribe = async () => {
-      for (const key of ["cmdRead", "dataRead", "shellRead", "otaRead"] as const) {
+    // Rescue listens only where its actions get answers — the shell only when it has to pair, the
+    // firmware-update channel never — and gives each subscription RESCUE_SUB_MS. On a watch stuck
+    // in a boot loop this is the first step the watch itself has to answer (Windows can serve the
+    // service list from its cache), and it answers at once or not before it restarts ~17 s later:
+    // failing fast leaves time for more tries in the windows it is up.
+    const subscribed = new Set<string>();
+    const subscribe = async (
+      keys: readonly ListenKey[] = rescue ? RESCUE_LISTEN(Boolean(loadKey())) : LISTEN,
+    ) => {
+      for (const key of keys) {
         const ch = this.chars[UUID[key]];
+
+        if (subscribed.has(ch?.uuid)) continue;
         // shell service is only needed for first-time pairing; some firmwares hide it. The
         // firmware-update channel only for a firmware update, which checks for it itself
         if (!ch) {
@@ -314,7 +348,14 @@ export class Watch {
           write: ch.properties.write,
           writeNoResp: ch.properties.writeWithoutResponse,
         });
-        await ch.startNotifications();
+        await (rescue
+          ? within(
+              ch.startNotifications(),
+              RESCUE_SUB_MS,
+              () => new Error(`the watch didn't answer the ${key} subscription`),
+            )
+          : ch.startNotifications());
+        subscribed.add(ch.uuid);
         ch.addEventListener("characteristicvaluechanged", (e) => {
           const value = (e.target as BluetoothRemoteGATTCharacteristic).value!;
           const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
@@ -343,7 +384,7 @@ export class Watch {
 
       if (k) {
         try {
-          await this.authenticate(k);
+          await this.authenticate(k, rescue);
         } catch (e) {
           // a stale key (the watch was re-paired/reset) shows up as authFailed or silence on the first
           // encrypted exchange (authMac = 0x49); other errors don't touch the saved key. On rescue
@@ -365,9 +406,13 @@ export class Watch {
             await connectOrRepick("reconnection");
             await subscribe();
           }
+          await subscribe(["shellRead"]);
           await this.pair(pairMs);
         }
-      } else await this.pair(pairMs);
+      } else {
+        await subscribe(["shellRead"]);
+        await this.pair(pairMs);
+      }
       if (!rescue) await this.fetchInfo();
     } catch (e) {
       // without this a failed pair()/authenticate() leaves the physical GATT link hanging:
@@ -959,7 +1004,8 @@ export class Watch {
     await this.authenticate(k1);
   }
 
-  async authenticate(k1: Uint8Array) {
+  /** `repeatName`: re-send authName until the watch answers it — see RESCUE_NAME_MS. */
+  async authenticate(k1: Uint8Array, repeatName = false) {
     this.status("authenticating…");
     await this.codec.setKey(k1);
     // the watch sends authFailed if it can't decrypt with the key — we react immediately instead of waiting for the timeout
@@ -971,8 +1017,16 @@ export class Watch {
     const wait = (key: number) => Promise.race([this.waitFor(key), failed]);
 
     try {
-      await this.send(CMD.authName, cat(new Uint8Array([MARKER]), utf8("fmc")));
-      await wait(CMD.authMac);
+      const name = () => this.send(CMD.authName, cat(new Uint8Array([MARKER]), utf8("fmc")));
+
+      await name();
+      const again = repeatName ? setInterval(() => name().catch(() => {}), RESCUE_NAME_MS) : 0;
+
+      try {
+        await wait(CMD.authMac);
+      } finally {
+        clearInterval(again);
+      }
       await this.send(CMD.authNonceReq, new Uint8Array([MARKER]));
       const nonce = await wait(CMD.authNonceRep);
 
@@ -985,8 +1039,19 @@ export class Watch {
   }
 
   // Gadgetbridge's FACTORY_RESET: the marker byte and nothing else. The watch wipes itself and
-  // reboots; it won't answer, so there is nothing to wait for.
+  // reboots; it won't answer, so there is nothing to wait for. It ignores the reset until a time
+  // write has marked the link live (SetLinkFlg in the 0x8004 handler; WP3 firmware, confirmed in
+  // the cmf-watch-utils emulator), and a clock more than 2 min off takes the time only on the
+  // second write: so the time twice, then the reset. The payload is the reference client's
+  // (cmf_watch.py: >ii unix seconds, UTC offset in ms) — a malformed one once reset a watch.
   async factoryReset() {
+    const time = new Uint8Array(8);
+    const dv = new DataView(time.buffer);
+
+    dv.setInt32(0, Math.floor(Date.now() / 1000));
+    dv.setInt32(4, -new Date().getTimezoneOffset() * 60000);
+    await this.send(CMD.time, time);
+    await this.send(CMD.time, time);
     await this.send(CMD.factoryReset, new Uint8Array([MARKER]));
   }
 
