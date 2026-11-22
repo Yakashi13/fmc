@@ -3,8 +3,8 @@ import { dict } from "$lib/shared/i18n";
 export const t = dict(
   {
     // pages
-    loginTitle: "Sign in — FMC Watchfaces",
-    registerTitle: "Sign up — FMC Watchfaces",
+    loginTitle: "Sign in — FMC",
+    registerTitle: "Sign up — FMC",
     welcomeBack: "Welcome back",
     createYourAccount: "Create your account",
     // login-form / signup-form
@@ -37,8 +37,8 @@ export const t = dict(
   },
   {
     ru: {
-      loginTitle: "Вход — FMC Watchfaces",
-      registerTitle: "Регистрация — FMC Watchfaces",
+      loginTitle: "Вход — FMC",
+      registerTitle: "Регистрация — FMC",
       welcomeBack: "С возвращением",
       createYourAccount: "Создайте аккаунт",
       loginWithGoogle: "Войти через Google",
@@ -67,8 +67,8 @@ export const t = dict(
       save: "Сохранить",
     },
     uk: {
-      loginTitle: "Вхід — FMC Watchfaces",
-      registerTitle: "Реєстрація — FMC Watchfaces",
+      loginTitle: "Вхід — FMC",
+      registerTitle: "Реєстрація — FMC",
       welcomeBack: "З поверненням",
       createYourAccount: "Створіть акаунт",
       loginWithGoogle: "Увійти через Google",
@@ -97,8 +97,8 @@ export const t = dict(
       save: "Зберегти",
     },
     es: {
-      loginTitle: "Entrar — FMC Watchfaces",
-      registerTitle: "Registro — FMC Watchfaces",
+      loginTitle: "Entrar — FMC",
+      registerTitle: "Registro — FMC",
       welcomeBack: "Hola de nuevo",
       createYourAccount: "Crea tu cuenta",
       loginWithGoogle: "Entrar con Google",
@@ -127,8 +127,8 @@ export const t = dict(
       save: "Guardar",
     },
     hi: {
-      loginTitle: "साइन इन — FMC Watchfaces",
-      registerTitle: "साइन अप — FMC Watchfaces",
+      loginTitle: "साइन इन — FMC",
+      registerTitle: "साइन अप — FMC",
       welcomeBack: "फिर से स्वागत है",
       createYourAccount: "अपना खाता बनाएं",
       loginWithGoogle: "Google से साइन इन करें",

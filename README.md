@@ -1,6 +1,6 @@
-# FMC Watchfaces Frontend
+# FMC Frontend
 
-Watchface editor + marketplace for the CMF Watch Pro 2 / Pro 3. SvelteKit (Svelte 5) SPA,
+Watch faces, apps, firmware and browser tools for CMF watches. SvelteKit (Svelte 5) SPA,
 static build (`@sveltejs/adapter-static`). Backend — [`fmc_pocketbase`](../fmc_pocketbase)
 (PocketBase), must be running for auth/marketplace to work.
 
@@ -52,3 +52,13 @@ pnpm test    # round-trip test of the .bin parser/compiler against watchfaces/fi
 
 [AGPL-3.0](LICENSE). The bundled Geist fonts are under the SIL Open Font License —
 see [`static/fonts/OFL.txt`](static/fonts/OFL.txt).
+
+Material Symbols Rounded is bundled locally under the [Apache 2.0 license](static/fonts/LICENSE-Material-Symbols.txt). Icons do not require Google Fonts requests.
+
+## Branding assets
+
+The original community logo is `static/branding/fmc-community.svg`. Navigation preserves the full artwork, including “by COMMUNITY”. Transparent SVG favicons adapt to the system light/dark preference. A stable 96px PNG and ICO provide non-themed fallbacks, with a contrasting edge for light and dark host surfaces. Installed-app icons keep a solid background for platform masking.
+
+Run `pnpm brand-assets` to regenerate the icons and `pnpm og-card` to regenerate the default share card. These scripts use Playwright Chromium; set `PLAYWRIGHT_CHANNEL=msedge` to use an installed Edge instead. Keep device-specific support descriptions on their relevant pages.
+
+Keep `/favicon.png` stable for crawlers; do not rotate favicon URLs on every build. Browser and third-party caches refresh independently. Search results may take days to weeks to recrawl, and favicon changes are not guaranteed to appear immediately.

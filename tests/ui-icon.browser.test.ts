@@ -27,7 +27,7 @@ test("an icon renders its ligature at the requested size", async () => {
 });
 
 // A name the font doesn't know renders as its own word — many ems wide, where a real glyph is
-// exactly one. So subset the face to the names the app actually spells and measure each one.
+// exactly one. Check the bundled face against every name the app actually spells.
 test("every icon name in the app is one Material Symbols ships", async () => {
   const sources = import.meta.glob("/src/**/*.svelte", {
     query: "?raw",
@@ -45,14 +45,9 @@ test("every icon name in the app is one Material Symbols ships", async () => {
 
   expect(names.size).toBeGreaterThan(20);
 
-  const css = await (
-    await fetch(
-      `https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&icon_names=${[...names].sort().join(",")}`,
-    )
-  ).text();
-  const url = css.match(/url\((https:[^)]+)\)/)![1];
-
-  document.fonts.add(await new FontFace("Material Symbols Rounded", `url(${url})`).load());
+  document.fonts.add(
+    await new FontFace("Material Symbols Rounded", "url(/fonts/material-symbols.woff2)").load(),
+  );
 
   const ctx = document.createElement("canvas").getContext("2d")!;
 

@@ -7,7 +7,7 @@ FMC talks to your watch straight from the browser, with no phone app in between.
 - **It installs watchfaces through the watch's own installer.** The upload follows the same steps the official app takes. FMC starts an install, describes the file, sends it in chunks and finishes. The watch answers every step and can refuse the file. When it does, FMC shows you the refusal and stops.
 - **Firmware is the risky part.** From the firmware shelf, FMC flashes unofficial images over the air, and a bad one can brick a watch. FMC offers an image only to a Watch Pro 2 at 50% battery or more, checks the image's checksums and that it was built for that watch, and waits for you to tick that you accept the risk.
 - **Watchfaces can go wrong too.** Usually the watch refuses the file, or installs it and it looks wrong, and you delete it on the watch. Once, a face with an image far larger than the screen made a Watch 3 Pro restart in a loop. See "The watch restarts in a loop" below.
-- **We won't tell you nothing can go wrong.** We build and test FMC on a CMF Watch Pro 2. Firmware we haven't seen may behave differently, and we can't promise anything about it. If something breaks, [tell us](https://github.com/freethinkel/fmc/issues). The Nothing X fix below exists because someone did.
+- **We won't tell you nothing can go wrong.** We build and test FMC on a CMF Watch Pro 2. Firmware we haven't seen may behave differently, and we can't promise anything about it. If something breaks, [tell us](https://github.com/fmctools/fmc/issues). The Nothing X fix below exists because someone did.
 
 ## Only one app can hold the watch at a time
 
@@ -24,7 +24,7 @@ This one looks like a bricked watch. It isn't. The phone has a Bluetooth pairing
 3. Forget the watch in the phone's Bluetooth settings.
 4. Put the watch in pairing mode and add it again in Nothing X.
 
-<p class="note type-caption">A user reported this in <a href="https://github.com/freethinkel/fmc/issues/27">issue #27</a>. Another user replied with these steps a few hours later, and nobody has needed a factory reset.</p>
+<p class="note type-caption">A user reported this in <a href="https://github.com/fmctools/fmc/issues/27">issue #27</a>. Another user replied with these steps a few hours later, and nobody has needed a factory reset.</p>
 
 ## Deleting a watchface on the watch
 
@@ -50,7 +50,7 @@ If your watch is already stuck in the loop, we don't have a confirmed fix yet. T
 4. Let the battery run out completely, then charge it and try again.
 5. If none of that works, contact Nothing support. A watchface doesn't touch the firmware, so this is a repair they can do.
 
-<p class="note type-caption">If one of these steps worked for you, or something else did, please <a href="https://github.com/freethinkel/fmc/issues">tell us</a> so we can put it at the top of this list.</p>
+<p class="note type-caption">If one of these steps worked for you, or something else did, please <a href="https://github.com/fmctools/fmc/issues">tell us</a> so we can put it at the top of this list.</p>
 
 ## When the watch refuses an upload
 
@@ -71,8 +71,8 @@ Safari has no Web Bluetooth, and every other iPhone browser runs on the same eng
 
 When you're done, close the tab, and the other app can have the watch back.
 
-<p class="note type-caption">If it still doesn't connect, press <strong>Copy log</strong> in the watch panel and paste it into an <a href="https://github.com/freethinkel/fmc/issues">issue</a>.</p>
+<p class="note type-caption">If it still doesn't connect, press <strong>Copy log</strong> in the watch panel and paste it into an <a href="https://github.com/fmctools/fmc/issues">issue</a>.</p>
 
 ---
 
-Did your watch do something this page doesn't describe? [Open an issue](https://github.com/freethinkel/fmc/issues) with your browser, the watch model and the firmware version shown in the watch panel. That's enough for us to reproduce it.
+Did your watch do something this page doesn't describe? [Open an issue](https://github.com/fmctools/fmc/issues) with your browser, the watch model and the firmware version shown in the watch panel. That's enough for us to reproduce it.

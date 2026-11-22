@@ -3,6 +3,7 @@
 // upload watchfaces. The wire format it speaks lives in ble-protocol.ts.
 // Chromium only (no Web Bluetooth in Firefox/Safari); requires a user gesture and
 // localhost or HTTPS.
+import { MANUFACTURERS, observeIdentity, productReply, type WatchIdentity } from "./watch-identity";
 import { dialLabel, flashedOn, unclaimDial } from "./catalog-names";
 import {
   cat,
@@ -40,11 +41,12 @@ import {
 } from "./wp2";
 
 export interface WatchInfo {
-  /** The advertised name ("CMF Watch Pro 2 …", "CMF Watch Pro 3 …") — the only model id we get */
+  /** The advertised name ("CMF Watch Pro 2 …", "CMF Watch Pro 3 …") ; factory identity is optional */
   name: string | null;
   battery: number | null;
   firmware: string | null;
   serial: string | null;
+  identity?: WatchIdentity | null;
 }
 // ponytail: flat list of installed dial ids — this firmware reports everything before the
 // §9.5g gallery sentinel, so the builtin/downloaded split always left one side empty.
@@ -163,9 +165,11 @@ export class Watch {
   handlers = new Map<number, (p: Uint8Array) => void | Promise<void>>();
   rx: Promise<void> = Promise.resolve(); // serializes inbound notifications, see subscribe()
   shellWaiter: ((s: string) => void) | null = null;
+  identity: WatchIdentity | null = null;
+  private identityReply: ((s: string) => void) | null = null;
   shellService: string | null = null; // where shellBlast found the shell, for its next try
   device: BluetoothDevice | null = null;
-  name: string | null = null; // advertised — the only model id there is
+  name: string | null = null; // advertised name; factory identity is separate
   battery: number | null = null;
   firmware: string | null = null;
   serial: string | null = null;
@@ -217,6 +221,7 @@ export class Watch {
           { manufacturerData: [{ companyIdentifier: 0x0ccb }] },
         ],
         optionalServices: SERVICES,
+        optionalManufacturerData: MANUFACTURERS,
       });
     } catch (e) {
       dbg("requestDevice failed:", errText(e));
@@ -358,6 +363,9 @@ export class Watch {
     let device = again && this.device ? this.device : await this.pick();
 
     this.device = device;
+    this.identity = null;
+    let advertisedIdentity = rescue ? Promise.resolve(null) : observeIdentity(device);
+
     this.name = device.name ?? null;
     this.capacity = capacityOf(this.name);
     this.headerCount = null;
@@ -423,6 +431,10 @@ export class Watch {
         if (!/not offered to this origin/i.test((e as Error).message)) throw e;
         this.status("re-picking device…");
         device = await this.pick();
+        this.device = device;
+        this.name = device.name ?? null;
+        this.capacity = capacityOf(this.name);
+        advertisedIdentity = rescue ? Promise.resolve(null) : observeIdentity(device);
         await Promise.race([discover(), timeout(15000, what)]);
       }
     };
@@ -535,7 +547,16 @@ export class Watch {
         await subscribe(["shellRead"]);
         await this.pair(pairMs);
       }
-      if (!rescue) await this.fetchInfo();
+      if (!rescue) {
+        await this.fetchInfo();
+        const advertised = await advertisedIdentity;
+        const reported = await this.readProductIdentity();
+        // A conflicting factory PID cannot borrow the advertisement's colour.
+        this.identity =
+          reported && advertised && reported.productId !== advertised.productId
+            ? reported
+            : (advertised ?? reported);
+      }
     } catch (e) {
       // without this a failed pair()/authenticate() leaves the physical GATT link hanging:
       // the watch thinks it's busy with us, and the next Connect won't see the shell service again
@@ -552,6 +573,7 @@ export class Watch {
       battery: this.battery,
       firmware: this.firmware,
       serial: this.serial,
+      identity: this.identity,
     };
   }
 
@@ -560,6 +582,7 @@ export class Watch {
       const s = new TextDecoder().decode(bytes);
 
       dbg("shell:", s.trim());
+      this.identityReply?.(s);
       if (this.shellWaiter && s.includes("GETSECRET:")) {
         this.shellWaiter(s);
         this.shellWaiter = null;
@@ -1242,6 +1265,34 @@ export class Watch {
     } finally {
       this.handlers.delete(CMD.wfChunkReq);
       this.handlers.delete(CMD.wfFinishAck1);
+    }
+  }
+
+  /** Optional factory product ID. No writes to settings or flash; rescue never calls this. */
+  private async readProductIdentity(): Promise<WatchIdentity | null> {
+    const write = this.chars[UUID.shellWrite];
+
+    if (!write || !this.chars[UUID.shellRead]) return null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let buffer = "";
+    const response = new Promise<WatchIdentity | null>((resolve) => {
+      timer = setTimeout(() => resolve(null), 1200);
+      this.identityReply = (chunk) => {
+        buffer = (buffer + chunk).replaceAll("\0", "").slice(-256);
+        const result = productReply(buffer.trim());
+
+        if (result) resolve(result);
+      };
+    });
+
+    try {
+      await within(write.writeValue(utf8("AT GETPID") as BufferSource), 1200, () => new Error());
+      return await response;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+      this.identityReply = null;
     }
   }
 

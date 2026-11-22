@@ -10,9 +10,9 @@
 export const DEVICE = "CMF Watch Pro 2 & Pro 3";
 export const SITE_NAME = "FMC";
 
-export const siteTitle = () => `FMC — watchfaces for the ${DEVICE}`;
+export const siteTitle = () => `FMC — watch faces, apps and firmware for CMF watches`;
 export const siteDesc = () =>
-  `Browse, edit and install watchfaces for the ${DEVICE} — straight from your browser, no phone app.`;
+  `Explore watch faces, apps and firmware for CMF watches. Create watch faces in the editor and install compatible content from your browser.`;
 
 export const faceTitle = (name: string) => `${name} — watchface for the ${DEVICE}`;
 /** The creator's own words when there are any; otherwise something a search result can use. */

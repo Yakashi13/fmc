@@ -19,7 +19,6 @@ import { fileURLToPath } from "node:url";
 import {
   creatorDesc,
   creatorTitle,
-  DEVICE,
   faceDesc,
   faceTitle,
   siteDesc,
@@ -35,7 +34,7 @@ const SITE = (process.env.SITE_URL || "https://fmc.tools").replace(/\/$/, "");
 const PB = (process.env.PB_URL || SITE).replace(/\/$/, "");
 
 const DEFAULT_IMAGE = `${SITE}/og-default.png`;
-const DEFAULT_ALT = `${SITE_NAME} — watchfaces for the ${DEVICE}`;
+const DEFAULT_ALT = `${SITE_NAME} — watch faces, apps and firmware for CMF watches`;
 
 // ---- the meta block ----
 

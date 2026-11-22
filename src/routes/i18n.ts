@@ -8,7 +8,7 @@ import privacyHi from "./(app)/privacy/privacy.hi.md?raw";
 
 export const t = dict(
   {
-    editorTitle: "Editor — FMC Watchfaces",
+    editorTitle: "Editor — FMC",
     // privacy
     privacyTitle: "Privacy — FMC",
     privacyDescription: "What fmc.tools and the FMC Companion app collect, and what they don't.",
@@ -16,25 +16,25 @@ export const t = dict(
   },
   {
     ru: {
-      editorTitle: "Редактор — FMC Watchfaces",
+      editorTitle: "Редактор — FMC",
       privacyTitle: "Конфиденциальность — FMC",
       privacyDescription: "Что собирают fmc.tools и приложение FMC Companion, а что нет.",
       privacy: privacyRu,
     },
     uk: {
-      editorTitle: "Редактор — FMC Watchfaces",
+      editorTitle: "Редактор — FMC",
       privacyTitle: "Конфіденційність — FMC",
       privacyDescription: "Що збирають fmc.tools і застосунок FMC Companion, а що ні.",
       privacy: privacyUk,
     },
     es: {
-      editorTitle: "Editor — FMC Watchfaces",
+      editorTitle: "Editor — FMC",
       privacyTitle: "Privacidad — FMC",
       privacyDescription: "Qué recopilan fmc.tools y la app FMC Companion, y qué no.",
       privacy: privacyEs,
     },
     hi: {
-      editorTitle: "एडिटर — FMC Watchfaces",
+      editorTitle: "एडिटर — FMC",
       privacyTitle: "गोपनीयता — FMC",
       privacyDescription: "fmc.tools और FMC Companion ऐप क्या इकट्ठा करते हैं, और क्या नहीं।",
       privacy: privacyHi,

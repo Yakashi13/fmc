@@ -11,7 +11,7 @@ same domain as the backend (see `fmc_pocketbase/README.md`).
 App: the store at the root, three shelves under one "Store" tab — watchfaces (`/`, with
 `?mine` for the signed-in user's own shelf; `/my`
 redirects there; `/market/[id]` — a face's showcase page), apps (`/apps`, `/apps/[id]` —
-`.wp2app` packages published from cmf-tech-community/apps, built with the wp2-apps SDK) and firmware (`/firmware`,
+`.wp2app` packages published from fmctools/apps, built with the wp2-apps SDK) and firmware (`/firmware`,
 `/firmware/[id]` — OTA images), plus a Community section (`/community`, links out; the old
 `/?community` redirects there); creator profiles (`/user/[id]`), watchface editor (`/editor`,
 with a BLE connection to the CMF Watch Pro 2) and auth (`/login`, `/register`).
@@ -205,9 +205,9 @@ and `frames` sections; `PropsPanel.svelte` is the container and owns the shared 
   desktop, the swipeable sheet on the phone —
   no portal/floating-ui deps. Button & co. don't forward arbitrary attrs; for `title`
   tooltips wrap in a `<span title>` (see `tool-slot` in editor.svelte).
-- Icons are Material Symbols Rounded, the whole set from Google Fonts (`app.html`). `name` IS
+- Icons are Material Symbols Rounded, the full font bundled in `static/fonts/material-symbols.woff2`. `name` IS
   the ligature — `<Icon name="storefront" />`, any name from fonts.google.com/icons works with
-  no map to edit and no build step. A name the font doesn't know renders as its own word, so
+  no map to edit and no build step. Keep the font local and preserve the load guard and fixed icon slot; do not reintroduce the external Google Fonts icon stylesheet. A name the font doesn't know is invalid, so
   `tests/ui-icon.browser.test.ts` measures every name the app spells.
 - Phone first for the store: the watchface grid is two dials across on a phone
   (`watchface-list`), a detail page is one column with a single ink button (the action that
@@ -261,3 +261,7 @@ and `frames` sections; `PropsPanel.svelte` is the container and owns the shared 
 - **English everywhere in the repo and around it**: code, identifiers, comments, docs,
   commit messages, PR titles and descriptions, issue text, CI/workflow files. Chat with the
   user can be in any language — anything that lands in git or on GitHub is English.
+
+## Watch identity and preview overrides
+
+`docs/watch-identity.md` records the Nothing X model/color formats and browser limitations. Keep factory identity separate from preview overrides. Unknown SKU values stay unknown, advertisement observation is optional and bounded, and recovery skips the extra PID query. The preview selectors must never feed firmware or package compatibility checks. No physical-device claim follows from fixture tests.

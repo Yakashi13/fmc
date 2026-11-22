@@ -7,7 +7,7 @@
   import { Textarea } from "$lib/shared/components/textarea";
   import { t } from "../i18n";
 
-  const ISSUES = "https://github.com/freethinkel/fmc/issues";
+  const ISSUES = "https://github.com/fmctools/fmc/issues";
 
   const {
     resetRequested,

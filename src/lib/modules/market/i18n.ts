@@ -90,7 +90,7 @@ export const t = dict(
           "Where the apps, firmware and tools are built. Findings, ideas, device testing.",
       },
       github: {
-        title: "cmf-tech-community on GitHub",
+        title: "FMC on GitHub",
         description: "The source of FMC, the app loader and SDK, and the firmware tools.",
       },
     } as Record<string, { title: string; description: string }>,
@@ -190,7 +190,7 @@ export const t = dict(
             "Здесь создаются приложения, прошивки и инструменты. Находки, идеи, тесты на часах.",
         },
         github: {
-          title: "cmf-tech-community на GitHub",
+          title: "FMC на GitHub",
           description: "Исходный код FMC, App Loader и SDK, инструменты для прошивок.",
         },
       },
@@ -288,7 +288,7 @@ export const t = dict(
             "Тут створюють застосунки, прошивки й інструменти. Знахідки, ідеї, тести на годинниках.",
         },
         github: {
-          title: "cmf-tech-community на GitHub",
+          title: "FMC на GitHub",
           description: "Вихідний код FMC, App Loader і SDK, інструменти для прошивок.",
         },
       },
@@ -382,7 +382,7 @@ export const t = dict(
             "Donde se crean las apps, el firmware y las herramientas. Hallazgos, ideas, pruebas en relojes.",
         },
         github: {
-          title: "cmf-tech-community en GitHub",
+          title: "FMC en GitHub",
           description: "El código de FMC, el App Loader y el SDK, y las herramientas de firmware.",
         },
       },
@@ -472,7 +472,7 @@ export const t = dict(
           description: "जहां ऐप, फ़र्मवेयर और टूल बनते हैं। खोजें, आइडिया, घड़ी पर टेस्टिंग।",
         },
         github: {
-          title: "GitHub पर cmf-tech-community",
+          title: "GitHub पर FMC",
           description: "FMC, App Loader और SDK का सोर्स कोड, और फ़र्मवेयर टूल।",
         },
       },
