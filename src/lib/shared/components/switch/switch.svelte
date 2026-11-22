@@ -1,16 +1,18 @@
 <script lang="ts">
   interface Props {
     checked?: boolean;
+    label?: string;
     disabled?: boolean;
     onChange?: (checked: boolean) => void;
   }
-  let { checked = $bindable(false), disabled, onChange }: Props = $props();
+  let { checked = $bindable(false), disabled, label, onChange }: Props = $props();
 </script>
 
 <label class="root">
   <input
     type="checkbox"
     role="switch"
+    aria-label={label}
     bind:checked
     {disabled}
     onchange={() => onChange?.(checked)}
@@ -20,6 +22,7 @@
 
 <style>
   .root {
+    position: relative;
     display: inline-flex;
     -webkit-tap-highlight-color: transparent;
     cursor: pointer;
@@ -27,11 +30,15 @@
   input {
     position: absolute;
     opacity: 0;
-    width: 0;
-    height: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: inherit;
   }
   /* an iOS-style pill: the thumb is wider than tall and squishes wider still while pressed */
   .switch {
+    pointer-events: none;
     --size: 1rem;
     --track: 2;
     --knob: 1;

@@ -115,6 +115,8 @@
     buildCurrentBin,
     previewBlob,
     previewThumb,
+    $showWatchFrame: showWatchFrame,
+    watchFrameToggled,
     $rightPanel: rightPanel,
     rightPanelSet,
     $loading: loading,
@@ -469,6 +471,7 @@
     panel: (tab) => rightPanelSet(tab),
     // picking AOD with no AOD screen creates one — the same thing the tab does
     screen: (kind) => (kind === "aod" && !hasAOD ? aodAdded() : screenSet(kind)),
+    watchFrame: () => watchFrameToggled(),
     help: () => (helpOpen = true),
   };
 
@@ -687,7 +690,7 @@
       <div class="canvas-scroll">
         <div class="canvas-clip">
           <div class="canvas-frame">
-            <WatchCase>
+            <WatchCase showFrame={$showWatchFrame}>
               <canvas
                 bind:this={canvas}
                 width={SCREEN}
@@ -752,23 +755,36 @@
       <!-- the canvas's gestures, folded into a round "?" in the corner: a native disclosure,
            so it opens and closes with no state of its own -->
       {#if $doc}
-        <details class="hint">
-          <summary class="hint-key" aria-label={$t.canvasControls} title={$t.canvasControls}>
-            <Icon name="question_mark" size={20} />
-          </summary>
-          <div class="hint-card type-small">
-            <ul>
-              <li><span>{$t.hintClick}</span> {$t.hintSelect}</li>
-              <li><span>{$t.hintDrag}</span> {$t.hintMove}</li>
-              <li><span>{$t.hintAltDrag}</span> {$t.hintMoveNoSnap}</li>
-              <li><span>{$t.hintCorners}</span> {$t.hintResize}</li>
-              <li><span>{$t.hintDot}</span> {$t.hintRotate}</li>
-            </ul>
-            <Button size="small" kind="secondary" onClick={() => (helpOpen = true)}>
-              {$t.allShortcuts}
-            </Button>
-          </div>
-        </details>
+        <div class="canvas-tools">
+          <button
+            type="button"
+            class="hint-key"
+            aria-label={$t.watchFrame}
+            aria-pressed={$showWatchFrame}
+            aria-keyshortcuts="Shift+F"
+            title={`${$t.watchFrame} (Shift+F)`}
+            onclick={() => watchFrameToggled()}
+          >
+            <Icon name="watch" size={20} />
+          </button>
+          <details class="hint">
+            <summary class="hint-key" aria-label={$t.canvasControls} title={$t.canvasControls}>
+              <Icon name="question_mark" size={20} />
+            </summary>
+            <div class="hint-card type-small">
+              <ul>
+                <li><span>{$t.hintClick}</span> {$t.hintSelect}</li>
+                <li><span>{$t.hintDrag}</span> {$t.hintMove}</li>
+                <li><span>{$t.hintAltDrag}</span> {$t.hintMoveNoSnap}</li>
+                <li><span>{$t.hintCorners}</span> {$t.hintResize}</li>
+                <li><span>{$t.hintDot}</span> {$t.hintRotate}</li>
+              </ul>
+              <Button size="small" kind="secondary" onClick={() => (helpOpen = true)}>
+                {$t.allShortcuts}
+              </Button>
+            </div>
+          </details>
+        </div>
       {/if}
     </section>
 
@@ -1214,18 +1230,27 @@
   }
 
   /* a round "?" floating in the canvas's corner; its card opens above it */
-  .hint {
-    display: none;
+  .canvas-tools {
     position: absolute;
     inset-inline-end: 0.75rem;
     bottom: 0.75rem;
     z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .hint {
+    display: none;
+    position: relative;
   }
   .hint-key {
     display: grid;
     place-items: center;
     width: 2.25rem;
     height: 2.25rem;
+    border: none;
+    padding: 0;
+    cursor: pointer;
     border-radius: 50%;
     color: oklch(from var(--color-text) l c h / 70%);
     background: oklch(from var(--color-text) l c h / 8%);
@@ -1241,9 +1266,23 @@
       }
     }
   }
+  .hint-key:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 2px;
+  }
+  .hint-key[aria-pressed="true"],
   .hint[open] .hint-key {
     color: var(--color-background);
     background: var(--color-text);
+  }
+  @media (max-width: 767px) {
+    .canvas-tools {
+      bottom: 4.75rem;
+    }
+    .hint-key {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
   }
   .hint-card {
     position: absolute;

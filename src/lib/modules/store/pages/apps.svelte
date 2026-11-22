@@ -85,7 +85,7 @@
         {:else}
           <li class="empty">{$t.noApps}</li>
         {/each}
-        <!-- the shelf is the cmf-tech-community/apps repository: a merged PR there is an app
+        <!-- the shelf is the fmctools/apps repository: a merged PR there is an app
              here — so the way in is the shelf's own last card, an empty slot to fill -->
         <li>
           <a class="row make" href={MAKE_AN_APP} target="_blank" rel="noopener noreferrer">

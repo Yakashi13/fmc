@@ -45,10 +45,12 @@
       const at = items.findIndex((i) => i.value === value);
       const tab = el.querySelectorAll<HTMLElement>(":scope > .tab")[at];
 
-      box = tab
+      const measured = tab
         ? { l: tab.offsetLeft, r: el.clientWidth - tab.offsetLeft - tab.offsetWidth }
         : null;
-      if (links && label && box) last.set(label, box);
+      // Do not read box here: it is written by this effect, so tracking it creates a loop.
+      box = measured;
+      if (links && label && measured) last.set(label, measured);
     };
     const ro = new ResizeObserver(measure);
     const from = !ready && links && label ? last.get(label) : undefined;

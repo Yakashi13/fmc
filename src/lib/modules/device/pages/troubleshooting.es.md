@@ -7,7 +7,7 @@ FMC habla con tu reloj directamente desde el navegador, sin una app del teléfon
 - **Instala esferas con el instalador del propio reloj.** La carga sigue los mismos pasos que la app oficial. FMC inicia una instalación, describe el archivo, lo envía por partes y termina. El reloj responde a cada paso y puede rechazar el archivo. Cuando lo hace, FMC te muestra el rechazo y se detiene.
 - **El firmware es la parte arriesgada.** Desde el estante de firmware, FMC instala imágenes no oficiales de forma inalámbrica, y una imagen mala puede dejar un reloj inservible. FMC ofrece una imagen solo a un Watch Pro 2 con 50 % de batería o más, comprueba las sumas de verificación de la imagen y que se hizo para ese reloj, y espera a que marques que aceptas el riesgo.
 - **Las esferas también pueden fallar.** Normalmente el reloj rechaza el archivo, o lo instala y se ve mal, y lo borras en el reloj. Una vez, una esfera con una imagen mucho más grande que la pantalla hizo que un Watch 3 Pro se reiniciara en bucle. Mira «El reloj se reinicia en bucle» más abajo.
-- **No te vamos a decir que nada puede salir mal.** Hacemos y probamos FMC en un CMF Watch Pro 2. Un firmware que no hemos visto puede comportarse de otra forma, y no podemos prometer nada sobre él. Si algo se rompe, [cuéntanos](https://github.com/freethinkel/fmc/issues). La solución para Nothing X de abajo existe porque alguien lo hizo.
+- **No te vamos a decir que nada puede salir mal.** Hacemos y probamos FMC en un CMF Watch Pro 2. Un firmware que no hemos visto puede comportarse de otra forma, y no podemos prometer nada sobre él. Si algo se rompe, [cuéntanos](https://github.com/fmctools/fmc/issues). La solución para Nothing X de abajo existe porque alguien lo hizo.
 
 ## Solo una app puede tener el reloj a la vez
 
@@ -24,7 +24,7 @@ Parece un reloj inservible, pero no lo es. El teléfono tiene un conflicto de em
 3. Olvida el reloj en los ajustes de Bluetooth del teléfono.
 4. Pon el reloj en modo de emparejamiento y agrégalo de nuevo en Nothing X.
 
-<p class="note type-caption">Un usuario lo informó en el <a href="https://github.com/freethinkel/fmc/issues/27">issue #27</a>. Otro usuario respondió con estos pasos unas horas después, y nadie ha necesitado un restablecimiento de fábrica.</p>
+<p class="note type-caption">Un usuario lo informó en el <a href="https://github.com/fmctools/fmc/issues/27">issue #27</a>. Otro usuario respondió con estos pasos unas horas después, y nadie ha necesitado un restablecimiento de fábrica.</p>
 
 ## Borrar una esfera en el reloj
 
@@ -50,7 +50,7 @@ Si tu reloj ya está atrapado en el bucle, todavía no tenemos una solución con
 4. Deja que la batería se agote por completo, luego cárgala y vuelve a intentarlo.
 5. Si nada de eso funciona, contacta con el soporte de Nothing. Una esfera no toca el firmware, así que es una reparación que pueden hacer.
 
-<p class="note type-caption">Si uno de estos pasos te funcionó, u otra cosa, por favor <a href="https://github.com/freethinkel/fmc/issues">cuéntanos</a> para ponerlo al principio de esta lista.</p>
+<p class="note type-caption">Si uno de estos pasos te funcionó, u otra cosa, por favor <a href="https://github.com/fmctools/fmc/issues">cuéntanos</a> para ponerlo al principio de esta lista.</p>
 
 ## Cuando el reloj rechaza una carga
 
@@ -71,8 +71,8 @@ Safari no tiene Web Bluetooth, y todos los demás navegadores de iPhone usan el 
 
 Cuando termines, cierra la pestaña y la otra app podrá recuperar el reloj.
 
-<p class="note type-caption">Si aún no conecta, pulsa <strong>Copiar registro</strong> en el panel del reloj y pégalo en un <a href="https://github.com/freethinkel/fmc/issues">issue</a>.</p>
+<p class="note type-caption">Si aún no conecta, pulsa <strong>Copiar registro</strong> en el panel del reloj y pégalo en un <a href="https://github.com/fmctools/fmc/issues">issue</a>.</p>
 
 ---
 
-¿Tu reloj hizo algo que esta página no describe? [Abre un issue](https://github.com/freethinkel/fmc/issues) con tu navegador, el modelo del reloj y la versión de firmware que muestra el panel del reloj. Con eso nos basta para reproducirlo.
+¿Tu reloj hizo algo que esta página no describe? [Abre un issue](https://github.com/fmctools/fmc/issues) con tu navegador, el modelo del reloj y la versión de firmware que muestra el panel del reloj. Con eso nos basta para reproducirlo.

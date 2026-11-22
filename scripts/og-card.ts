@@ -1,54 +1,85 @@
-// Renders static/og-default.png — the 1200x630 card a link unfurls to when the page behind it
-// isn't one watchface. Committed output; this only exists so it can be redrawn when the mark or
-// the pitch changes: `pnpm run og-card`.
-//
-// The mark itself comes from static/icons/icon.svg, so the card can't drift from the app icon.
-// Chromium is the one playwright already installs for the browser tests — no new dependency.
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { DEVICE } from "../src/lib/shared/seo/copy.ts";
 
 const STATIC = join(dirname(fileURLToPath(import.meta.url)), "..", "static");
+const inline = async (path: string, mime: string) =>
+  `data:${mime};base64,${(await readFile(join(STATIC, path))).toString("base64")}`;
+const source = (await readFile(join(STATIC, "branding/fmc-community.svg"), "utf8"))
+  .replace(/<rect\b[^>]*\/>/, "")
+  .replace(/\s(?:width|height)="512"/g, "");
+const color = process.env.OG_WATCH_COLOR ?? "dark-grey";
 
-// the dark-scheme pair from tokens.css, spelled out — a PNG can't read a custom property
-const INK = "#131313";
-const PAPER = "#f2f2f2";
+if (!["dark-grey", "orange", "green"].includes(color))
+  throw new Error("Unsupported OG watch color");
+const output = process.env.OG_OUTPUT ?? join(STATIC, "og-default.png");
+const browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL });
 
-const mark = await readFile(join(STATIC, "icons", "icon.svg"), "utf8");
+try {
+  const page = await browser.newPage({
+    viewport: { width: 1200, height: 630 },
+    deviceScaleFactor: 1,
+  });
 
-const html = `<!doctype html>
-<html><head><meta charset="utf-8">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..600&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing: border-box; margin: 0; }
-  html, body { width: 1200px; height: 630px; overflow: hidden; }
-  body {
-    background: ${INK}; color: ${PAPER};
-    font-family: Geist, system-ui, sans-serif;
-    display: flex; flex-direction: column; justify-content: center; gap: 36px; padding: 0 96px;
-  }
-  .mark { width: 124px; height: 124px; border-radius: 26px; overflow: hidden; }
-  .mark svg { display: block; width: 100%; height: 100%; }
-  /* both lines are sized to sit on one line at 1008px of usable width */
-  h1 { font-size: 46px; font-weight: 600; letter-spacing: -1px; }
-  p { font-size: 28px; font-weight: 400; color: oklch(from ${PAPER} l c h / 55%); }
-</style></head>
-<body>
-  <div class="mark">${mark}</div>
-  <h1>Watchfaces for the ${DEVICE}</h1>
-  <p>Browse, edit and install — straight from the browser, no phone app</p>
-</body></html>`;
+  await page.setContent(source);
+  const bounds = await page.locator("svg").evaluate((svg) => {
+    const { x, y, width, height } = (svg as SVGSVGElement).getBBox();
 
-const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
+    return `${x - 2} ${y - 2} ${width + 4} ${height + 4}`;
+  });
+  const mark = source.replace(/viewBox="[^"]+"/, `viewBox="${bounds}"`);
+  const [font, watch] = await Promise.all([
+    inline("fonts/geist.woff2", "font/woff2"),
+    inline(`frames/watch-3-pro-${color}.webp`, "image/webp"),
+  ]);
 
-await page.setContent(html, { waitUntil: "load" });
-await page.evaluate(() => document.fonts.ready);
-const png = await page.screenshot({ type: "png" });
+  await page.setContent(
+    `<!doctype html><html lang="en"><head><meta charset="utf-8">
+  <style>
+    @font-face { font-family: Geist; src: url("${font}"); font-weight: 100 900; }
+    * { box-sizing: border-box; margin: 0; }
+    html, body { inline-size: 1200px; block-size: 630px; }
+    body { background: #000; color: #fafafa; font-family: Geist, sans-serif; }
+    main { position: relative; isolation: isolate; display: grid; grid-template-columns: 680px minmax(0, 1fr); block-size: 100%; padding-inline: 152px 72px; overflow: clip; }
+    .copy { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: start; padding-block: 72px; z-index: 1; }
+    .mark { inline-size: 230px; }
+    .mark svg { display: block; inline-size: 100%; block-size: auto; }
+    h1 { margin-block-start: 44px; font-size: 60px; font-weight: 550; line-height: 1.12; letter-spacing: -2px; }
+    p { margin-block-start: 24px; color: #929292; font-size: 26px; line-height: 1.4; }
+    .art { position: absolute; inset: 0; z-index: 0; mask-image: linear-gradient(90deg, transparent 54%, #000 80%); }
+    .art img { display: block; position: absolute; inline-size: 1120px; block-size: 1120px; object-fit: contain; inset-inline-start: 565px; inset-block-start: -245px; opacity: .23; }
+  </style></head><body><main>
+    <section class="copy"><div class="mark">${mark}</div>
+      <h1>Watch faces.<br>Apps &amp; firmware.</h1>
+      <p>Explore, create and install.</p>
+    </section>
+    <div class="art" aria-hidden="true"><img src="${watch}" alt=""></div>
+  </main></body></html>`,
+    { waitUntil: "load" },
+  );
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await Promise.all([...document.images].map((image) => image.decode()));
+  });
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
 
-await browser.close();
-await writeFile(join(STATIC, "og-default.png"), png);
-console.log(`static/og-default.png — ${(png.length / 1024).toFixed(1)} kB`);
+  const textFits = await page
+    .locator("h1")
+    .evaluate((element) => element.scrollWidth <= element.clientWidth);
+
+  if (!textFits) throw new Error("OG headline overflows its column");
+  const png = await page.screenshot({ type: "png" });
+
+  await writeFile(output, png);
+  console.log(
+    `static/og-default.png: 1200x630, ${(png.length / 1024).toFixed(1)} kB; local fonts and artwork only`,
+  );
+} finally {
+  await browser.close();
+}

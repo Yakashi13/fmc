@@ -12,6 +12,10 @@
   import { Icon, type IconName } from "$lib/shared/components/icon";
   import { Menu, MenuItem } from "$lib/shared/components/menu";
 
+  import { watchAppearanceModel } from "$lib/modules/device/model";
+  import { t as deviceText } from "$lib/modules/device/i18n";
+  import WatchFrameDialog from "$lib/modules/device/components/watch-frame-dialog.svelte";
+  const { framePanelOpened } = watchAppearanceModel;
   const { $user: user, logout } = authModel;
   const { accentDialogOpened, languageDialogOpened } = appearanceModel;
   const path = $derived(page.url.pathname);
@@ -38,7 +42,7 @@
   const tabs = $derived<{ title: string; icon: IconName }[]>([
     ...nav,
     { title: $t.watch, icon: "watch" },
-    $user ? { title: $t.account, icon: "person" } : { title: $t.signIn, icon: "login" },
+    { title: $t.account, icon: $user ? "person" : "settings" },
   ]);
   // only pages hold the thumb: the watch panel and the account menu are overlays
   const activeAt = $derived(
@@ -127,7 +131,12 @@
     e.stopPropagation();
   }}
 >
-  <a class="logo type-title" href="/">fmc</a>
+  <a class="logo" href="/" aria-label="FMC home">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="/branding/fmc-community-dark.svg" />
+      <img src="/branding/fmc-community-light.svg" alt="FMC by Community" width="64" height="64" />
+    </picture>
+  </a>
   {#each nav as item (item.url)}
     <a class="type-label" data-tab draggable="false" href={item.url} class:active={item.active}>
       <span class="icon">
@@ -149,53 +158,40 @@
     {/snippet}
   </WatchSheet>
   <!-- the account closes the bar: the app has no top bar, so this is where it lives -->
-  {#if $user}
-    <span class="account">
-      <Menu align="start">
-        {#snippet trigger({ toggle })}
-          <button class="type-label" data-tab onclick={toggle}>
-            <span class="icon">
-              <Avatar
+  <span class="account">
+    <Menu align="start">
+      {#snippet trigger({ toggle })}
+        <button class="type-label" data-tab onclick={toggle}>
+          <span class="icon">
+            {#if $user}<Avatar
                 name={$user.name || $user.email}
                 src={$user.avatar ? fileUrl($user, "avatar") : undefined}
               />
-            </span>
-            {$t.account}
-          </button>
-        {/snippet}
-        <MenuItem href="/user/{$user.id}">
-          <Icon name="person" size={16} />
-          {$t.profile}
-        </MenuItem>
-        <MenuItem onClick={() => accentDialogOpened()}>
-          <Icon name="palette" size={16} />
-          {$t.accentColor}
-        </MenuItem>
-        <MenuItem onClick={() => languageDialogOpened()}>
-          <Icon name="translate" size={16} />
-          {$t.language}
-        </MenuItem>
-        <MenuItem href="https://github.com/freethinkel/fmc/issues">
-          <Icon name="help" size={16} />
-          {$t.reportIssue}
-        </MenuItem>
-        <MenuItem danger onClick={() => logout()}>
-          <Icon name="logout" size={16} />
-          {$t.logOut}
-        </MenuItem>
-      </Menu>
-    </span>
-  {:else}
-    <!-- the same slot as the account it turns into: the far end of the rail -->
-    <span class="account">
-      <a class="type-label" data-tab draggable="false" href="/login" class:active={signingIn}>
-        <span class="icon">
-          <Icon name="login" size={24} />
-        </span>
-        {$t.signIn}
-      </a>
-    </span>
-  {/if}
+            {:else}<Icon name="settings" size={24} />{/if}
+          </span>{$t.account}
+        </button>
+      {/snippet}
+      {#if $user}<MenuItem href="/user/{$user.id}"
+          ><Icon name="person" size={16} />{$t.profile}</MenuItem
+        >
+      {:else}<MenuItem href="/login"><Icon name="login" size={16} />{$t.signIn}</MenuItem>{/if}
+      <MenuItem onClick={() => accentDialogOpened()}
+        ><Icon name="palette" size={16} />{$t.accentColor}</MenuItem
+      >
+      <MenuItem onClick={() => framePanelOpened()}
+        ><Icon name="watch" size={16} />{$deviceText.watchAppearance}</MenuItem
+      >
+      <MenuItem onClick={() => languageDialogOpened()}
+        ><Icon name="translate" size={16} />{$t.language}</MenuItem
+      >
+      <MenuItem href="https://github.com/fmctools/fmc/issues"
+        ><Icon name="help" size={16} />{$t.reportIssue}</MenuItem
+      >
+      {#if $user}<MenuItem danger onClick={() => logout()}
+          ><Icon name="logout" size={16} />{$t.logOut}</MenuItem
+        >{/if}
+    </Menu>
+  </span>
   <!-- the lit copy of the row, visible only inside the thumb (see .lit) -->
   <div class="lit" class:off={thumbAt < 0} aria-hidden="true">
     {#each tabs as tab, i (tab.title)}
@@ -215,6 +211,7 @@
     {/each}
   </div>
 </nav>
+<WatchFrameDialog />
 <AccentDialog />
 <LanguageDialog />
 
@@ -306,6 +303,14 @@
     display: none;
   }
   .logo {
+    height: auto;
+    min-height: 0;
+    & img {
+      display: block;
+      width: 4rem;
+      height: 4rem;
+      object-fit: contain;
+    }
     display: none;
     flex: none;
     color: var(--color-text);
@@ -336,7 +341,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding-block: 0.5rem 0.75rem;
+      padding-block: 0.625rem;
+      width: 100%;
     }
     /* the account sits at the far end of the rail, away from the pages */
     .account {

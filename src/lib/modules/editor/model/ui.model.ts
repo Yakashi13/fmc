@@ -32,3 +32,6 @@ sample({
   fn: (on) => !on,
   target: $lockAspect,
 });
+
+export const watchFrameToggled = createEvent();
+export const $showWatchFrame = createStore(true).on(watchFrameToggled, (shown) => !shown);

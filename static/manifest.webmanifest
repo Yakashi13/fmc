@@ -1,7 +1,7 @@
 {
-  "name": "FMC Watchfaces",
-  "short_name": "FMC·WF",
-  "description": "Watchface editor and marketplace for the CMF Watch Pro 2",
+  "name": "FMC",
+  "short_name": "FMC",
+  "description": "Watch faces, apps, firmware and tools for CMF watches",
   "lang": "en",
   "start_url": "/",
   "scope": "/",
@@ -21,6 +21,8 @@
   ],
   "shortcuts": [
     { "name": "Editor", "url": "/editor" },
-    { "name": "Marketplace", "url": "/market" }
+    { "name": "Watch faces", "url": "/" },
+    { "name": "Apps", "url": "/apps" },
+    { "name": "Firmware", "url": "/firmware" }
   ]
 }

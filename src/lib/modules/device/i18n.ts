@@ -7,6 +7,17 @@ import helpHi from "./pages/troubleshooting.hi.md?raw";
 
 export const t = dict(
   {
+    appearanceColors: {
+      "dark-grey": "Dark Grey",
+      "light-grey": "Light Grey",
+      orange: "Orange",
+      blue: "Blue",
+      green: "Green",
+    },
+    watchAppearance: "Watch Frame",
+    appearanceModel: "Model",
+    appearanceColor: "Color",
+    appearanceAuto: "Automatic",
     // watch-sheet
     connectYourWatch: "Connect your watch",
     overWebBluetooth: "CMF Watch Pro 2 / Pro 3 over Web Bluetooth.",
@@ -124,6 +135,18 @@ export const t = dict(
   },
   {
     ru: {
+      appearanceColors: {
+        "dark-grey": "Тёмно-серый",
+        "light-grey": "Светло-серый",
+        orange: "Оранжевый",
+        blue: "Синий",
+        green: "Зелёный",
+      },
+      watchAppearance: "Корпус часов",
+      appearanceModel: "Модель",
+      appearanceColor: "Цвет",
+      appearanceAuto: "Автоматически",
+
       connectYourWatch: "Подключите часы",
       overWebBluetooth: "CMF Watch Pro 2 / Pro 3 через Web Bluetooth.",
       connecting: "Подключение…",
@@ -231,6 +254,18 @@ export const t = dict(
       backToFaces: "К циферблатам",
     },
     uk: {
+      appearanceColors: {
+        "dark-grey": "Темно-сірий",
+        "light-grey": "Світло-сірий",
+        orange: "Помаранчевий",
+        blue: "Синій",
+        green: "Зелений",
+      },
+      watchAppearance: "Корпус годинника",
+      appearanceModel: "Модель",
+      appearanceColor: "Колір",
+      appearanceAuto: "Автоматично",
+
       connectYourWatch: "Підключіть годинник",
       overWebBluetooth: "CMF Watch Pro 2 / Pro 3 через Web Bluetooth.",
       connecting: "Підключення…",
@@ -340,6 +375,18 @@ export const t = dict(
       backToFaces: "До циферблатів",
     },
     es: {
+      appearanceColors: {
+        "dark-grey": "Gris oscuro",
+        "light-grey": "Gris claro",
+        orange: "Naranja",
+        blue: "Azul",
+        green: "Verde",
+      },
+      watchAppearance: "Marco del reloj",
+      appearanceModel: "Modelo",
+      appearanceColor: "Color",
+      appearanceAuto: "Automático",
+
       connectYourWatch: "Conecta tu reloj",
       overWebBluetooth: "CMF Watch Pro 2 / Pro 3 por Web Bluetooth.",
       connecting: "Conectando…",
@@ -450,6 +497,18 @@ export const t = dict(
       backToFaces: "Volver a las esferas",
     },
     hi: {
+      appearanceColors: {
+        "dark-grey": "गहरा स्लेटी",
+        "light-grey": "हल्का स्लेटी",
+        orange: "नारंगी",
+        blue: "नीला",
+        green: "हरा",
+      },
+      watchAppearance: "घड़ी का फ्रेम",
+      appearanceModel: "मॉडल",
+      appearanceColor: "रंग",
+      appearanceAuto: "अपने आप",
+
       connectYourWatch: "अपनी घड़ी कनेक्ट करें",
       overWebBluetooth: "CMF Watch Pro 2 / Pro 3, Web Bluetooth से।",
       connecting: "कनेक्ट हो रहा है…",
