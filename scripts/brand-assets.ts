@@ -18,9 +18,9 @@ for (const [name, foreground] of [
   let variant = freeMark.replaceAll('fill="#FAFAFA"', 'fill="' + foreground + '"');
   // The non-themed fallback needs an edge that survives both light and dark host surfaces.
   if (name === "neutral")
-    variant = variant.replaceAll(
-      "<path ",
-      '<path stroke="#FAFAFA" stroke-width="4" paint-order="stroke fill" ',
+    variant = variant.replace(
+      /(<svg\b[^>]*>)([\s\S]*)(<\/svg>)/,
+      '$1<g stroke="#FAFAFA" stroke-width="4">$2</g><g>$2</g>$3',
     );
   await writeFile(`static/icons/favicon-${name}.svg`, variant);
 }
