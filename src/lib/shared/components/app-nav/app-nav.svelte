@@ -131,9 +131,12 @@
     e.stopPropagation();
   }}
 >
-  <a class="logo" href="/" aria-label="FMC home"
-    ><img src="/branding/fmc-community.svg" alt="FMC by Community" width="88" height="88" /></a
-  >
+  <a class="logo" href="/" aria-label="FMC home">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="/branding/fmc-community-dark.svg" />
+      <img src="/branding/fmc-community-light.svg" alt="FMC by Community" width="64" height="64" />
+    </picture>
+  </a>
   {#each nav as item (item.url)}
     <a class="type-label" data-tab draggable="false" href={item.url} class:active={item.active}>
       <span class="icon">

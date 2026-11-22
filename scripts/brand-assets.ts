@@ -6,15 +6,19 @@ const mark = await readFile("static/branding/fmc-community.svg", "utf8");
 
 await writeFile("static/icons/icon.svg", mark);
 // Keep every part of the supplied mark; remove only its tile and tighten the surrounding canvas.
-const freeMark = mark
-  .replace(/<rect\b[^>]*\/>/, "")
-  .replace('viewBox="0 0 512 512"', 'viewBox="44 44 424 424"');
+const transparentMark = mark.replace(/<rect\b[^>]*\/>/, "");
+const freeMark = transparentMark.replace('viewBox="0 0 512 512"', 'viewBox="44 44 424 424"');
 
 for (const [name, foreground] of [
   ["light", "#010101"],
   ["dark", "#FAFAFA"],
   ["neutral", "#202020"],
 ]) {
+  if (name !== "neutral")
+    await writeFile(
+      `static/branding/fmc-community-${name}.svg`,
+      transparentMark.replaceAll('fill="#FAFAFA"', 'fill="' + foreground + '"'),
+    );
   let variant = freeMark.replaceAll('fill="#FAFAFA"', 'fill="' + foreground + '"');
   // The non-themed fallback needs an edge that survives both light and dark host surfaces.
   if (name === "neutral")
