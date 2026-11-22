@@ -36,6 +36,7 @@ export interface ShortcutActions {
   flash(): void;
   panel(tab: "props" | "sim"): void;
   screen(kind: "main" | "aod"): void;
+  watchFrame(): void;
   help(): void;
 }
 
@@ -324,6 +325,14 @@ export const SHORTCUTS: readonly Shortcut[] = [
   },
 
   // ---- View ----
+  {
+    combos: ["shift+f"],
+    keys: "Shift+F",
+    label: "Toggle watch frame",
+    group: "View",
+    when: hasDoc,
+    run: (a) => a.watchFrame(),
+  },
   {
     combos: ["1"],
     keys: "1",

@@ -16,16 +16,20 @@
 
   interface Props {
     children?: Snippet;
+    showFrame?: boolean;
   }
-  const { children }: Props = $props();
+  const { children, showFrame = true }: Props = $props();
 </script>
 
 <div
   class="case"
+  class:frameless={!showFrame}
   class:wp3={$appearance.model === "watch_3_pro"}
   class:colored={$appearance.color === "blue" || $appearance.color === "orange"}
 >
-  <img class="render" src={$appearance.frame} alt="" draggable="false" />
+  {#if showFrame}
+    <img class="render" src={$appearance.frame} alt="" draggable="false" />
+  {/if}
   <div class="bezel">
     <div class="glass">{@render children?.()}</div>
   </div>
@@ -72,6 +76,9 @@
     transform: translate(-50%, -50%);
     border-radius: 50%;
     background: oklch(0 0 0);
+  }
+  .case.frameless .bezel {
+    background: transparent;
   }
   .glass {
     position: relative;
