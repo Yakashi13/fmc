@@ -1,8 +1,16 @@
-import { expect, test, vi } from "vitest";
+import { expect, onTestFinished, test, vi } from "vitest";
 import { Watch, capacityOf } from "$lib/modules/device/lib/ble";
 import { UUID } from "$lib/modules/device/lib/ble-protocol";
 
 test("re-picking uses the new device name, capacity and advertised identity", async () => {
+  const bluetooth = Object.getOwnPropertyDescriptor(navigator, "bluetooth");
+
+  Object.defineProperty(navigator, "bluetooth", { configurable: true, value: {} });
+  onTestFinished(() => {
+    if (bluetooth) Object.defineProperty(navigator, "bluetooth", bluetooth);
+    else Reflect.deleteProperty(navigator, "bluetooth");
+    vi.restoreAllMocks();
+  });
   localStorage.removeItem("fmc_authkey");
   const reads = [UUID.cmdRead, UUID.dataRead, UUID.shellRead].map((uuid) => {
     const characteristic = Object.assign(new EventTarget(), {
