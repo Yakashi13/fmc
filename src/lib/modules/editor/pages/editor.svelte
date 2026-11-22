@@ -75,6 +75,7 @@
   const {
     $doc: doc,
     $memory: memory,
+    $support: support,
     $store: store,
     $sim: sim,
     $screen: screen,
@@ -110,7 +111,11 @@
     newFaceRequested,
     importFacerRequested,
     exportBin,
+    exportPro2,
     errored,
+    watchPressed,
+    watchReleased,
+    watchTapped,
     renameFace,
     buildCurrentBin,
     previewBlob,
@@ -339,6 +344,7 @@
 
   // ---- selection and drag ----
   let drag: { p: Point; items: DragItem[]; moved: boolean } | null = null;
+  let pressed = false; // a press that is still a tap on the watch being previewed
   const canvasXY = (e: PointerEvent): Point => {
     const r = canvas!.getBoundingClientRect();
 
@@ -366,6 +372,10 @@
       canvas?.setPointerCapture(e.pointerId);
       return;
     }
+    // the dial takes the press too: some Watch 3 Pro widgets answer one
+    pressed = true;
+    watchPressed(p);
+    canvas?.setPointerCapture(e.pointerId); // the release must come back here
     const h = hits.findLast(
       (h) => !h.layer.locked && p.x >= h.x && p.x < h.x + h.w && p.y >= h.y && p.y < h.y + h.h,
     );
@@ -392,7 +402,6 @@
       // the canvas doesn't resize mid-drag, so one layout read is enough for the whole gesture
       cvScale = SCREEN / (canvas?.getBoundingClientRect().width || SCREEN);
     }
-    canvas?.setPointerCapture(e.pointerId);
   }
 
   function onMove(e: PointerEvent) {
@@ -415,6 +424,8 @@
     if (!d.moved) {
       checkpoint(0);
       d.moved = true;
+      pressed = false; // it's a drag
+      watchReleased();
     }
     const snap =
       box0 && snapT && !e.altKey
@@ -426,6 +437,9 @@
     for (const it of d.items) layerPatched(movePatch(it, it.x0 + m.dx, it.y0 + m.dy));
   }
   function onUp() {
+    watchReleased();
+    if (pressed) watchTapped(Date.now());
+    pressed = false;
     if (rot) {
       if (rot.started && rot.deg % 360) rotateImageRequested({ layer: rot.layer.id, deg: rot.deg });
       rot = null;
@@ -572,6 +586,12 @@
             <Icon name="download" />
             {$t.exportBin}
           </MenuItem>
+          {#if $support === "pro2Converts"}
+            <MenuItem onClick={() => exportPro2()}>
+              <Icon name="download" />
+              {$t.exportPro2}
+            </MenuItem>
+          {/if}
         {/if}
       </Menu>
       <input bind:this={fileInput} type="file" accept=".bin,.aab,.zip" hidden onchange={openFile} />
@@ -699,6 +719,10 @@
                 onpointerdown={onDown}
                 onpointermove={onMove}
                 onpointerup={onUp}
+                onpointercancel={() => {
+                  pressed = false;
+                  watchReleased();
+                }}
               ></canvas>
               <!-- the market opens the editor before the .bin has even arrived (see editRequested) —
                this is what the user watches while it does -->
@@ -733,20 +757,31 @@
           </div>
         </div>
       </div>
-      {#if showMem && screenMem}
-        <p
-          class="memory type-caption"
-          class:warn={screenMem.fit === "compressed"}
-          class:error={screenMem.fit === "too-heavy"}
-          title={$t.memoryHint(mb(SCREEN_BUDGET))}
-        >
-          {$t.memory(mb(screenMem.bytes), mb(SCREEN_BUDGET))}{screenMem.fit === "compressed"
-            ? ` — ${$t.memoryCompressed}`
-            : screenMem.fit === "too-heavy"
-              ? ` — ${$t.memoryTooHeavy}`
-              : ""}
-        </p>
-      {/if}
+      <div class="notes">
+        {#if $support}
+          <p
+            class="memory support type-caption"
+            class:warn={$support === "pro3Only" || $support === "pro2Converts"}
+            class:error={$support === "none"}
+          >
+            {$t.support[$support]}
+          </p>
+        {/if}
+        {#if showMem && screenMem}
+          <p
+            class="memory type-caption"
+            class:warn={screenMem.fit === "compressed"}
+            class:error={screenMem.fit === "too-heavy"}
+            title={$t.memoryHint(mb(SCREEN_BUDGET))}
+          >
+            {$t.memory(mb(screenMem.bytes), mb(SCREEN_BUDGET))}{screenMem.fit === "compressed"
+              ? ` — ${$t.memoryCompressed}`
+              : screenMem.fit === "too-heavy"
+                ? ` — ${$t.memoryTooHeavy}`
+                : ""}
+          </p>
+        {/if}
+      </div>
       {#if perf && $doc}
         <p class="fps type-caption type-mono" class:slow={fps > 0 && fps < 50}>
           {fps} fps · {drawMs} ms draw
@@ -1200,12 +1235,25 @@
     }
   }
 
-  /* the open screen's share of a Watch 3 Pro's memory, over the canvas's top edge */
-  .memory {
+  /* where the face can go and the open screen's share of a Watch 3 Pro's memory, stacked over
+     the canvas's top edge */
+  .notes {
     position: absolute;
     top: 0.5rem;
     inset-inline-end: 0.5rem;
     z-index: 2;
+    display: flex;
+    max-width: calc(100% - 1rem);
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+  }
+  @media (max-width: 767px) {
+    .notes {
+      top: 3.5rem; /* under the floating Main/AOD switch */
+    }
+  }
+  .memory {
     margin: 0;
     padding: 0.125rem 0.5rem;
     border-radius: calc(var(--border-radius) - 0.25rem);

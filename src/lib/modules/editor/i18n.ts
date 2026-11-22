@@ -17,7 +17,19 @@ export const t = dict(
     openWatchface: "Open watchface",
     importFolder: "Import export folder",
     addLayersFrom: "Add layers from watchfaces",
+    support: {
+      none: "No supported watch can take this face: it has a widget of an unknown type.",
+      pro3Only: "Watch 3 Pro only: a Watch Pro 2 would restart in a loop on this face.",
+      pro2Converts:
+        "Uses Watch 3 Pro image formats or data: for a Watch Pro 2, use Export for Watch Pro 2.",
+      pro2Drops: "Watch 3 Pro. A Watch Pro 2 runs it without the touch widget.",
+    },
     exportBin: "Export .bin",
+    exportPro2: "Export for Watch Pro 2",
+    pro2TooHeavy: (need: string, max: string) =>
+      `Can't export for Watch Pro 2: a screen needs ${need} MB there, over the ${max} MB tested on that watch. Use fewer or smaller images.`,
+    pro2Theme:
+      "Can't export for Watch Pro 2: a number or a visibility condition reads the colour theme, which that watch doesn't have.",
     exportBinHint: "Export .bin (⌘E)",
     // editor.svelte — toolbar
     nameHint: "Watchface name — the watch's own list shows the first 15 characters",
@@ -205,7 +217,19 @@ export const t = dict(
       openWatchface: "Открыть циферблат",
       importFolder: "Импорт папки экспорта",
       addLayersFrom: "Добавить слои из циферблатов",
+      support: {
+        none: "Ни одни поддерживаемые часы не примут этот циферблат: в нём виджет неизвестного типа.",
+        pro3Only: "Только Watch 3 Pro: Watch Pro 2 на этом циферблате зациклится на перезагрузке.",
+        pro2Converts:
+          "Использует форматы изображений или данные Watch 3 Pro: для Watch Pro 2 используйте «Экспорт для Watch Pro 2».",
+        pro2Drops: "Watch 3 Pro. На Watch Pro 2 работает без виджета касания.",
+      },
       exportBin: "Экспорт .bin",
+      exportPro2: "Экспорт для Watch Pro 2",
+      pro2TooHeavy: (need, max) =>
+        `Не удаётся экспортировать для Watch Pro 2: экрану там нужно ${need} МБ, а проверено только до ${max} МБ. Уменьшите изображения или их число.`,
+      pro2Theme:
+        "Не удаётся экспортировать для Watch Pro 2: число или условие видимости читает цветовую тему, которой у этих часов нет.",
       exportBinHint: "Экспорт .bin (⌘E)",
       nameHint: "Название циферблата — в списке на часах видны первые 15 символов",
       undoHint: "Отменить (⌘Z)",
@@ -375,7 +399,20 @@ export const t = dict(
       openWatchface: "Відкрити циферблат",
       importFolder: "Імпорт теки експорту",
       addLayersFrom: "Додати шари з циферблатів",
+      support: {
+        none: "Жоден підтримуваний годинник не прийме цей циферблат: у ньому віджет невідомого типу.",
+        pro3Only:
+          "Лише Watch 3 Pro: Watch Pro 2 на цьому циферблаті циклічно перезавантажуватиметься.",
+        pro2Converts:
+          "Використовує формати зображень або дані Watch 3 Pro: для Watch Pro 2 скористайтеся «Експорт для Watch Pro 2».",
+        pro2Drops: "Watch 3 Pro. На Watch Pro 2 працює без віджета дотику.",
+      },
       exportBin: "Експорт .bin",
+      exportPro2: "Експорт для Watch Pro 2",
+      pro2TooHeavy: (need, max) =>
+        `Не вдається експортувати для Watch Pro 2: екрану там потрібно ${need} МБ, а перевірено лише до ${max} МБ. Зменште зображення або їхню кількість.`,
+      pro2Theme:
+        "Не вдається експортувати для Watch Pro 2: число або умова видимості читає колірну тему, якої цей годинник не має.",
       exportBinHint: "Експорт .bin (⌘E)",
       nameHint: "Назва циферблата — у списку на годиннику видно перші 15 символів",
       undoHint: "Скасувати (⌘Z)",
@@ -545,7 +582,19 @@ export const t = dict(
       openWatchface: "Abrir esfera",
       importFolder: "Importar carpeta exportada",
       addLayersFrom: "Añadir capas de esferas",
+      support: {
+        none: "Ningún reloj compatible acepta esta esfera: tiene un widget de tipo desconocido.",
+        pro3Only: "Solo Watch 3 Pro: un Watch Pro 2 se reiniciaría en bucle con esta esfera.",
+        pro2Converts:
+          "Usa formatos de imagen o datos del Watch 3 Pro: para un Watch Pro 2 usa «Exportar para Watch Pro 2».",
+        pro2Drops: "Watch 3 Pro. En un Watch Pro 2 funciona sin el widget táctil.",
+      },
       exportBin: "Exportar .bin",
+      exportPro2: "Exportar para Watch Pro 2",
+      pro2TooHeavy: (need, max) =>
+        `No se puede exportar para el Watch Pro 2: una pantalla necesita ${need} MB allí, más de los ${max} MB probados en ese reloj. Usa menos imágenes o más pequeñas.`,
+      pro2Theme:
+        "No se puede exportar para el Watch Pro 2: un número o una condición de visibilidad lee el tema de color, que ese reloj no tiene.",
       exportBinHint: "Exportar .bin (⌘E)",
       nameHint: "Nombre de la esfera: la lista del reloj muestra los primeros 15 caracteres",
       undoHint: "Deshacer (⌘Z)",
@@ -715,7 +764,19 @@ export const t = dict(
       openWatchface: "वॉच फ़ेस खोलें",
       importFolder: "एक्सपोर्ट फ़ोल्डर इम्पोर्ट करें",
       addLayersFrom: "वॉच फ़ेस से लेयर जोड़ें",
+      support: {
+        none: "कोई समर्थित घड़ी यह फ़ेस नहीं ले सकती: इसमें अज्ञात टाइप का विजेट है।",
+        pro3Only: "सिर्फ़ Watch 3 Pro: Watch Pro 2 इस फ़ेस पर बार-बार रीस्टार्ट होगी।",
+        pro2Converts:
+          "Watch 3 Pro के इमेज फ़ॉर्मेट या डेटा का इस्तेमाल करता है: Watch Pro 2 के लिए “Watch Pro 2 के लिए एक्सपोर्ट” इस्तेमाल करें।",
+        pro2Drops: "Watch 3 Pro। Watch Pro 2 पर यह टच विजेट के बिना चलता है।",
+      },
       exportBin: ".bin एक्सपोर्ट",
+      exportPro2: "Watch Pro 2 के लिए एक्सपोर्ट",
+      pro2TooHeavy: (need, max) =>
+        `Watch Pro 2 के लिए एक्सपोर्ट नहीं हो सका: स्क्रीन को वहाँ ${need} MB चाहिए, जो उस घड़ी पर जाँची गई ${max} MB सीमा से ज़्यादा है। कम या छोटी इमेज इस्तेमाल करें।`,
+      pro2Theme:
+        "Watch Pro 2 के लिए एक्सपोर्ट नहीं हो सका: कोई संख्या या दृश्यता शर्त कलर थीम पढ़ती है, जो उस घड़ी में नहीं है।",
       exportBinHint: ".bin एक्सपोर्ट (⌘E)",
       nameHint: "वॉच फ़ेस का नाम — घड़ी की सूची में पहले 15 अक्षर दिखते हैं",
       undoHint: "पूर्ववत (⌘Z)",
